@@ -1,0 +1,21 @@
+version: '3.9'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: django_prod
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "False"
+      ALLOWED_HOSTS: "render.com"
+      DB_NAME: "postgres"
+      DB_USER: "postgres"
+      DB_PASSWORD: "postgres"
+      DB_HOST: "db"
+      DB_PORT: "5432"
+    # No volume mount needed for code in production

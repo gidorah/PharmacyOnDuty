@@ -1,4 +1,4 @@
-from django.db import models
+from django.contrib.gis.db import models
 from enum import StrEnum
 from datetime import datetime
 
@@ -15,14 +15,11 @@ class City(models.Model):
     def get_city_status(self):
         return self.working_schedule.get_current_status()
 
-    def get_open_pharmacies(self):
-        if self.get_city_status() == PharmacyStatus.OPEN:
-            return self.pharmacies.all()
-        else:
-            return self.pharmacies.filter(
-                duty_start__lte=datetime.now().time(),
-                duty_end__gte=datetime.now().time(),
-            )
+    def get_pharmacies_on_duty(self):
+        return self.pharmacies.filter(
+            duty_start__lte=datetime.now().time(),
+            duty_end__gte=datetime.now().time(),
+        )
 
 
 class WorkingSchedule(models.Model):
@@ -65,6 +62,7 @@ class WorkingSchedule(models.Model):
 
 class Pharmacy(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False)
+    location = models.PointField()
     address = models.CharField(max_length=100, null=True, blank=True)
     city = models.ForeignKey(
         City,

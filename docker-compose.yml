@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgis
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: gis
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis-data:/var/lib/postgresql/data
+
+volumes:
+  postgis-data:

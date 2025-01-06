@@ -1,0 +1,22 @@
+# Dockerfile.dev
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies for geospatial libraries
+RUN apt-get update && apt-get install -y \
+    binutils libproj-dev gdal-bin \
+    && apt-get clean
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy project code
+COPY . .
+
+# Expose ports for Django dev server and debugpy
+EXPOSE 8000 5678
+
+# By default, run Django's dev server with debugpy for remote debugging
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "manage.py", "runserver", "0.0.0.0:8000"]
