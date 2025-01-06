@@ -15,7 +15,7 @@
 </head>
 <body>
 <h1>Google Maps with HTMX</h1>
-<div id="mapDiv" hx-get="/load_map_data" hx-trigger="load" hidden=""></div>
+<div id="mapDiv" hx-get="/load_map_data/eskisehir" hx-trigger="load" hidden=""></div>
 <div id="map"></div>
 
 <script>
@@ -144,6 +144,8 @@
 
     // Main map handler
     document.addEventListener("htmx:afterOnLoad", (event) => {
+
+
         if (event.detail.elt.id === "mapDiv") {
             const data = JSON.parse(event.detail.xhr.responseText);
             const { center, points } = data;

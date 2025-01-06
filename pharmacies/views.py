@@ -11,7 +11,7 @@ def home(request):
     return render(request, "pharmacies/index.html")
 
 
-def load_map_data(request):
+def load_map_data(request, city):
     scraped_data = get_eskisehir_data()
     points = get_map_points_from_scraped_data(scraped_data)
     data = {"center": {"lat": 39.779154, "lng": 30.519983}, "points": points}
