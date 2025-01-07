@@ -89,7 +89,7 @@ DATABASES = {
         "NAME": "postgres",
         "USER": "postgres",
         "PASSWORD": "password",
-        "HOST": "db",  # Will match the Docker service name
+        "HOST": "localhost",
         "PORT": 5432,
     }
 }

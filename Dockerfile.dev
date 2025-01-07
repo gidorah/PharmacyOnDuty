@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose ports for Django dev server and debugpy
-EXPOSE 8000 5678
+EXPOSE 8000 5678 5679
 
 # By default, run Django's dev server with debugpy for remote debugging
-CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["python", "-Xfrozen_modules=off", "manage.py", "runserver", "0.0.0.0:8000"]

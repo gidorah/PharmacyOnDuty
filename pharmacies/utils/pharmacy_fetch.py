@@ -46,6 +46,40 @@ def fetch_pharmacies_in_eskisehir(api_key, page_size=20):
     return results
 
 
+import requests
+import os
+from dotenv import load_dotenv
+
+
+def fetch_nearest_pharmacies(lat, lng, keyword="pharmacy", limit=5):
+    import os
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
+
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+    params = {
+        "location": f"{lat},{lng}",
+        "rankby": "distance",  # Orders results by distance
+        "keyword": keyword,  # Search keyword, e.g., pharmacy
+        "key": api_key,
+    }
+
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        if "results" in data:
+            # Return only the nearest 'limit' pharmacies
+            return data["results"][:limit]
+        else:
+            print("No results found.")
+            return []
+    else:
+        print(f"Error: {response.status_code} - {response.text}")
+        return []
+
+
 def save_to_json(data, filename="pharmacies_in_eskisehir.json"):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)

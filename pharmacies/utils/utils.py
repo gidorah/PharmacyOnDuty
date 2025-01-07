@@ -1,3 +1,8 @@
+from pharmacies.models import Pharmacy, City
+
+from datetime import datetime
+
+
 def get_coordinates_from_google_maps_url(url: str):
     coordinate_string = url.split("=")[-1]
     lat = float(coordinate_string.split(",")[0])
@@ -19,66 +24,54 @@ def get_map_points_from_scraped_data(scraped_data):
     return map_points
 
 
-def fetch_all_pharmacies_in_city(city: str):
-    import requests
-    import os
-    from dotenv import load_dotenv
+def get_map_points_from_pharmacies(pharmacies):
+    points = []
 
-    # Load environment variables
-    load_dotenv()
+    for pharmacy in pharmacies:
+        point = {
+            "position": {
+                "lat": pharmacy.location.coords[1],
+                "lng": pharmacy.location.coords[0],
+            },
+            "title": pharmacy.name,
+            "description": pharmacy.address,
+        }
+        points.append(point)
 
-    # Get the API key from environment variables
-    api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
-    if not api_key:
-        raise ValueError("Google Maps API key not found in environment variables.")
+    return points
 
-    # Initialize results list and pagination token
-    results = []
-    next_page_token = None
 
-    while True:
-        # Prepare the API request URL
-        formatted_city = city.lower().replace(" ", "+")
-        page_token_str = f"&pagetoken={next_page_token}" if next_page_token else ""
-        endpoint = (
-            f"https://maps.googleapis.com/maps/api/place/textsearch/json?"
-            f"query=pharmacies+in+{formatted_city}&key={api_key}{page_token_str}"
-        )
+def get_nearest_pharmacies_on_duty(lat, lng, radius=1000, limit=5):
+    return Pharmacy.objects.filter(
+        duty_start__lte=datetime.now(),
+        duty_end__gte=datetime.now(),
+    ).order_by("location")[:limit]
 
-        # Make the API request
-        response = requests.get(endpoint)
 
-        # Check for a successful response, raise exception for HTTP errors
-        if response.status_code != 200:
-            raise Exception(f"Error fetching data from Google API: {response.text}")
+def check_if_pharmacy_exists(name):
+    pharmacy = Pharmacy.objects.filter(name=name).first()
+    return True if pharmacy else False
 
-        # Extract data from the response
-        response_data = response.json()
-        results.extend(response_data.get("results", []))
 
-        # Check for the next page token (if any)
-        next_page_token = response_data.get("next_page_token")
-
-        # Wait briefly if the next_page_token is provided (per Google API docs)
-        if next_page_token:
-            import time
-
-            time.sleep(2)  # To avoid quota issues with rapid requests
-
-        # If no next page, break the loop
-        if not next_page_token:
-            break
-
-    return results
+def add_scraped_data_to_db(scraped_data):
+    for item in scraped_data:
+        if not check_if_pharmacy_exists(item["name"]):
+            coordinates = item["coordinates"]
+            pharmacy = Pharmacy(
+                name=item["name"],
+                address=item["address"],
+                phone=item["phone"],
+                location="POINT({} {})".format(coordinates["lng"], coordinates["lat"]),
+                duty_start=item["duty_start"],
+                duty_end=item["duty_end"],
+                district=item["district"],
+                city_id=City.objects.get(name="eskisehir").id,
+            )
+            pharmacy.save()
 
 
 if __name__ == "__main__":
-    import json
+    from pharmacies.utils.eskisehireo_scraper import get_eskisehir_data
 
-    # Fetch pharmacies for a given city
-    city_name = "eskisehir"
-    pharmacies = fetch_all_pharmacies_in_city(city_name)
-
-    # Save results to a JSON file
-    with open(f"{city_name.lower().replace(' ', '_')}_pharmacies.json", "w") as file:
-        json.dump(pharmacies, file, indent=4)
+    eskisehir_data = get_eskisehir_data()
+    add_scraped_data_to_db(eskisehir_data)

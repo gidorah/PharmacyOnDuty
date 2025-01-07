@@ -17,8 +17,8 @@ class City(models.Model):
 
     def get_pharmacies_on_duty(self):
         return self.pharmacies.filter(
-            duty_start__lte=datetime.now().time(),
-            duty_end__gte=datetime.now().time(),
+            duty_start__lte=datetime.now(),
+            duty_end__gte=datetime.now(),
         )
 
 
@@ -62,8 +62,8 @@ class WorkingSchedule(models.Model):
 
 class Pharmacy(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False)
-    location = models.PointField()
-    address = models.CharField(max_length=100, null=True, blank=True)
+    location = models.PointField(null=False, blank=False, default="POINT(0 0)")
+    address = models.CharField(max_length=200, null=True, blank=True)
     city = models.ForeignKey(
         City,
         on_delete=models.CASCADE,
@@ -72,11 +72,11 @@ class Pharmacy(models.Model):
         blank=False,
     )
     district = models.CharField(max_length=100, null=False, blank=False)
-    phone = models.CharField(max_length=10, null=True, blank=True)
+    phone = models.CharField(max_length=16, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
-    duty_start = models.TimeField(null=True, blank=True)
-    duty_end = models.TimeField(null=True, blank=True)
+    duty_start = models.DateTimeField(null=True, blank=True)
+    duty_end = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name

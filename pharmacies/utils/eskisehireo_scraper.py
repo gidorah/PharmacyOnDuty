@@ -1,8 +1,22 @@
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
+
+
+def _get_district_from_name(pharmacy_name):
+    return pharmacy_name.split(" ")[-1]
+
+
+def _get_duty_dates(operation_times: str):
+    parts = operation_times.split(" ")
+    start_date = datetime.strptime(parts[0] + " " + parts[1], "%d.%m.%Y %H:%M")
+    end_date = datetime.strptime(parts[3] + " " + parts[4], "%d.%m.%Y %H:%M")
+    return start_date, end_date
 
 
 def get_eskisehir_data():
+    from pharmacies.utils import get_coordinates_from_google_maps_url
+
     url = "https://www.eskisehireo.org.tr/eskisehir-nobetci-eczaneler"
     response = requests.get(url)
     soup = BeautifulSoup(response.text, "html.parser")
@@ -13,6 +27,10 @@ def get_eskisehir_data():
     for pharmacy in pharmacies:
         # Extract name
         name = pharmacy.find("h4", class_="text-danger").text.strip()
+
+        district = _get_district_from_name(name) if name else None
+
+        name = name.split("-")[0].strip()
 
         # Address
         address_tag = pharmacy.find("i", class_="fa-home")
@@ -32,22 +50,29 @@ def get_eskisehir_data():
             "a", href=lambda href: href and "google.com/maps" in href
         )
         google_maps = map_tag["href"] if map_tag else None
+        coordinates = (
+            get_coordinates_from_google_maps_url(google_maps) if google_maps else None
+        )
 
         # Operation Times
         operation_time_tag = pharmacy.find("span", class_="text-danger")
-        if operation_time_tag:
-            operation_times = operation_time_tag.text.strip()
-        else:
-            operation_times = None
+        operation_times = (
+            operation_time_tag.text.strip() if operation_time_tag else None
+        )
+        start_date, end_date = (
+            _get_duty_dates(operation_times) if operation_times else None
+        )
 
         # Append to the data list
         data.append(
             {
                 "name": name,
                 "address": address,
+                "district": district,
                 "phone": phone,
-                "google_maps": google_maps,
-                "operation_times": operation_times,
+                "coordinates": coordinates,
+                "duty_start": start_date,
+                "duty_end": end_date,
             }
         )
 
