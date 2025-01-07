@@ -5,6 +5,6 @@ from . import views
 app_name = "pharmacies"
 urlpatterns = [
     path("", views.home, name="home"),
-    path("load_map_data/<str:city_name>", views.load_map_data, name="load_map_data"),
+    path("get_pharmacy_points", views.get_pharmacy_points, name="get_pharmacy_points"),
     path("google_maps_proxy", views.google_maps_proxy, name="google_maps_proxy"),
 ]

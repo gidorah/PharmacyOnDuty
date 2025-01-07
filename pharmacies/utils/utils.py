@@ -11,17 +11,21 @@ def get_coordinates_from_google_maps_url(url: str):
     return coordinates
 
 
-def get_map_points_from_scraped_data(scraped_data):
-    map_points = []
+def get_map_points_from_fetched_data(data):
+    points = []
 
-    for item in scraped_data:
+    for pharmacy in data:
         point = {
-            "position": get_coordinates_from_google_maps_url(item["google_maps"]),
-            "title": item["name"],
-            "description": item["address"],
+            "position": {
+                "lat": pharmacy["geometry"]["location"]["lat"],
+                "lng": pharmacy["geometry"]["location"]["lng"],
+            },
+            "title": pharmacy["name"],
+            "description": pharmacy["vicinity"],
         }
-        map_points.append(point)
-    return map_points
+        points.append(point)
+
+    return points
 
 
 def get_map_points_from_pharmacies(pharmacies):

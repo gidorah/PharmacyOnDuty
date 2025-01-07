@@ -8,6 +8,7 @@ from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
     fetch_nearest_pharmacies,
     get_map_points_from_pharmacies,
+    get_map_points_from_fetched_data,
     get_nearest_pharmacies_on_duty,
 )
 
@@ -16,30 +17,26 @@ def home(request):
     return render(request, "pharmacies/index.html")
 
 
-def load_map_data(request, city_name):
+def get_pharmacy_points(request):
+    user_latitude = request.GET.get("lat")
+    user_longitude = request.GET.get("lng")
+    city_name = request.GET.get("city", "eskisehir")
+
     city = City.objects.get(name=city_name)
     city_status = city.get_city_status() if city else None
 
     if city_status == PharmacyStatus.OPEN:
-        data = fetch_nearest_pharmacies(39.779154, 30.519984)
-
-        points = []
-
-        for pharmacy in data:
-            point = {
-                "position": {
-                    "lat": pharmacy["geometry"]["location"]["lat"],
-                    "lng": pharmacy["geometry"]["location"]["lng"],
-                },
-                "title": pharmacy["name"],
-                "description": pharmacy["vicinity"],
-            }
-            points.append(point)
+        pharmacies = fetch_nearest_pharmacies(
+            user_latitude, user_longitude, keyword="pharmacy"
+        )
+        points = get_map_points_from_fetched_data(pharmacies)
     else:
-        pharmacies_on_duty = get_nearest_pharmacies_on_duty(39.779154, 30.519984)
+        pharmacies_on_duty = get_nearest_pharmacies_on_duty(
+            user_latitude, user_longitude
+        )
         points = get_map_points_from_pharmacies(pharmacies_on_duty)
 
-    data = {"center": {"lat": 39.779154, "lng": 30.519984}, "points": points}
+    data = {"points": points}
     return JsonResponse(data)
 
 
