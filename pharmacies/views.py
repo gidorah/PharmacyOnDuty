@@ -1,14 +1,18 @@
-import requests
+from datetime import datetime
 
+import requests
+from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
-from django.conf import settings
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
+    add_scraped_data_to_db,
+    check_if_scraped_data_old,
     fetch_nearest_pharmacies,
-    get_map_points_from_pharmacies,
+    get_eskisehir_data,
     get_map_points_from_fetched_data,
+    get_map_points_from_pharmacies,
     get_nearest_pharmacies_on_duty,
 )
 
@@ -18,12 +22,12 @@ def home(request):
 
 
 def get_pharmacy_points(request):
-    user_latitude = request.GET.get("lat")
-    user_longitude = request.GET.get("lng")
+    user_latitude = float(request.GET.get("lat"))
+    user_longitude = float(request.GET.get("lng"))
     city_name = request.GET.get("city", "eskisehir")
 
     city = City.objects.get(name=city_name)
-    city_status = city.get_city_status() if city else None
+    city_status = city.get_city_status_for_time() if city else None
 
     if city_status == PharmacyStatus.OPEN:
         pharmacies = fetch_nearest_pharmacies(
@@ -31,6 +35,14 @@ def get_pharmacy_points(request):
         )
         points = get_map_points_from_fetched_data(pharmacies)
     else:
+        data_status = check_if_scraped_data_old("eskisehir")
+        if data_status is True:
+            eskisehir_data = get_eskisehir_data()
+            add_scraped_data_to_db(eskisehir_data)
+            eskisehir = City.objects.get(name="eskisehir")
+            eskisehir.last_scraped_at = datetime.now()
+            eskisehir.save()
+
         pharmacies_on_duty = get_nearest_pharmacies_on_duty(
             user_latitude, user_longitude
         )

@@ -1,20 +1,21 @@
+from datetime import datetime
+
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
 
 
 def _get_district_from_name(pharmacy_name):
     return pharmacy_name.split(" ")[-1]
 
 
-def _get_duty_dates(operation_times: str):
+def _get_duty_dates(operation_times: str) -> tuple[datetime, datetime]:
     parts = operation_times.split(" ")
     start_date = datetime.strptime(parts[0] + " " + parts[1], "%d.%m.%Y %H:%M")
     end_date = datetime.strptime(parts[3] + " " + parts[4], "%d.%m.%Y %H:%M")
     return start_date, end_date
 
 
-def get_eskisehir_data():
+def get_eskisehir_data() -> list[dict]:
     from pharmacies.utils import get_coordinates_from_google_maps_url
 
     url = "https://www.eskisehireo.org.tr/eskisehir-nobetci-eczaneler"
@@ -60,7 +61,7 @@ def get_eskisehir_data():
             operation_time_tag.text.strip() if operation_time_tag else None
         )
         start_date, end_date = (
-            _get_duty_dates(operation_times) if operation_times else None
+            _get_duty_dates(operation_times) if operation_times else (None, None)
         )
 
         # Append to the data list
