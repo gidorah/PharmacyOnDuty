@@ -15,18 +15,25 @@ class City(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
 
-    def get_pharmacies_on_duty(self, current_time: datetime | None = None):
+    def get_pharmacies_on_duty(self, current_time: datetime | None = None) -> list:
         """Return pharmacies that are on duty at the given time."""
         current_time = current_time or datetime.now()
-        return list(
+        pharmacies_on_duty = list(
             self.pharmacies.filter(
                 duty_start__lte=current_time, duty_end__gte=current_time
             )
         )
+        if not pharmacies_on_duty:
+            raise ValueError("No pharmacies are on duty at this time.")
+        return pharmacies_on_duty
 
     def get_city_status(self, query_time: datetime | None = None) -> PharmacyStatus:
         """Return the city status for the given time."""
-        return self.working_schedule.get_status(query_time=query_time or datetime.now())
+        query_time = query_time or datetime.now()
+        status = self.working_schedule.get_status(query_time=query_time)
+        if not status:
+            raise ValueError("Unable to retrieve city status.")
+        return status
 
 
 class WorkingSchedule(models.Model):

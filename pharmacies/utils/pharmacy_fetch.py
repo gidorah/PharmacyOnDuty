@@ -31,7 +31,7 @@ def fetch_pharmacies_in_eskisehir(api_key, page_size=20):
         else:
             data.pop("pageToken", None)
 
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, timeout=10)
 
         if response.status_code == 200:
             response_data = response.json()
@@ -64,18 +64,16 @@ def fetch_nearest_pharmacies(lat, lng, keyword="pharmacy", limit=5):
         "key": api_key,
     }
 
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=10)
     if response.status_code == 200:
         data = response.json()
         if "results" in data:
             # Return only the nearest 'limit' pharmacies
             return data["results"][:limit]
-        else:
-            print("No results found.")
-            return []
-    else:
-        print(f"Error: {response.status_code} - {response.text}")
+        print("No results found.")
         return []
+    print(f"Error: {response.status_code} - {response.text}")
+    return []
 
 
 def save_to_json(data, filename="pharmacies_in_eskisehir.json"):
