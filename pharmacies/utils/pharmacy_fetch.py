@@ -1,5 +1,6 @@
-import requests
 import json
+
+import requests
 
 """
 This script was to fetch all pharmacies in a city using Google Places API
@@ -46,16 +47,13 @@ def fetch_pharmacies_in_eskisehir(api_key, page_size=20):
     return results
 
 
-import requests
-import os
-from dotenv import load_dotenv
-
-
 def fetch_nearest_pharmacies(lat, lng, keyword="pharmacy", limit=5):
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv()
+
     api_key = os.environ.get("GOOGLE_MAPS_API_KEY")
 
     url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
@@ -87,6 +85,7 @@ def save_to_json(data, filename="pharmacies_in_eskisehir.json"):
 
 if __name__ == "__main__":
     import os
+
     from dotenv import load_dotenv
 
     load_dotenv()

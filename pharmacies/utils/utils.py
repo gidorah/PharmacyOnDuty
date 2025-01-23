@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 
-from pharmacies.models import City, Pharmacy
+from pharmacies.models import City, Pharmacy, PharmacyStatus
 
 
 def get_coordinates_from_google_maps_url(url: str):
@@ -24,6 +24,7 @@ def get_map_points_from_fetched_data(data):
             },
             "title": pharmacy["name"],
             "description": pharmacy["vicinity"],
+            "is_open": True,
         }
         points.append(point)
 
@@ -41,6 +42,7 @@ def get_map_points_from_pharmacies(pharmacies):
             },
             "title": pharmacy.name,
             "description": pharmacy.address,
+            "is_open": True,
         }
         points.append(point)
 
