@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 
-from pharmacies.models import City, Pharmacy, PharmacyStatus
+from pharmacies.models import City, Pharmacy
 
 
 def get_coordinates_from_google_maps_url(url: str):
@@ -50,16 +50,19 @@ def get_map_points_from_pharmacies(pharmacies):
 
 
 def check_if_scraped_data_old(city_name):
+    from datetime import timedelta
+
     from pharmacies.models import City, PharmacyStatus
 
     city = City.objects.get(name=city_name)
 
-    if city.get_city_status_for_time(datetime.now()) == PharmacyStatus.OPEN:
+    if city.get_city_status(datetime.now()) == PharmacyStatus.OPEN:
         return False
 
     if (
         city.last_scraped_at is None
-        or city.get_city_status_for_time(city.last_scraped_at) == PharmacyStatus.OPEN
+        or city.get_city_status(city.last_scraped_at) == PharmacyStatus.OPEN
+        or city.last_scraped_at.date() < datetime.now().date() - timedelta(hours=6)
     ):
         return True
 
