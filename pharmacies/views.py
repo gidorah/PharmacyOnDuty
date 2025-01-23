@@ -27,7 +27,7 @@ def get_pharmacy_points(request):
     city_name = request.GET.get("city", "eskisehir")
 
     city = City.objects.get(name=city_name)
-    city_status = city.get_city_status_for_time() if city else None
+    city_status = city.get_city_status() if city else None
 
     if city_status == PharmacyStatus.OPEN:
         pharmacies = fetch_nearest_pharmacies(
