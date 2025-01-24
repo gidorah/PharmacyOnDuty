@@ -24,7 +24,7 @@ def get_map_points_from_fetched_data(data):
             },
             "title": pharmacy["name"],
             "description": pharmacy["vicinity"],
-            "is_open": True,
+            "status": "open",
         }
         points.append(point)
 
@@ -42,7 +42,7 @@ def get_map_points_from_pharmacies(pharmacies):
             },
             "title": pharmacy.name,
             "description": pharmacy.address,
-            "is_open": True,
+            "status": "on duty",
         }
         points.append(point)
 

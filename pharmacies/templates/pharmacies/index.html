@@ -129,10 +129,10 @@
                             <p class="pharmacy-name">${pharmacy.title}</p>
                             <p class="pharmacy-address">${pharmacy.address} (${pharmacy.distance}m away)</p>
                         </div>
-                        <span class="status ${pharmacy.is_open ? 'open' : 'closed'}">
-                            ${pharmacy.is_open ? 'Open' : 'Closed'}
+                        <span class="status ${pharmacy.status}">
+                            ${pharmacy.status}
                         </span>
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=${pharmacy.position.lat},${pharmacy.position.lng}"class="directions" target="_blank">Directions</a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${pharmacy.position.lat},${pharmacy.position.lng}" class="directions" target="_blank">Directions</a>
                     </div>
                 `);
             });
