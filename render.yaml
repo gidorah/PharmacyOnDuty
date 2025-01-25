@@ -3,7 +3,7 @@ services:
   # 1) PostGIS Container (Private Service)
   # ------------------------------------------------
   - name: postgis-db
-    type: privateService       # not publicly accessible
+    type: postgres
     env: docker
     dockerfilePath: ./Dockerfile.postgis
 
