@@ -1,1 +1,1 @@
-web: LD_LIBRARY_PATH=/app/.apt/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH gunicorn PharmacyOnDuty.wsgi:application --log-file -
+web: LD_LIBRARY_PATH=/app/.apt/usr/lib/x86_64-linux-gnu:/app/.apt/usr/lib/x86_64-linux-gnu/blas:$LD_LIBRARY_PATH gunicorn PharmacyOnDuty.wsgi:application --log-file -
