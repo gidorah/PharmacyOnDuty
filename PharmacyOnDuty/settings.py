@@ -175,4 +175,6 @@ if DEBUG and REMOTE_DEBUGGING_PORT:
 
 
 # Set GDAL_LIBRARY_PATH based on the installed location on Heroku
-GDAL_LIBRARY_PATH = os.getenv("GDAL_LIBRARY_PATH", "/app/.apt/usr/lib/libgdal.so")
+
+GDAL_LIBRARY_PATH = "/app/.apt/usr/lib/x86_64-linux-gnu/libgdal.so"
+os.environ["GDAL_LIBRARY_PATH"] = GDAL_LIBRARY_PATH
