@@ -4,3 +4,4 @@ gdal-bin
 libgdal-dev
 libblas3
 liblapack3
+liblapack-dev
