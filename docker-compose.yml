@@ -12,6 +12,7 @@ services:
     environment:
       - DB_HOST=db
       - REMOTE_DEBUGGING_PORT=5678
+      - ALLOWED_HOSTS=pharmacyonduty.onrender.com
 
   db:
     build:
