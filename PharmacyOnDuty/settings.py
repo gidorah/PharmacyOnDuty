@@ -92,7 +92,7 @@ DATABASES = {
         "NAME": "postgres",
         "USER": "postgres",
         "PASSWORD": "password",
-        "HOST": "localhost",
+        "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": 5432,
     }
 }
@@ -157,3 +157,18 @@ if SENTRY_DSN:
             "continuous_profiling_auto_start": True,
         },
     )
+
+# Debugpy settings
+REMOTE_DEBUGGING_PORT = os.getenv("REMOTE_DEBUGGING_PORT")
+
+if DEBUG and REMOTE_DEBUGGING_PORT:
+    DEBUG_PORT = int(REMOTE_DEBUGGING_PORT)
+    print("Starting debugpy with port", DEBUG_PORT)
+
+    try:
+        import debugpy
+
+        debugpy.listen(("0.0.0.0", DEBUG_PORT))
+        print(f"Debugger is listening on port {DEBUG_PORT}")
+    except Exception as e:
+        print(f"debugpy not available: {e}")
