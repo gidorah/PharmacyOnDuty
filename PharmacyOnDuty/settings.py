@@ -143,6 +143,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 SENTRY_DSN: str | None = os.environ.get("SENTRY_DSN")
 
 if SENTRY_DSN:
+    print("Sentry DSN is set, initializing Sentry SDK")
     import sentry_sdk
 
     sentry_sdk.init(
@@ -162,6 +163,7 @@ if SENTRY_DSN:
 REMOTE_DEBUGGING_PORT = os.getenv("REMOTE_DEBUGGING_PORT")
 
 if DEBUG and REMOTE_DEBUGGING_PORT:
+    print("Remote debugging port is set, starting debugpy")
     DEBUG_PORT = int(REMOTE_DEBUGGING_PORT)
     print("Starting debugpy with port", DEBUG_PORT)
 
