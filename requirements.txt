@@ -24,3 +24,4 @@ soupsieve==2.6
 sqlparse==0.5.3
 urllib3==2.3.0
 sentry-sdk==2.20.0
+whitenoise==6.8.2
