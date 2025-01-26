@@ -25,3 +25,5 @@ sqlparse==0.5.3
 urllib3==2.3.0
 sentry-sdk==2.20.0
 whitenoise==6.8.2
+django-tailwind==3.8.0
+django-browser-reload==1.17.0

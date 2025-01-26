@@ -38,6 +38,9 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", " ").split(" ") + [
     "192.168.68.61",
 ]
 
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
 
 # Application definition
 
@@ -50,7 +53,13 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.gis",
     "pharmacies",
+    "pharmacies_nearby",
+    "tailwind",
+    "django_browser_reload",
 ]
+
+TAILWIND_APP_NAME = "pharmacies_nearby"
+
 
 MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -61,6 +70,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
 
 ROOT_URLCONF = "PharmacyOnDuty.urls"
