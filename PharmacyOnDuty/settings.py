@@ -174,9 +174,3 @@ if DEBUG and REMOTE_DEBUGGING_PORT:
         print(f"Debugger is listening on port {DEBUG_PORT}")
     except Exception as e:
         print(f"debugpy not available: {e}")
-
-
-# Set GDAL_LIBRARY_PATH based on the installed location on Heroku
-
-GDAL_LIBRARY_PATH = "/app/.apt/usr/lib/x86_64-linux-gnu/libgdal.so"
-os.environ["GDAL_LIBRARY_PATH"] = GDAL_LIBRARY_PATH
