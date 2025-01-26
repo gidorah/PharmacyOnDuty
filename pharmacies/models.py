@@ -15,6 +15,10 @@ class City(models.Model):
     name = models.CharField(max_length=100, null=False, blank=False)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
 
+    class Meta:
+        verbose_name = "City"
+        verbose_name_plural = "Cities"
+
     def get_pharmacies_on_duty(self, current_time: datetime | None = None) -> list:
         """Return pharmacies that are on duty at the given time."""
         current_time = current_time or datetime.now()
@@ -48,6 +52,10 @@ class WorkingSchedule(models.Model):
     weekday_end = models.TimeField(null=False, blank=False)
     saturday_start = models.TimeField(null=False, blank=False)
     saturday_end = models.TimeField(null=False, blank=False)
+
+    class Meta:
+        verbose_name = "Working Schedule"
+        verbose_name_plural = "Working Schedules"
 
     def is_open(self, query_time: datetime) -> bool:
         """Check if the working schedule is open at the given time."""
@@ -89,6 +97,10 @@ class Pharmacy(models.Model):
     website = models.URLField(null=True, blank=True)
     duty_start = models.DateTimeField(null=True, blank=True)
     duty_end = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Pharmacy"
+        verbose_name_plural = "Pharmacies"
 
     def __str__(self):
         return self.name
