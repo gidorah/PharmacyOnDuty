@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import timezone
 
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
@@ -56,13 +57,13 @@ def check_if_scraped_data_old(city_name):
 
     city = City.objects.get(name=city_name)
 
-    if city.get_city_status(datetime.now()) == PharmacyStatus.OPEN:
+    if city.get_city_status(timezone.now()) == PharmacyStatus.OPEN:
         return False
 
     if (
         city.last_scraped_at is None
         or city.get_city_status(city.last_scraped_at) == PharmacyStatus.OPEN
-        or city.last_scraped_at.date() < datetime.now().date() - timedelta(hours=6)
+        or city.last_scraped_at.date() < timezone.now().date() - timedelta(hours=6)
     ):
         return True
 
@@ -73,7 +74,7 @@ def get_nearest_pharmacies_on_duty(lat, lng, radius=100000, limit=5):
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location
-    now = datetime.now()
+    now = timezone.now()
 
     # Filter pharmacies on duty and within the radius
     pharmacies = (

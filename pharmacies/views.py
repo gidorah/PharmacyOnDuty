@@ -1,4 +1,5 @@
 from datetime import datetime
+from time import timezone
 
 import requests
 from django.conf import settings
@@ -41,7 +42,7 @@ def get_pharmacy_points(request):
                 add_scraped_data_to_db(eskisehir_data)
                 eskisehir = City.objects.get(name="eskisehir")
                 try:
-                    eskisehir.last_scraped_at = datetime.now()
+                    eskisehir.last_scraped_at = timezone.now()
                     eskisehir.save()
                 except Exception as e:
                     return JsonResponse({"error": str(e)}, status=500)

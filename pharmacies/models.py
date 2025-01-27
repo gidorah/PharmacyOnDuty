@@ -73,7 +73,7 @@ class WorkingSchedule(models.Model):
         """Return the status of the working schedule for the given time."""
         return (
             PharmacyStatus.OPEN
-            if self.is_open(query_time or datetime.now())
+            if self.is_open(query_time or timezone.now())
             else PharmacyStatus.CLOSED
         )
 
