@@ -1,7 +1,6 @@
-from time import timezone
-
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
+from django.utils import timezone
 
 from pharmacies.models import City, Pharmacy
 
