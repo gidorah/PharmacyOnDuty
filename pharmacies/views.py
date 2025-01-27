@@ -17,10 +17,6 @@ from pharmacies.utils import (
 )
 
 
-def home(request):
-    return render(request, "pharmacies/index.html")
-
-
 def get_pharmacy_points(request):
     user_latitude = float(request.GET.get("lat"))
     user_longitude = float(request.GET.get("lng"))

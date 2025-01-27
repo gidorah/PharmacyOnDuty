@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import Optional
 
 from django.contrib.gis.db import models
+from django.utils import timezone
 
 
 class PharmacyStatus(StrEnum):
@@ -21,7 +22,7 @@ class City(models.Model):
 
     def get_pharmacies_on_duty(self, current_time: datetime | None = None) -> list:
         """Return pharmacies that are on duty at the given time."""
-        current_time = current_time or datetime.now()
+        current_time = current_time or timezone.now()
         pharmacies_on_duty = list(
             self.pharmacies.filter(
                 duty_start__lte=current_time, duty_end__gte=current_time
@@ -33,7 +34,7 @@ class City(models.Model):
 
     def get_city_status(self, query_time: datetime | None = None) -> PharmacyStatus:
         """Return the city status for the given time."""
-        query_time = query_time or datetime.now()
+        query_time = query_time or timezone.now()
         status = self.working_schedule.get_status(query_time=query_time)
         if not status:
             raise ValueError("Unable to retrieve city status.")
