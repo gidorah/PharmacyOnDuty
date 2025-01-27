@@ -35,7 +35,6 @@ DEBUG = True
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", " ").split(" ") + [
     "localhost",
     "127.0.0.1",
-    "192.168.68.61",
 ]
 
 INTERNAL_IPS = [

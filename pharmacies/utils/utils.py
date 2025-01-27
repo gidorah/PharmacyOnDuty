@@ -1,4 +1,3 @@
-from datetime import datetime
 from time import timezone
 
 from django.contrib.gis.db.models.functions import Distance

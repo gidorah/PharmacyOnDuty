@@ -1,10 +1,8 @@
-from datetime import datetime
 from time import timezone
 
 import requests
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
@@ -70,5 +68,5 @@ def google_maps_proxy(request):
         "libraries": "geometry",
         **dict(request.GET),
     }
-    response = requests.get(endpoint, params=params)
+    response = requests.get(endpoint, params=params, timeout=10)
     return HttpResponse(response.text, content_type="text/javascript")
