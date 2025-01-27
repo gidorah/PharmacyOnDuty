@@ -53,12 +53,12 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.gis",
     "pharmacies",
-    "pharmacies_nearby",
+    "theme",
     "tailwind",
     "django_browser_reload",
 ]
 
-TAILWIND_APP_NAME = "pharmacies_nearby"
+TAILWIND_APP_NAME = "theme"
 
 
 MIDDLEWARE = [
