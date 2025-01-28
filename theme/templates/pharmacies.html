@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-	<title>Django Tailwind</title>
+	<title>Eczanerede</title>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -23,16 +23,28 @@
 
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 
-	<!-- Header / Title -->
-	<header class="bg-white p-4 shadow">
-		<h1 class="text-2xl font-bold text-center">Nearest On-Duty Pharmacy</h1>
+	<header class="px-6 py-4 flex items-center gap-4 border-b bg-primary-100 relative z-10">
+		<div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center shadow-lg relative z-20">
+			<img src="static/icons/eczane-logo-circled.svg" alt="Pharmacy Icon" class="w-16 h-16">
+		</div>
+		<h1 class="text-2xl font-bold text-gray-800">Nearest Pharmacy</h1>
 	</header>
-
+	
 	<!-- Map Section -->
-	<div id="map" class="w-full h-64 md:h-96"></div>
+	<main class="flex-1 relative bg-gray-50">
+		<div id="map" class="w-full h-64 md:h-96"></div>
+	</main>
 
 	<!-- Pharmacy List Container -->
-	<div class="p-4">
+	<div class="p-4 bg-primary-100">
+		<h2 class="text-xl font-semibold mb-4">Nearest Pharmacies</h2>
+		<div id="pharmacy-items" class="space-y-4">
+			<!-- Pharmacy items will be dynamically inserted here by updatePharmacyList -->
+		</div>
+	</div>
+
+	<!-- Pharmacy List Container -->
+	<div class="p-4 bg-primary-100">
 		<h2 class="text-xl font-semibold mb-4">Nearest Pharmacies</h2>
 		<div id="pharmacy-items" class="space-y-4">
 			<!-- Pharmacy items will be dynamically inserted here by updatePharmacyList -->
