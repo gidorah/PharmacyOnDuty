@@ -14,6 +14,8 @@
   <script src="/google_maps_proxy"></script>
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Hammer.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
 </head>
 
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
@@ -30,23 +32,13 @@
     <div id="map" class="flex-1 w-full h-[calc(100vh-200px)]"></div>
 
     <!-- Pharmacy List Container -->
-    <div class="p-4 bg-primary-100 shadow-lg rounded-t-xl mt-[-2rem] relative z-20">
-		<!-- Toggle Button (for expanding/hiding) -->
-		<div id="pharmacy-toggle-container" class="text-center mt-4"> 
-			<!-- Starts as "expand" arrow (▲). Click to show all. -->
-			<button id="toggle-pharmacy-list" class="border-gray-300 rounded text-sm bg-primary-100 text-primary-200">
-			^
-			</button>
-		</div>
+    <div id="pharmacy-list-container" class="p-4 bg-primary-100 shadow-lg rounded-t-xl mt-[-2rem] relative z-20">
+      <h2 class="text-xl font-semibold mb-4">Nearest Pharmacies</h2>
 
-		<h2 class="text-xl font-semibold mb-4">Nearest Pharmacies</h2>
-		
-
-		<!-- The main list container -->
-		<div id="pharmacy-items" class="space-y-4">
-			<!-- Pharmacy items will be dynamically inserted here -->
-		</div>
-
+      <!-- The main list container -->
+      <div id="pharmacy-items" class="space-y-4">
+        <!-- Pharmacy items will be dynamically inserted here -->
+      </div>
     </div>
   </main>
 
@@ -55,7 +47,8 @@
     let map;
     let directionsService;
     let directionsRenderer;
-    let isExpanded = false;  // Track expand/collapse state
+    // We track whether the list is expanded or collapsed
+    let isExpanded = false;  
 
     function initMap(center = { lat: 40.7128, lng: -74.0060 }) {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -88,7 +81,7 @@
       pharmacyItems.empty(); // Clear existing list
 
       // Insert each pharmacy into the container
-      pharmacies.forEach((pharmacy, index) => {
+      pharmacies.forEach((pharmacy) => {
         const itemHtml = `
           <div class="pharmacy-item bg-white shadow rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between">
             <div class="md:flex-grow">
@@ -111,23 +104,39 @@
         pharmacyItems.append(itemHtml);
       });
 
-      // Hide all items except the first
+      // By default, show only the first pharmacy item (collapsed state)
       const allItems = pharmacyItems.children('.pharmacy-item');
-      allItems.slice(1).hide();
+      if (allItems.length > 1) {
+        allItems.slice(1).hide();
+      }
 
-      // Toggle button logic
-      $('#toggle-pharmacy-list').off('click').on('click', function () {
-        isExpanded = !isExpanded;
+      // Attach Hammer.js swipe events to handle up/down gestures
+      attachHammerSwipeEvents();
+    }
+
+    function attachHammerSwipeEvents() {
+      const pharmacyItems = $('#pharmacy-items');
+      const hammertime = new Hammer(pharmacyItems[0]);
+
+      // Allow vertical swipes
+      hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
+
+      // Swipe up -> show all
+      hammertime.on('swipeup', function () {
+        if (!isExpanded) {
+          isExpanded = true;
+          // Show all items with a slide-down animation
+          pharmacyItems.children('.pharmacy-item').slideDown(300);
+        }
+      });
+
+      // Swipe down -> show only the first
+      hammertime.on('swipedown', function () {
         if (isExpanded) {
-          // Show all items
-          allItems.show();
-          // Change button arrow to "collapse" arrow (▼)
-          $(this).text('▼');
-        } else {
-          // Hide everything except the first
-          allItems.slice(1).hide();
-          // Change button arrow back to "expand" arrow (▲)
-          $(this).text('▲');
+          isExpanded = false;
+          // Hide everything except the first item
+          const allItems = pharmacyItems.children('.pharmacy-item');
+          allItems.slice(1).slideUp(300);
         }
       });
     }
@@ -138,8 +147,8 @@
         method: 'GET',
         dataType: 'json',
         data: {
-          "lat": userLocation.lat,
-          "lng": userLocation.lng,
+          "lat": userLocation ? userLocation.lat : '',
+          "lng": userLocation ? userLocation.lng : '',
           "city": city,
         },
         success: function (response) {
@@ -152,23 +161,21 @@
     }
 
     function showDirectionsToNearestMarker(points, userLocation) {
-      if (userLocation) {
+      if (userLocation && points.length > 0) {
         const nearestMarker = points[0];
-        if (nearestMarker) {
-          const request = {
-            origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
-            destination: new google.maps.LatLng(nearestMarker.position.lat, nearestMarker.position.lng),
-            travelMode: google.maps.TravelMode.DRIVING,
-          };
-          directionsService.route(request, (result, status) => {
-            if (status === google.maps.DirectionsStatus.OK) {
-              directionsRenderer.setDirections(result);
-            } else {
-              console.error("Directions request failed due to " + status);
-              alert("Unable to fetch directions!");
-            }
-          });
-        }
+        const request = {
+          origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
+          destination: new google.maps.LatLng(nearestMarker.position.lat, nearestMarker.position.lng),
+          travelMode: google.maps.TravelMode.DRIVING,
+        };
+        directionsService.route(request, (result, status) => {
+          if (status === google.maps.DirectionsStatus.OK) {
+            directionsRenderer.setDirections(result);
+          } else {
+            console.error("Directions request failed due to " + status);
+            alert("Unable to fetch directions!");
+          }
+        });
       }
     }
 
@@ -205,7 +212,7 @@
           initMap(userLocation);
           fetchPharmacyPoints(userLocation, "eskisehir", function (result) {
             if (result) {
-              const points = result['points'];
+              const points = result.points;
               addMarkers(points);
               updatePharmacyList(points);
               showDirectionsToNearestMarker(points, userLocation);
@@ -219,6 +226,5 @@
       });
     });
   </script>
-
 </body>
 </html>
