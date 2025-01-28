@@ -47,7 +47,7 @@
     let map;
     let directionsService;
     let directionsRenderer;
-    // We track whether the list is expanded or collapsed
+    // Track whether the list is expanded or collapsed
     let isExpanded = false;  
 
     function initMap(center = { lat: 40.7128, lng: -74.0060 }) {
@@ -109,33 +109,29 @@
       if (allItems.length > 1) {
         allItems.slice(1).hide();
       }
-
-      // Attach Hammer.js swipe events to handle up/down gestures
-      attachHammerSwipeEvents();
     }
 
     function attachHammerSwipeEvents() {
-      const pharmacyItems = $('#pharmacy-items');
-      const hammertime = new Hammer(pharmacyItems[0]);
+      // Attach gestures to the whole container, not just the items
+      const containerElement = document.getElementById('pharmacy-list-container');
+      const hammertime = new Hammer(containerElement);
 
-      // Allow vertical swipes
+      // Let Hammer detect vertical swipes
       hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
 
-      // Swipe up -> show all
       hammertime.on('swipeup', function () {
         if (!isExpanded) {
           isExpanded = true;
-          // Show all items with a slide-down animation
-          pharmacyItems.children('.pharmacy-item').slideDown(300);
+          // Show all pharmacy items with a slide-down
+          $('#pharmacy-items').children('.pharmacy-item').slideDown(300);
         }
       });
 
-      // Swipe down -> show only the first
       hammertime.on('swipedown', function () {
         if (isExpanded) {
           isExpanded = false;
           // Hide everything except the first item
-          const allItems = pharmacyItems.children('.pharmacy-item');
+          const allItems = $('#pharmacy-items').children('.pharmacy-item');
           allItems.slice(1).slideUp(300);
         }
       });
@@ -215,6 +211,7 @@
               const points = result.points;
               addMarkers(points);
               updatePharmacyList(points);
+              attachHammerSwipeEvents();  // <-- Attach gestures AFTER list is generated
               showDirectionsToNearestMarker(points, userLocation);
             } else {
               alert("No pharmacy points found.");
