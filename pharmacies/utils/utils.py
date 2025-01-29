@@ -71,7 +71,7 @@ def check_if_scraped_data_old(city_name):
     return False
 
 
-def get_nearest_pharmacies_on_duty(lat, lng, radius=100000, limit=5):
+def get_nearest_pharmacies_on_duty(lat, lng, radius=1000000, limit=5):
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location
