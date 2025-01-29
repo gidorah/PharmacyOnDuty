@@ -25,9 +25,23 @@
 
 	<!-- Map Section -->
 	<main class="flex-1 flex flex-col bg-gray-50">
-		<div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
-			style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
-			<img src="static/icons/eczane-logo.png" alt="Pharmacy Icon">
+		<div class="flex items-center">
+
+			<div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
+				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
+				<img src="static/icons/eczane-logo.png" alt="Pharmacy Icon">
+			</div>
+
+			<div class="h-14 px-8 gap-4 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
+				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
+				<span id="selectedPharmacyStatus" class="inline-block text-sm font-medium px-2 py-2 rounded-full
+				bg-secondary border-2 border-secondary text-white">
+				</span>
+				<span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">
+					Eczanerede
+				</span>
+			</div>
+
 		</div>
 
 		<div id="map" class="fixed top-[calc(-14rem)] left-0 right-0 h-[calc(100vh-3rem)] w-full"></div>
@@ -37,9 +51,9 @@
 			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
 			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
 			<div id="handle" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
-			<h2 class="text-xl font-bold mb-4 mt-4">En Yakın Eczanerede</h2>
+			<h2 class="text-xl font-bold mb-4 mt-4">Eskişehir'deki Açık Eczaneler</h2>
 			<!-- Scrollable Area -->
-			<div class="flex-1 scrollable-area">
+			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
 				<div id="pharmacy-items" class="space-y-4">
 					<!-- Pharmacy items will be dynamically inserted here -->
 				</div>
@@ -127,6 +141,26 @@
 		function updatePharmacyList(pharmacies) {
 			const pharmacyItems = $('#pharmacy-items');
 			pharmacyItems.empty(); // Clear existing list
+
+			// First item is adsense
+			const adHtml = `
+				<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col
+								md:flex-row items-start md:items-center justify-between">
+					<div class="md:flex-grow">
+						<p class="text-lg font-semibold mb-1">Reklam</p>
+						<p class="text-sm text-gray-600">
+							Adsız reklam
+						</p>
+					</div>
+					<div class="mt-2 md:mt-0 flex items-center space-x-3">
+						<span class="inline-block text-sm font-medium px-6 py-2 rounded
+									bg-secondary border-2 border-secondary text-white">
+							Açık
+						</span>
+					</div>
+				</div>
+			`;
+			// pharmacyItems.append(adHtml);
 
 			pharmacies.forEach((pharmacy) => {
 				const itemHtml = `
@@ -263,6 +297,7 @@
 		}
 
 		function showDirectionsToPharmacy(pharmacy) {
+			$(`#selectedPharmacyName`).text(pharmacy.title);
 			// 1) Draw directions on map
 			addMarkers(pharmacy);
 			showDirectionsToMarker(pharmacy, userLocation);
@@ -271,18 +306,8 @@
 			const pharmacyListContainer = $('#pharmacy-list-container');
 			pharmacyListContainer.removeClass('expanded').addClass('collapsed');
 
-			// 3) Scroll the clicked pharmacy into view
-			// Build a selector matching the data-lat and data-lng:
-			const itemSelector = `.pharmacy-item[data-name="${pharmacy.title}"]`;
-			const itemElement = $(itemSelector);
-
-			// If found, scroll it into view:
-			if (itemElement.length > 0) {
-				itemElement[0].scrollIntoView({
-					behavior: 'smooth',
-					block: 'nearest'
-				});
-			}
+			const scrollableArea = $('#pharmacy-scrollable-area');
+			scrollableArea.scrollTop(0);
 		}
 
 		// On page load
@@ -331,7 +356,7 @@
 	}
 
 	#pharmacy-list-container.collapsed {
-		transform: translateY(50vh);
+		transform: translateY(60vh);
 	}
 
 	#pharmacy-list-container {
