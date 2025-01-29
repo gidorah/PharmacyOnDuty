@@ -24,6 +24,8 @@ def get_map_points_from_fetched_data(data):
             "title": pharmacy["name"],
             "description": pharmacy["vicinity"],
             "status": "open",
+            "address": pharmacy["formatted_address"],
+            "distance": pharmacy["distance"]["text"],
         }
         points.append(point)
 
@@ -40,8 +42,9 @@ def get_map_points_from_pharmacies(pharmacies):
                 "lng": pharmacy.location.coords[0],
             },
             "title": pharmacy.name,
-            "description": pharmacy.address,
+            "address": pharmacy.address,
             "status": "on duty",
+            "distance": pharmacy.distance.m,
         }
         points.append(point)
 
