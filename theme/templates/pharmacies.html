@@ -33,11 +33,11 @@
 		</div>
 
 
-		<div id="map" class="fixed top-[calc(-200px)] left-0 right-0 h-[calc(100vh+200px)] w-full"></div>
+		<div id="map" class="fixed top-[calc(-14rem)] left-0 right-0 h-[calc(100vh-12rem)] w-full"></div>
 
 		<!-- Pharmacy List Container -->
 		<div id="pharmacy-list-container"
-			class="m-2 p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400"
+			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400"
 			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
 			<div id="handle" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
 			<h2 class="text-center text-xl font-semibold mb-4 mt-6">En Yakın Eczaneler</h2>
@@ -266,6 +266,10 @@
 
 	#pharmacy-list-container.collapsed {
 		transform: translateY(73%);
+	}
+
+	html {
+		overflow: hidden;
 	}
 </style>
 
