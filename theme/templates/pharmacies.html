@@ -57,11 +57,11 @@
 			<h2 class="text-xl font-bold mb-4 mt-4">Eskişehir'deki Açık Eczaneler</h2>
 			<!-- Scrollable Area -->
 			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
-				<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col
+				<div id="ad-item">
 					<script async
 						src=" https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
-					crossorigin="anonymous">
-					</script>
+						crossorigin="anonymous">
+						</script>
 					<!-- pharmacy-list-ad -->
 					<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2058777526611837"
 						data-ad-slot="6228792612" data-ad-format="auto" data-full-width-responsive="true"></ins>
@@ -156,15 +156,6 @@
 		function updatePharmacyList(pharmacies) {
 			const pharmacyItems = $('#pharmacy-items');
 			pharmacyItems.empty(); // Clear existing list
-
-			// First item is adsense
-			const adHtml = `
-				<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col
-								md:flex-row items-start md:items-center justify-between">
-
-				</div>
-			`;
-			// pharmacyItems.append(adHtml);
 
 			pharmacies.forEach((pharmacy) => {
 				const itemHtml = `
