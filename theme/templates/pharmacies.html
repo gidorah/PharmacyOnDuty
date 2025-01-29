@@ -128,29 +128,35 @@
 			const pharmacyItems = $('#pharmacy-items');
 			pharmacyItems.empty(); // Clear existing list
 
-			// Insert each pharmacy into the container
 			pharmacies.forEach((pharmacy) => {
 				const itemHtml = `
-          <div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between">
-            <div class="md:flex-grow">
-              <p class="text-lg font-semibold mb-1">${pharmacy.title}</p>
-              <p class="text-sm text-gray-600">${pharmacy.address} (${pharmacy.distance} metre uzaklıkta)</p>
-            </div>
-            <div class="mt-2 md:mt-0 flex items-center space-x-3">
-              <span class="inline-block text-sm font-medium px-6 py-2 rounded bg-secondary border-2 border-secondary text-white">
-                ${pharmacy.status === 'open' ? 'Açık' : 'Nöbetçi'}
-              </span>
-			<button onclick="showDirectionsToPharmacy(${JSON.stringify(pharmacy).replace(/"/g, '&quot;')})"
-				class="inline-block px-6 py-2 bg-primary-100 text-secondary rounded border-2 border-secondary text-sm"
-				type="button">
-				Yol Tarifi
-			</button>
-            </div>
-          </div>
-        `;
+					<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col
+								md:flex-row items-start md:items-center justify-between"
+						data-name="${pharmacy.title}">
+						<div class="md:flex-grow">
+						<p class="text-lg font-semibold mb-1">${pharmacy.title}</p>
+						<p class="text-sm text-gray-600">
+							${pharmacy.address} (${pharmacy.distance} metre uzaklıkta)
+						</p>
+						</div>
+						<div class="mt-2 md:mt-0 flex items-center space-x-3">
+						<span class="inline-block text-sm font-medium px-6 py-2 rounded
+									bg-secondary border-2 border-secondary text-white">
+							${pharmacy.status === 'open' ? 'Açık' : 'Nöbetçi'}
+						</span>
+						<button
+							onclick="showDirectionsToPharmacy(${JSON.stringify(pharmacy)
+						.replace(/"/g, '&quot;')})"
+							class="inline-block px-6 py-2 bg-primary-100 text-secondary
+								rounded border-2 border-secondary text-sm"
+							type="button">
+							Yol Tarifi
+						</button>
+						</div>
+					</div>
+					`;
 				pharmacyItems.append(itemHtml);
 			});
-
 		}
 
 		function attachHammerSwipeEvents() {
@@ -256,15 +262,28 @@
 			}
 		}
 
-		function showDirectionsToPharmacy(point) {
-			if (userLocation === null || point === null) {
-				return;
+		function showDirectionsToPharmacy(pharmacy) {
+			// 1) Draw directions on map
+			addMarkers(pharmacy);
+			showDirectionsToMarker(pharmacy, userLocation);
+
+			// 2) Collapse the bottom sheet
+			const pharmacyListContainer = $('#pharmacy-list-container');
+			pharmacyListContainer.removeClass('expanded').addClass('collapsed');
+
+			// 3) Scroll the clicked pharmacy into view
+			// Build a selector matching the data-lat and data-lng:
+			const itemSelector = `.pharmacy-item[data-name="${pharmacy.title}"]`;
+			const itemElement = $(itemSelector);
+
+			// If found, scroll it into view:
+			if (itemElement.length > 0) {
+				itemElement[0].scrollIntoView({
+					behavior: 'smooth',
+					block: 'nearest'
+				});
 			}
-			addMarkers(point, userLocation);
-			showDirectionsToMarker(point, userLocation);
 		}
-
-
 
 		// On page load
 		$(document).ready(function () {
