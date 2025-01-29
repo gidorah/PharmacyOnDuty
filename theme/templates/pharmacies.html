@@ -27,24 +27,24 @@
 	<main class="flex-1 flex flex-col bg-gray-50">
 		<div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
 			style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
-				<img src="static/icons/eczane-logo.png" alt="Pharmacy Icon">
+			<img src="static/icons/eczane-logo.png" alt="Pharmacy Icon">
 		</div>
 
 		<div id="map" class="fixed top-[calc(-14rem)] left-0 right-0 h-[calc(100vh-3rem)] w-full"></div>
 
 		<!-- Pharmacy List Container -->
 		<div id="pharmacy-list-container"
-		class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
-		style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
-		<div id="handle" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
-		<h2 class="text-xl font-bold mb-4 mt-4">En Yakın Eczanerede</h2>
-		<!-- Scrollable Area -->
-		<div class="flex-1 overflow-y-auto">
-			<div id="pharmacy-items" class="space-y-4">
-				<!-- Pharmacy items will be dynamically inserted here -->
+			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
+			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
+			<div id="handle" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
+			<h2 class="text-xl font-bold mb-4 mt-4">En Yakın Eczanerede</h2>
+			<!-- Scrollable Area -->
+			<div class="flex-1 overflow-y-auto">
+				<div id="pharmacy-items" class="space-y-4">
+					<!-- Pharmacy items will be dynamically inserted here -->
+				</div>
 			</div>
 		</div>
-	</div>
 
 	</main>
 
@@ -64,17 +64,17 @@
 				disableDefaultUI: true,
 				// Optional: Disable zoom/pan gestures
 				{% comment %} gestureHandling: "none", {% endcomment %}
-				// Optional: Disable remaining individual controls
-				zoomControl: false,
-				mapTypeControl: false,
+		// Optional: Disable remaining individual controls
+		zoomControl: false,
+			mapTypeControl: false,
 				scaleControl: false,
-				streetViewControl: false,
-				rotateControl: false,
-				fullscreenControl: false,
+					streetViewControl: false,
+						rotateControl: false,
+							fullscreenControl: false,
 			});
-			directionsService = new google.maps.DirectionsService();
-			directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, map: map });
-			directionsRenderer.setMap(map);
+		directionsService = new google.maps.DirectionsService();
+		directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, map: map });
+		directionsRenderer.setMap(map);
 		}
 
 		function addMarkers(points, userLocation) {
@@ -100,7 +100,7 @@
 			marker.addListener("click", () => {
 				infoWindow.open(map, marker);
 			});
-			
+
 
 			const userLocationIcon = {
 				url: '/static/icons/user-pointer.svg',
