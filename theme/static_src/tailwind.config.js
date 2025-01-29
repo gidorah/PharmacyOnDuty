@@ -50,7 +50,7 @@ module.exports = {
               500: '#eceff0',
               900: '#1e3a8a',
             },
-            'secondary': '#ff9900', // Shortened syntax (defaults to 500)
+            'secondary': '#64C878', // Shortened syntax (defaults to 500)
           },},
     },
     plugins: [

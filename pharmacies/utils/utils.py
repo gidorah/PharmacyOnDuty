@@ -23,7 +23,7 @@ def get_map_points_from_fetched_data(data):
             },
             "title": pharmacy["name"],
             "description": pharmacy["vicinity"],
-            "status": "open",
+            "status": "Açık",
             "address": pharmacy["formatted_address"],
             "distance": pharmacy["distance"]["text"],
         }
@@ -43,8 +43,8 @@ def get_map_points_from_pharmacies(pharmacies):
             },
             "title": pharmacy.name,
             "address": pharmacy.address,
-            "status": "on duty",
-            "distance": pharmacy.distance.m,
+            "status": "Nöbetçi",
+            "distance": round(pharmacy.distance.m),
         }
         points.append(point)
 
