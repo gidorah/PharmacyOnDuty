@@ -904,6 +904,14 @@ select {
   height: calc(100vh - 3rem);
 }
 
+.h-\[calc\(100vh-2rem\)\] {
+  height: calc(100vh - 2rem);
+}
+
+.h-\[calc\(100vh-1rem\)\] {
+  height: calc(100vh - 1rem);
+}
+
 .min-h-screen {
   min-height: 100vh;
 }
