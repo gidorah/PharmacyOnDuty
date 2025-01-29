@@ -871,6 +871,14 @@ select {
   margin: 0.75rem;
 }
 
+.m-6 {
+  margin: 1.5rem;
+}
+
+.m-5 {
+  margin: 1.25rem;
+}
+
 .mx-auto {
   margin-left: auto;
   margin-right: auto;
@@ -1024,6 +1032,14 @@ select {
   height: calc(100vh - 3rem);
 }
 
+.h-8 {
+  height: 2rem;
+}
+
+.h-14 {
+  height: 3.5rem;
+}
+
 .max-h-\[70vh\] {
   max-height: 70vh;
 }
@@ -1050,6 +1066,14 @@ select {
 
 .w-24 {
   width: 6rem;
+}
+
+.w-8 {
+  width: 2rem;
+}
+
+.w-14 {
+  width: 3.5rem;
 }
 
 .flex-1 {
