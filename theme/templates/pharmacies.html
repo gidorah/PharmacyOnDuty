@@ -287,17 +287,6 @@
 		max-height: 80vh;
 	}
 
-	/* Scrollable area rules */
-	.scrollable-area {
-		overflow-y: hidden;
-		/* Default state */
-	}
-
-	#pharmacy-list-container.expanded .scrollable-area {
-		overflow-y: auto;
-		/* Only scroll when expanded */
-	}
-
 	/* Keep existing other styles */
 	#handle {
 		cursor: pointer;
@@ -310,6 +299,25 @@
 
 	#pharmacy-list-container.collapsed {
 		transform: translateY(50vh);
+	}
+
+	#pharmacy-list-container {
+		/* Previous styles */
+		height: 82vh;
+		/* Increased from 80vh to 82vh */
+	}
+
+	.scrollable-area {
+		overflow-y: hidden;
+		padding-bottom: 1rem;
+		/* Added as fallback */
+	}
+
+	#pharmacy-list-container.expanded .scrollable-area {
+		overflow-y: auto;
+		/* Compensate for title + handle height */
+		max-height: calc(100% - 4.5rem);
+		/* Adjust this value based on your actual title height */
 	}
 
 	html {
