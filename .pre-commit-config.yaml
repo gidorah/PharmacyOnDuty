@@ -1,4 +1,4 @@
-exclude: .*migrations\/.*  # Exclude Django migrations
+exclude: .*migrations\/.*
 repos:
 - repo: local
   hooks:
@@ -6,10 +6,12 @@ repos:
       name: Build Tailwind CSS
       entry: python manage.py tailwind build
       language: system
-      types: [python, html]  # Trigger on code/template changes
-      stages: [commit]
+      types_or: [html]  # Change to OR logic
+      stages: [pre-commit]
+      pass_filenames: false
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v4.4.0
   hooks:
     - id: check-yaml
+
