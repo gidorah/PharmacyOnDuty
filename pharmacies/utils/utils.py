@@ -23,7 +23,9 @@ def get_map_points_from_fetched_data(data):
             },
             "title": pharmacy["name"],
             "description": pharmacy["vicinity"],
-            "status": "open",
+            "status": "Açık",
+            "address": pharmacy["vicinity"],
+            "distance": "-",
         }
         points.append(point)
 
@@ -40,8 +42,9 @@ def get_map_points_from_pharmacies(pharmacies):
                 "lng": pharmacy.location.coords[0],
             },
             "title": pharmacy.name,
-            "description": pharmacy.address,
-            "status": "on duty",
+            "address": pharmacy.address,
+            "status": "Nöbetçi",
+            "distance": round(pharmacy.distance.m),
         }
         points.append(point)
 
@@ -68,7 +71,7 @@ def check_if_scraped_data_old(city_name):
     return False
 
 
-def get_nearest_pharmacies_on_duty(lat, lng, radius=100000, limit=5):
+def get_nearest_pharmacies_on_duty(lat, lng, radius=1000000, limit=5):
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location

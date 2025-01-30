@@ -2,6 +2,7 @@ import requests
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
@@ -60,6 +61,7 @@ def get_pharmacy_points(request):
     return JsonResponse(data)
 
 
+@cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request):
     endpoint = "https://maps.googleapis.com/maps/api/js"
     params = {

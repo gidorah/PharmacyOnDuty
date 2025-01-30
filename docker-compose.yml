@@ -12,10 +12,6 @@ services:
     environment:
       - DB_HOST=db
       - REMOTE_DEBUGGING_PORT=5678
-    command: >
-      sh -c "mkdir -p /app/staticfiles &&
-             python manage.py collectstatic --noinput &&
-             gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
 
   db:
     build:

@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-	<title>Django Tailwind</title>
+	<title>Eczanerede</title>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
@@ -11,143 +11,265 @@
 
 	<!-- htmx -->
 	<script src="https://unpkg.com/htmx.org"></script>
-
-	<!-- Google Maps Proxy (ensure this points to your Maps loading script) -->
+	<!-- Google Maps Proxy -->
 	<script src="/google_maps_proxy"></script>
-
 	<!-- jQuery -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<!-- Hammer.js (CDN) -->
+	<script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
+		crossorigin="anonymous"></script>
 </head>
-
-
 
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
 
-	<!-- Header / Title -->
-	<header class="bg-white p-4 shadow">
-		<h1 class="text-2xl font-bold text-center">Nearest On-Duty Pharmacy</h1>
-	</header>
+
 
 	<!-- Map Section -->
-	<div id="map" class="w-full h-64 md:h-96"></div>
+	<main class="flex-1 flex flex-col bg-gray-50">
+		<div class="flex items-center">
 
-	<!-- Pharmacy List Container -->
-	<div class="p-4">
-		<h2 class="text-xl font-semibold mb-4">Nearest Pharmacies</h2>
-		<div id="pharmacy-items" class="space-y-4">
-			<!-- Pharmacy items will be dynamically inserted here by updatePharmacyList -->
+			<div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
+				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
+				<img src="static/icons/eczane-logo.png" alt="Pharmacy Icon">
+			</div>
+
+			<div class="h-14 px-8 gap-4 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
+				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
+				<span id="selectedPharmacyStatus" class="inline-block text-sm font-medium px-2 py-2 rounded-full
+				bg-secondary border-2 border-secondary text-white">
+				</span>
+				<span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">
+					Eczanerede
+				</span>
+			</div>
+
 		</div>
-	</div>
 
-	<!-- Your existing scripts and logic -->
+		<div id="map" class="fixed top-[calc(-14rem)] left-0 right-0 h-[calc(100vh+2rem)] w-full"></div>
+
+		<!-- Pharmacy List Container -->
+		<div id="pharmacy-list-container"
+			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
+			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
+			<div id="handle" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
+			<h2 class="text-xl font-bold mb-4 mt-4">Eskişehir'deki Açık Eczaneler</h2>
+			<!-- Scrollable Area -->
+			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
+				<div id="pharmacy-items" class="space-y-4">
+					<!-- Pharmacy items will be dynamically inserted here -->
+				</div>
+				<div id="ad-item">
+					<script async
+						src=" https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
+						crossorigin="anonymous">
+						</script>
+					<!-- pharmacy-list-ad -->
+					<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2058777526611837"
+						data-ad-slot="6228792612" data-ad-format="auto" data-full-width-responsive="true"></ins>
+					<script>
+						(adsbygoogle = window.adsbygoogle || []).push({});
+					</script>
+				</div>
+			</div>
+		</div>
+
+	</main>
+
+	<!-- Script Logic -->
 	<script>
-		$(document).ready(function () {
-			function fetchPharmacyPoints(userLocation = null, city = "eskisehir", callback) {
-				$.ajax({
-					url: '/get_pharmacy_points',
-					method: 'GET',
-					dataType: 'json',
-					data: {
-						"lat": userLocation.lat,
-						"lng": userLocation.lng,
-						"city": city,
-					},
-					success: function (response) {
-						callback(response);
-					},
-					error: function (error) {
-						console.error("Error fetching pharmacy points:", error);
-					}
-				});
-			}
-
-			function updatePharmacyList(pharmacies) {
-				const pharmacyItems = $('#pharmacy-items');
-				pharmacyItems.empty(); // Clear existing list
-
-				// Show top 5 or however many you prefer
-				pharmacies.slice(0, 5).forEach(pharmacy => {
-					pharmacyItems.append(`
-					  <div class="bg-white shadow rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between">
-						  <div class="md:flex-grow">
-							  <p class="text-lg font-semibold mb-1">${pharmacy.title}</p>
-							  <p class="text-sm text-gray-600">${pharmacy.address} (${pharmacy.distance}m away)</p>
-						  </div>
-						  <div class="mt-2 md:mt-0 flex items-center space-x-3">
-							  <span class="inline-block text-sm font-medium px-3 py-1 rounded
-								${pharmacy.status === 'open'
-							? 'bg-green-100 text-green-800'
-							: 'bg-red-100 text-red-800'}">
-								  ${pharmacy.status}
-							  </span>
-							  <a href="https://www.google.com/maps/dir/?api=1&destination=${pharmacy.position.lat},${pharmacy.position.lng}"
-								 class="inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-								 target="_blank">
-								Directions
-							  </a>
-						  </div>
-					  </div>
-				  `);
-				});
-			}
-
-			getUserLocation(function (userLocation) {
-				if (userLocation) {
-					initMap(userLocation);
-					fetchPharmacyPoints(userLocation, "eskisehir", function (result) {
-						if (result) {
-							const points = result['points'];
-							addMarkers(points);
-							updatePharmacyList(points);
-							showDirectionsToNearestMarker(points, userLocation);
-						} else {
-							alert("No pharmacy points found.");
-						}
-					});
-				} else {
-					alert("Failed to get user location.");
-				}
-			});
-		});
-
 		let map;
 		let directionsService;
 		let directionsRenderer;
+		// Track whether the list is expanded or collapsed
+		let isExpanded = false;
+		let userLocation;
 
 		function initMap(center = { lat: 40.7128, lng: -74.0060 }) {
 			map = new google.maps.Map(document.getElementById("map"), {
 				center: center,
 				zoom: 10,
+				// Disable all default UI controls
+				disableDefaultUI: true,
+				// Optional: Disable zoom/pan gestures
+				// Optional: Disable remaining individual controls
+				zoomControl: false,
+				mapTypeControl: false,
+				scaleControl: false,
+				streetViewControl: false,
+				rotateControl: false,
+				fullscreenControl: false,
 			});
-
 			directionsService = new google.maps.DirectionsService();
-			directionsRenderer = new google.maps.DirectionsRenderer();
+			directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, map: map });
 			directionsRenderer.setMap(map);
 		}
 
-		function addMarkers(points) {
-			points.forEach((point) => {
-				const marker = new google.maps.Marker({
-					position: point.position,
-					map: map,
-					title: point.title,
-				});
+		// Declare an array to keep track of all markers
+		let markersArray = [];
 
-				const infoWindow = new google.maps.InfoWindow({
-					content: `<h3>${point.title}</h3><p>${point.description || ""}</p>`,
-				});
+		function addMarkers(point) {
+			// Remove all existing markers
+			markersArray.forEach(marker => marker.setMap(null));
+			markersArray = [];
 
-				marker.addListener("click", () => {
-					infoWindow.open(map, marker);
-				});
+			// Pharmacy marker setup
+			const pharmacyIcon = {
+				url: '/static/icons/pharmacy-pointer.svg',
+				scaledSize: new google.maps.Size(50, 50),
+				origin: new google.maps.Point(0, 0),
+				anchor: new google.maps.Point(25, 25),
+			};
+			const marker = new google.maps.Marker({
+				position: point.position,
+				map: map,
+				title: point.title,
+				icon: pharmacyIcon,
 			});
+			markersArray.push(marker); // Add to tracking array
+
+			// Info Window for pharmacy marker
+			const infoWindow = new google.maps.InfoWindow({
+				content: `<h3>${point.title}</h3><p>${point.address || ""}</p>`,
+			});
+			marker.addListener("click", () => {
+				infoWindow.open(map, marker);
+			});
+
+			// User location marker setup
+			const userLocationIcon = {
+				url: '/static/icons/user-pointer.svg',
+				scaledSize: new google.maps.Size(50, 50),
+				origin: new google.maps.Point(0, 0),
+				anchor: new google.maps.Point(25, 25),
+			};
+			const userLocationMarker = new google.maps.Marker({
+				position: userLocation,
+				map: map,
+				title: "Konumumu",
+				icon: userLocationIcon,
+			});
+			markersArray.push(userLocationMarker); // Add to tracking array
+		}
+
+		function updatePharmacyList(pharmacies) {
+			const pharmacyItems = $('#pharmacy-items');
+			pharmacyItems.empty(); // Clear existing list
+
+			pharmacies.forEach((pharmacy) => {
+				const itemHtml = `
+					<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col
+								md:flex-row items-start md:items-center justify-between"
+						data-name="${pharmacy.title}">
+						<div class="md:flex-grow">
+						<p class="text-lg font-semibold mb-1">${pharmacy.title}</p>
+						<p class="text-sm text-gray-600">
+							${pharmacy.address} (${pharmacy.distance} metre uzaklıkta)
+						</p>
+						</div>
+						<div class="mt-2 md:mt-0 flex items-center space-x-3">
+						<span class="inline-block text-sm font-medium px-6 py-2 rounded
+									bg-secondary border-2 border-secondary text-white">
+							${pharmacy.status === 'open' ? 'Açık' : 'Nöbetçi'}
+						</span>
+						<button
+							onclick="showDirectionsToPharmacy(${JSON.stringify(pharmacy)
+						.replace(/"/g, '&quot;')})"
+							class="inline-block px-6 py-2 bg-primary-100 text-secondary
+								rounded border-2 border-secondary text-sm"
+							type="button">
+							Yol Tarifi
+						</button>
+						</div>
+					</div>
+					`;
+				pharmacyItems.append(itemHtml);
+			});
+		}
+
+		function attachHammerSwipeEvents() {
+			const containerElement = document.getElementById('pharmacy-list-container');
+			const handle = document.getElementById('handle');
+			const pharmacyListContainer = $('#pharmacy-list-container');
+
+			let isExpanded = false; // Track whether the list is expanded
+
+			// Function to toggle between expanded and collapsed states
+			function toggleBottomSheet() {
+				if (isExpanded) {
+					pharmacyListContainer.removeClass('expanded').addClass('collapsed');
+				} else {
+					pharmacyListContainer.removeClass('collapsed').addClass('expanded');
+				}
+				isExpanded = !isExpanded;
+			}
+
+			// Attach click event to handle for toggling
+			handle.addEventListener('click', toggleBottomSheet);
+
+			// Attach swipe gestures using Hammer.js
+			const hammertime = new Hammer(containerElement);
+			hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
+
+			hammertime.on('swipeup', function () {
+				if (!isExpanded) {
+					pharmacyListContainer.removeClass('collapsed').addClass('expanded');
+					isExpanded = true;
+				}
+			});
+
+			hammertime.on('swipedown', function () {
+				if (isExpanded) {
+					pharmacyListContainer.removeClass('expanded').addClass('collapsed');
+					isExpanded = false;
+				}
+			});
+		}
+
+
+		function fetchPharmacyPoints(userLocation = null, city = "eskisehir", callback) {
+			$.ajax({
+				url: '/get_pharmacy_points',
+				method: 'GET',
+				dataType: 'json',
+				data: {
+					"lat": userLocation ? userLocation.lat : '',
+					"lng": userLocation ? userLocation.lng : '',
+					"city": city,
+				},
+				success: function (response) {
+					callback(response);
+				},
+				error: function (error) {
+					console.error("Error fetching pharmacy points:", error);
+				}
+			});
+		}
+
+		function showDirectionsToMarker(point, userLocation) {
+			if (userLocation && point) {
+				const request = {
+					origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
+					destination: new google.maps.LatLng(point.position.lat, point.position.lng),
+					travelMode: google.maps.TravelMode.DRIVING,
+				};
+				directionsService.route(request, (result, status) => {
+					if (status === google.maps.DirectionsStatus.OK) {
+						directionsRenderer.setDirections(result);
+					} else {
+						console.error("Directions request failed due to " + status);
+						alert("Unable to fetch directions!");
+					}
+				});
+			}
 		}
 
 		function getUserLocation(callback) {
 			if (navigator.geolocation) {
 				navigator.geolocation.getCurrentPosition(
 					(position) => {
-						const userLocation = {
+						userLocation = {
 							lat: position.coords.latitude,
 							lng: position.coords.longitude,
 						};
@@ -169,29 +291,91 @@
 			}
 		}
 
-		function showDirectionsToNearestMarker(points, userLocation) {
-			if (userLocation) {
-				const nearestMarker = points[0];
-				if (nearestMarker) {
-					const request = {
-						origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
-						destination: new google.maps.LatLng(nearestMarker.position.lat, nearestMarker.position.lng),
-						travelMode: google.maps.TravelMode.DRIVING,
-					};
+		function showDirectionsToPharmacy(pharmacy) {
+			$(`#selectedPharmacyName`).text(pharmacy.title);
+			// 1) Draw directions on map
+			addMarkers(pharmacy);
+			showDirectionsToMarker(pharmacy, userLocation);
 
-					directionsService.route(request, (result, status) => {
-						if (status === google.maps.DirectionsStatus.OK) {
-							directionsRenderer.setDirections(result);
+			// 2) Collapse the bottom sheet
+			const pharmacyListContainer = $('#pharmacy-list-container');
+			pharmacyListContainer.removeClass('expanded').addClass('collapsed');
+
+			const scrollableArea = $('#pharmacy-scrollable-area');
+			scrollableArea.scrollTop(0);
+		}
+
+		// On page load
+		$(document).ready(function () {
+			getUserLocation(function (userLocation) {
+				if (userLocation) {
+					initMap(userLocation);
+					fetchPharmacyPoints(userLocation, "eskisehir", function (result) {
+						if (result) {
+							const points = result.points;
+							updatePharmacyList(points);
+							attachHammerSwipeEvents();
+							showDirectionsToPharmacy(points[0]);
 						} else {
-							console.error("Directions request failed due to " + status);
-							alert("Unable to fetch directions!");
+							alert("No pharmacy points found.");
 						}
 					});
+				} else {
+					alert("Failed to get user location.");
 				}
-			}
-		}
+			});
+		});
 	</script>
-
 </body>
+
+<style>
+	#pharmacy-list-container {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		transition: transform 0.3s ease-in-out;
+		transform: translateY(50vh);
+		will-change: transform;
+		max-height: 80vh;
+	}
+
+	/* Keep existing other styles */
+	#handle {
+		cursor: pointer;
+		touch-action: drag-y;
+	}
+
+	#pharmacy-list-container.expanded {
+		transform: translateY(0%);
+	}
+
+	#pharmacy-list-container.collapsed {
+		transform: translateY(60vh);
+	}
+
+	#pharmacy-list-container {
+		/* Previous styles */
+		height: 82vh;
+		/* Increased from 80vh to 82vh */
+	}
+
+	.scrollable-area {
+		overflow-y: hidden;
+		padding-bottom: 1rem;
+		/* Added as fallback */
+	}
+
+	#pharmacy-list-container.expanded .scrollable-area {
+		overflow-y: auto;
+		/* Compensate for title + handle height */
+		max-height: calc(100% - 4.5rem);
+		/* Adjust this value based on your actual title height */
+	}
+
+	html {
+		overflow: hidden;
+	}
+</style>
 
 </html>
