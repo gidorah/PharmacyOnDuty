@@ -40,7 +40,7 @@ def fetch_nearest_pharmacies(
 
     # First round lat and lng to exclude little variations
     lat, lng = round_lat_lng(lat, lng, precision=4)
-    print(f"will fetch pharmacies near {lat}, {lng}")
+    print(f"Will fetch pharmacies near {lat}, {lng}")
 
     results = _fetch_pharmacy_data(lat, lng, keyword)
     return results[:limit]
