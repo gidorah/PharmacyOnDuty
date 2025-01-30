@@ -4,7 +4,7 @@ repos:
   hooks:
     - id: tailwind-build
       name: Build Tailwind CSS
-      entry: python manage.py tailwind build
+      entry: .venv/bin/python manage.py tailwind build  # Full venv path
       language: system
       types_or: [html]  # Change to OR logic
       stages: [pre-commit]
