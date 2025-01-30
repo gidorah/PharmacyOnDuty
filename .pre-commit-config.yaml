@@ -10,8 +10,8 @@ repos:
               git add theme/static/css/*
             '
       language: system
-      types_or: [html]  # Change to OR logic
-      stages: [pre-push]
+      types_or: [html]
+      stages: [pre-commit]
       pass_filenames: false
 
 - repo: https://github.com/pre-commit/pre-commit-hooks
