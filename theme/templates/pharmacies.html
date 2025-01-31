@@ -238,7 +238,9 @@
 					callback(response);
 				},
 				error: function (error) {
-					console.error("Error fetching pharmacy points:", error);
+					console.error("Error fetching pharmacy points:", error.responseJSON.error);
+					console.warn(error.responseJSON.traceback);
+
 				}
 			});
 		}

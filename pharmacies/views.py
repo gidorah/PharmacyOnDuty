@@ -1,3 +1,5 @@
+import traceback
+
 import requests
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -6,58 +8,49 @@ from django.views.decorators.cache import cache_page
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
-    add_scraped_data_to_db,
-    check_if_scraped_data_old,
     fetch_nearest_pharmacies,
-    get_eskisehir_data,
+    get_city_name_from_location,
     get_map_points_from_fetched_data,
     get_map_points_from_pharmacies,
     get_nearest_pharmacies_on_duty,
+    round_lat_lng,
 )
+
+TEST_TIME = timezone.now().replace(hour=19, minute=0, second=0, microsecond=0)
 
 
 def get_pharmacy_points(request):
-    user_latitude = float(request.GET.get("lat"))
-    user_longitude = float(request.GET.get("lng"))
-    city_name = request.GET.get("city", "eskisehir")
-
     try:
+        user_latitude = float(request.GET.get("lat"))
+        user_longitude = float(request.GET.get("lng"))
+
+        # First round lat and lng to exclude little variations
+        lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
+
+        # decide the city from the user location
+        city_name = get_city_name_from_location(lat, lng)
+
         city = City.objects.get(name=city_name)
-        try:
-            city_status = city.get_city_status()
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+
+        city_status = city.get_city_status(TEST_TIME)
 
         if city_status == PharmacyStatus.OPEN:
-            pharmacies = fetch_nearest_pharmacies(
-                user_latitude, user_longitude, keyword="pharmacy"
-            )
+            pharmacies = fetch_nearest_pharmacies(lat, lng, keyword="pharmacy")
             points = get_map_points_from_fetched_data(pharmacies)
         else:
-            data_status = check_if_scraped_data_old("eskisehir")
-            if data_status is True:
-                eskisehir_data = get_eskisehir_data()
-                add_scraped_data_to_db(eskisehir_data)
-                eskisehir = City.objects.get(name="eskisehir")
-                try:
-                    eskisehir.last_scraped_at = timezone.now()
-                    eskisehir.save()
-                except Exception as e:
-                    return JsonResponse({"error": str(e)}, status=500)
-
             pharmacies_on_duty = get_nearest_pharmacies_on_duty(
-                user_latitude, user_longitude
+                lat, lng, city=city_name, time=TEST_TIME
             )
+
             points = get_map_points_from_pharmacies(pharmacies_on_duty)
 
-    except City.DoesNotExist:
-        return JsonResponse({"error": "City not found."}, status=404)
-    except ValueError as e:
-        return JsonResponse({"error": str(e)}, status=400)
+        data = {"points": points}
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
-
-    data = {"points": points}
+        error_message = str(e)
+        error_traceback = traceback.format_exc()
+        return JsonResponse(
+            {"error": error_message, "traceback": error_traceback}, status=500
+        )
     return JsonResponse(data)
 
 
@@ -69,5 +62,9 @@ def google_maps_proxy(request):
         "libraries": "geometry",
         **dict(request.GET),
     }
-    response = requests.get(endpoint, params=params, timeout=10)
-    return HttpResponse(response.text, content_type="text/javascript")
+
+    try:
+        response = requests.get(endpoint, params=params, timeout=10)
+        return HttpResponse(response.text, content_type="text/javascript")
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({"error": str(e)}, status=500)

@@ -38,15 +38,5 @@ def fetch_nearest_pharmacies(
 ):
     """Returns cached pharmacy results with limit applied"""
 
-    # First round lat and lng to exclude little variations
-    lat, lng = round_lat_lng(lat, lng, precision=4)
-    print(f"Will fetch pharmacies near {lat}, {lng}")
-
     results = _fetch_pharmacy_data(lat, lng, keyword)
     return results[:limit]
-
-
-def round_lat_lng(lat: float, lng: float, precision: int = 6):
-    """Rounds lat and lng to given precision"""
-
-    return round(lat, precision), round(lng, precision)

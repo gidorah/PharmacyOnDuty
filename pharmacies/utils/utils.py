@@ -1,3 +1,8 @@
+from datetime import datetime, timedelta
+from functools import lru_cache
+
+import requests
+from django.conf import settings
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.utils import timezone
@@ -51,10 +56,16 @@ def get_map_points_from_pharmacies(pharmacies):
     return points
 
 
-def check_if_scraped_data_old(city_name):
-    from datetime import timedelta
-
+def check_if_scraped_data_old(
+    city_name: str | None = None, time: datetime | None = None
+):
     from pharmacies.models import City, PharmacyStatus
+
+    if city_name is None:
+        raise ValueError("City name is required.")
+
+    if time is None:
+        time = timezone.now()
 
     city = City.objects.get(name=city_name)
 
@@ -71,7 +82,31 @@ def check_if_scraped_data_old(city_name):
     return False
 
 
-def get_nearest_pharmacies_on_duty(lat, lng, radius=1000000, limit=5):
+def get_nearest_pharmacies_on_duty(
+    lat: float | None = None,
+    lng: float | None = None,
+    city: str | None = None,
+    radius: int = 100_000,
+    limit: int = 5,
+    time: datetime | None = None,
+):
+    if city is None:
+        raise ValueError("City name is required.")
+
+    if lat is None or lng is None:
+        raise ValueError("Latitude and longitude are required.")
+
+    if time is None:
+        time = timezone.now()
+
+    data_status = check_if_scraped_data_old(city, time=time)
+    if data_status is True:
+        eskisehir_data = get_eskisehir_data()
+        add_scraped_data_to_db(eskisehir_data)
+        eskisehir = City.objects.get(name="eskisehir")
+        eskisehir.last_scraped_at = time
+        eskisehir.save()
+
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location
@@ -118,8 +153,41 @@ def add_scraped_data_to_db(scraped_data) -> None:
             pharmacy.save()
 
 
+@lru_cache(maxsize=1024)
+def get_city_name_from_location(lat: float, lng: float) -> str:
+    """Retrieve city name using Google Maps Geocoding API"""
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lng}&key={settings.GOOGLE_MAPS_API_KEY}"
+
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    if data["status"] != "OK" or not data["results"]:
+        raise ValueError("Unable to retrieve city name: status is not OK")
+
+    compound_code: str = data["plus_code"]["compound_code"]
+
+    if compound_code is None:
+        raise ValueError("Unable to retrieve city name: compound_code is None")
+
+    # TODO: find and handle cities via DB
+    if "İstanbul" in compound_code:
+        return "istanbul"
+
+    if "Eskişehir" in compound_code:
+        return "eskisehir"
+
+    raise ValueError("Unknown city")
+
+
 if __name__ == "__main__":
     from pharmacies.utils.eskisehireo_scraper import get_eskisehir_data
 
     eskisehir_data = get_eskisehir_data()
     add_scraped_data_to_db(eskisehir_data)
+
+
+def round_lat_lng(lat: float, lng: float, precision: int = 6):
+    """Rounds lat and lng to given precision"""
+
+    return round(lat, precision), round(lng, precision)
