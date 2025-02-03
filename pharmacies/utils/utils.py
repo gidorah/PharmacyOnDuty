@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from enum import Enum
 from functools import lru_cache
 
 import requests
@@ -8,6 +9,7 @@ from django.contrib.gis.geos import Point
 from django.utils import timezone
 
 from pharmacies.models import City, Pharmacy
+from pharmacies.utils import get_eskisehir_data, get_istanbul_data
 
 
 def get_coordinates_from_google_maps_url(url: str):
@@ -56,9 +58,14 @@ def get_map_points_from_pharmacies(pharmacies):
     return points
 
 
-def check_if_scraped_data_old(
+class ScrapedDataStatus(Enum):
+    OLD = "old"
+    NEW = "new"
+
+
+def check_scraped_data_age(
     city_name: str | None = None, time: datetime | None = None
-):
+) -> ScrapedDataStatus:
     from pharmacies.models import City, PharmacyStatus
 
     if city_name is None:
@@ -69,17 +76,27 @@ def check_if_scraped_data_old(
 
     city = City.objects.get(name=city_name)
 
-    if city.get_city_status(timezone.now()) == PharmacyStatus.OPEN:
-        return False
+    if city.get_city_status(time) == PharmacyStatus.OPEN:
+        return ScrapedDataStatus.NEW
 
     if (
         city.last_scraped_at is None
         or city.get_city_status(city.last_scraped_at) == PharmacyStatus.OPEN
-        or city.last_scraped_at.date() < timezone.now().date() - timedelta(hours=6)
+        or city.last_scraped_at.date() < time.date() - timedelta(hours=6)
     ):
-        return True
+        return ScrapedDataStatus.OLD
 
-    return False
+    return ScrapedDataStatus.OLD
+
+
+def _get_city_data(city_name: str):
+    if city_name == "eskisehir":
+        return get_eskisehir_data()
+
+    if city_name == "istanbul":
+        return get_istanbul_data()
+
+    raise ValueError("Unknown city")
 
 
 def get_nearest_pharmacies_on_duty(
@@ -99,10 +116,10 @@ def get_nearest_pharmacies_on_duty(
     if time is None:
         time = timezone.now()
 
-    data_status = check_if_scraped_data_old(city, time=time)
-    if data_status is True:
-        eskisehir_data = get_eskisehir_data()
-        add_scraped_data_to_db(eskisehir_data)
+    data_status = check_scraped_data_age(city, time=time)
+    if data_status is ScrapedDataStatus.OLD:
+        city_data = _get_city_data(city_name=city)
+        add_scraped_data_to_db(city_data, city_name=city)
         eskisehir = City.objects.get(name="eskisehir")
         eskisehir.last_scraped_at = time
         eskisehir.save()
@@ -110,13 +127,12 @@ def get_nearest_pharmacies_on_duty(
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location
-    now = timezone.now()
 
     # Filter pharmacies on duty and within the radius
     pharmacies = (
         Pharmacy.objects.filter(
-            duty_start__lte=now,
-            duty_end__gte=now,
+            duty_start__lte=time,
+            duty_end__gte=time,
             location__distance_lte=(user_location, radius),
         )
         .annotate(distance=Distance("location", user_location))  # Calculate distance
@@ -131,12 +147,12 @@ def check_if_pharmacy_exists(name: str) -> bool:
     return True if pharmacy else False
 
 
-def add_scraped_data_to_db(scraped_data) -> None:
+def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
     for item in scraped_data:
         if not check_if_pharmacy_exists(item["name"]):
             coordinates = item["coordinates"]
             location = Point(float(coordinates["lng"]), float(coordinates["lat"]))
-            city: City = City.objects.get(name="eskisehir")
+            city: City = City.objects.get(name=city_name)
 
             if not city:
                 pass

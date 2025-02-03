@@ -2,7 +2,7 @@ import traceback
 
 import requests
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
 
@@ -16,41 +16,38 @@ from pharmacies.utils import (
     round_lat_lng,
 )
 
-TEST_TIME = timezone.now().replace(hour=19, minute=0, second=0, microsecond=0)
+TEST_TIME = timezone.now().replace(hour=19, minute=30, second=0, microsecond=0)
 
 
 def get_pharmacy_points(request):
-    try:
-        user_latitude = float(request.GET.get("lat"))
-        user_longitude = float(request.GET.get("lng"))
+    user_latitude = float(request.GET.get("lat"))
+    user_longitude = float(request.GET.get("lng"))
 
-        # First round lat and lng to exclude little variations
-        lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
+    # First round lat and lng to exclude little variations
+    lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
 
-        # decide the city from the user location
-        city_name = get_city_name_from_location(lat, lng)
+    # decide the city from the user location
+    city_name = get_city_name_from_location(lat, lng)
 
-        city = City.objects.get(name=city_name)
+    city = City.objects.get(name=city_name)
 
-        city_status = city.get_city_status(TEST_TIME)
+    query_time = TEST_TIME if settings.DEBUG else timezone.now()
+    city_status = city.get_city_status(query_time)
+    print(f"City status: {city_status}")
 
-        if city_status == PharmacyStatus.OPEN:
-            pharmacies = fetch_nearest_pharmacies(lat, lng, keyword="pharmacy")
-            points = get_map_points_from_fetched_data(pharmacies)
-        else:
-            pharmacies_on_duty = get_nearest_pharmacies_on_duty(
-                lat, lng, city=city_name, time=TEST_TIME
-            )
-
-            points = get_map_points_from_pharmacies(pharmacies_on_duty)
-
-        data = {"points": points}
-    except Exception as e:
-        error_message = str(e)
-        error_traceback = traceback.format_exc()
-        return JsonResponse(
-            {"error": error_message, "traceback": error_traceback}, status=500
+    if city_status == PharmacyStatus.OPEN:
+        pharmacies = fetch_nearest_pharmacies(lat, lng, keyword="pharmacy")
+        points = get_map_points_from_fetched_data(pharmacies)
+    else:
+        pharmacies_on_duty = get_nearest_pharmacies_on_duty(
+            lat, lng, city=city_name, time=query_time
         )
+
+        points = get_map_points_from_pharmacies(pharmacies_on_duty)
+
+    data = {"points": points}
+
+    print(f"Pharmacy points: \n {data}")
     return JsonResponse(data)
 
 
