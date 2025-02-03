@@ -186,8 +186,10 @@
 				isExpanded = !isExpanded;
 			}
 
-			// Attach click event to handle for toggling
-			handle.addEventListener('click', toggleBottomSheet);
+			// Attach click event to handle and to the container for toggling
+			handle.addEventListener('click', toggleBottomSheet)
+			containerElement.addEventListener('click', toggleBottomSheet)
+
 
 			// Attach swipe gestures using Hammer.js
 			const hammertime = new Hammer(containerElement);
