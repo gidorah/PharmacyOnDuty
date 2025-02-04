@@ -20,7 +20,7 @@ TEST_TIME = timezone.now() - timedelta(hours=6)
 SHOWN_PHARMACIES = 5
 
 
-@csrf_protect
+# @csrf_protect
 def get_pharmacy_points(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
