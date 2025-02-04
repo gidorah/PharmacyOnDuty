@@ -6,7 +6,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
@@ -20,7 +20,7 @@ TEST_TIME = timezone.now() - timedelta(hours=6)
 SHOWN_PHARMACIES = 5
 
 
-# @csrf_protect
+@csrf_exempt
 def get_pharmacy_points(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])

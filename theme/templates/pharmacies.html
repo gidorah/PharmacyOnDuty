@@ -41,7 +41,7 @@
 				bg-secondary border-2 border-secondary text-white">
 				</span>
 				<span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">
-					Açık Eczaneler Yükleniyor...
+					Açık Eczaneler Yükleniyor
 				</span>
 			</div>
 
@@ -331,11 +331,11 @@
 			return cookieValue;
 		}
 
-		$.ajaxSetup({
+		{% comment %} $.ajaxSetup({
 			beforeSend: function(xhr, settings) {
 				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
 			}
-		});
+		}); {% endcomment %}
 	</script>
 
 	<script type="application/ld+json">
