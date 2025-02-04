@@ -58,7 +58,7 @@ def is_allowed_referer(request):
     return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
 
 
-# @cache_page(60 * 60)  # cache for 1 hour
+@cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
