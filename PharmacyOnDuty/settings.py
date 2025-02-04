@@ -37,6 +37,8 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", " ").split(" ") + [
     "127.0.0.1",
 ]
 
+ALLOWED_REFERERS = os.environ.get("ALLOWED_REFERERS", " ").split(" ")
+
 INTERNAL_IPS = [
     "127.0.0.1",
 ]

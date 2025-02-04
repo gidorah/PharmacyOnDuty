@@ -1,10 +1,12 @@
+import json
 from datetime import timedelta
 
 import requests
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
+from django.views.decorators.csrf import csrf_protect
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
@@ -14,13 +16,18 @@ from pharmacies.utils import (
     round_lat_lng,
 )
 
-TEST_TIME = timezone.now()
+TEST_TIME = timezone.now() - timedelta(hours=6)
 SHOWN_PHARMACIES = 5
 
 
+@csrf_protect
 def get_pharmacy_points(request):
-    user_latitude = float(request.GET.get("lat"))
-    user_longitude = float(request.GET.get("lng"))
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    data = json.loads(request.body)
+    user_latitude = float(data["lat"])
+    user_longitude = float(data["lng"])
 
     # First round lat and lng to exclude little variations
     lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
@@ -46,8 +53,19 @@ def get_pharmacy_points(request):
     return JsonResponse(data)
 
 
-@cache_page(60 * 60)  # cache for 1 hour
+def is_allowed_referer(request):
+    referer = request.META.get("HTTP_REFERER", "")
+    return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
+
+
+# @cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request):
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+
+    if not is_allowed_referer(request):
+        return HttpResponse("Forbidden", status=403)
+
     endpoint = "https://maps.googleapis.com/maps/api/js"
     params = {
         "key": settings.GOOGLE_MAPS_API_KEY,

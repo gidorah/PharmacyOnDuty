@@ -214,13 +214,12 @@
 		function fetchPharmacyPoints(userLocation = null, city = "eskisehir", callback) {
 			$.ajax({
 				url: '/get_pharmacy_points',
-				method: 'GET',
-				dataType: 'json',
-				data: {
+				method: 'POST',
+				contentType: 'application/json',
+				data: JSON.stringify({
 					"lat": userLocation ? userLocation.lat : '',
 					"lng": userLocation ? userLocation.lng : '',
-					"city": city,
-				},
+				}),
 				success: function (response) {
 					callback(response);
 				},
@@ -309,6 +308,27 @@
 					alert("Failed to get user location.");
 				}
 			});
+		});
+	</script>
+
+	<script>
+		function getCSRFToken() {
+			let cookieValue = null;
+			const cookies = document.cookie.split(';');
+			for (let i = 0; i < cookies.length; i++) {
+				let cookie = cookies[i].trim();
+				if (cookie.startsWith('csrftoken=')) {
+					cookieValue = cookie.substring('csrftoken='.length, cookie.length);
+					break;
+				}
+			}
+			return cookieValue;
+		}
+
+		$.ajaxSetup({
+			beforeSend: function(xhr, settings) {
+				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+			}
 		});
 	</script>
 </body>
