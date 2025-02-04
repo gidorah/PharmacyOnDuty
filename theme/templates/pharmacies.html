@@ -3,9 +3,18 @@
 <html lang="tr">
 
 <head>
-	<link rel="icon" href="static/favicon.ico" type="image/x-icon">
 	<title>Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede</title>
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y5F4DN577T"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag(){dataLayer.push(arguments);}
+		gtag('js', new Date());
+		
+		gtag('config', 'G-Y5F4DN577T');
+	</script>
 	<meta name="description" content="Keşfedin: Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">	<meta charset="UTF-8" />
+	<link rel="icon" href="static/favicon.ico" type="image/x-icon">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 	<meta property="og:title" content="Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede">
@@ -25,15 +34,6 @@
 	<!-- Hammer.js (CDN) -->
 	<script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
 
-	<!-- Google tag (gtag.js) -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y5F4DN577T"></script>
-	<script>
-	window.dataLayer = window.dataLayer || [];
-	function gtag(){dataLayer.push(arguments);}
-	gtag('js', new Date());
-
-	gtag('config', 'G-Y5F4DN577T');
-	</script>
 </head>
 
 <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
@@ -66,7 +66,7 @@
 			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
 			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
 			<div id="handle" onclick="event.stopPropagation()" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
-			<h2 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h2>
+			<h1 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h1>
 			<!-- Scrollable Area -->
 			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
 				<div id="pharmacy-items" class="space-y-4">
