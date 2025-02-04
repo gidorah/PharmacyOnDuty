@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import lru_cache
@@ -10,6 +11,65 @@ from django.utils import timezone
 
 from pharmacies.models import City, Pharmacy
 from pharmacies.utils import get_eskisehir_data, get_istanbul_data
+from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
+
+
+def get_nearest_pharmacies_open(lat: float, lng: float, limit: int = 5):
+    """Get pharmacies that are open"""
+    fetched_data = fetch_nearest_pharmacies(lat, lng, limit=limit)
+    pharmacy_data = get_map_points_from_fetched_data(fetched_data)
+    add_travel_distances_to_pharmacy_data(lat=lat, lng=lng, pharmacy_data=pharmacy_data)
+    order_data_by_distance(pharmacy_data)
+
+    return pharmacy_data
+
+
+def get_nearest_pharmacies_on_duty(
+    lat: float | None = None,
+    lng: float | None = None,
+    city: str | None = None,
+    radius: int = 100_000,
+    limit: int = 5,
+    time: datetime | None = None,
+):
+    if city is None:
+        raise ValueError("City name is required.")
+
+    if lat is None or lng is None:
+        raise ValueError("Latitude and longitude are required.")
+
+    if time is None:
+        time = timezone.now()
+
+    data_status = check_scraped_data_age(city, time=time)
+    if data_status is ScrapedDataStatus.OLD:
+        city_data = _get_city_data(city_name=city)
+        add_scraped_data_to_db(city_data, city_name=city)
+        eskisehir = City.objects.get(name="eskisehir")
+        eskisehir.last_scraped_at = time
+        eskisehir.save()
+
+    user_location = Point(
+        float(lng), float(lat), srid=4326
+    )  # Create a point for the given location
+
+    # Filter pharmacies on duty and within the radius
+    pharmacies = (
+        Pharmacy.objects.filter(
+            duty_start__lte=time,
+            duty_end__gte=time,
+            location__distance_lte=(user_location, radius),
+        )
+        .annotate(distance=Distance("location", user_location))  # Calculate distance
+        .order_by("distance")  # Order by nearest first
+    )[: limit * 2]  # Limit to twice the limit to account for travel distances
+
+    # Get pharmacies with travel distances.
+    pharmacy_data = get_map_points_from_pharmacies(pharmacies)
+    add_travel_distances_to_pharmacy_data(lat=lat, lng=lng, pharmacy_data=pharmacy_data)
+    order_data_by_distance(pharmacy_data)
+
+    return pharmacy_data[:limit]
 
 
 def get_coordinates_from_google_maps_url(url: str):
@@ -99,49 +159,6 @@ def _get_city_data(city_name: str):
     raise ValueError("Unknown city")
 
 
-def get_nearest_pharmacies_on_duty(
-    lat: float | None = None,
-    lng: float | None = None,
-    city: str | None = None,
-    radius: int = 100_000,
-    limit: int = 5,
-    time: datetime | None = None,
-):
-    if city is None:
-        raise ValueError("City name is required.")
-
-    if lat is None or lng is None:
-        raise ValueError("Latitude and longitude are required.")
-
-    if time is None:
-        time = timezone.now()
-
-    data_status = check_scraped_data_age(city, time=time)
-    if data_status is ScrapedDataStatus.OLD:
-        city_data = _get_city_data(city_name=city)
-        add_scraped_data_to_db(city_data, city_name=city)
-        eskisehir = City.objects.get(name="eskisehir")
-        eskisehir.last_scraped_at = time
-        eskisehir.save()
-
-    user_location = Point(
-        float(lng), float(lat), srid=4326
-    )  # Create a point for the given location
-
-    # Filter pharmacies on duty and within the radius
-    pharmacies = (
-        Pharmacy.objects.filter(
-            duty_start__lte=time,
-            duty_end__gte=time,
-            location__distance_lte=(user_location, radius),
-        )
-        .annotate(distance=Distance("location", user_location))  # Calculate distance
-        .order_by("distance")  # Order by nearest first
-    )
-
-    return pharmacies[:limit]
-
-
 def check_if_pharmacy_exists(name: str) -> bool:
     pharmacy = Pharmacy.objects.filter(name=name).first()
     return True if pharmacy else False
@@ -194,6 +211,63 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
         return "eskisehir"
 
     raise ValueError("Unknown city")
+
+
+@lru_cache(maxsize=1024)
+def _get_distance_matrix_data(origins: str, destinations: str):
+    url = (
+        "https://maps.googleapis.com/maps/api/distancematrix/json"
+        f"?origins={origins}"
+        f"&destinations={destinations}"
+        f"&key={settings.GOOGLE_MAPS_API_KEY}"
+    )
+
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+    received_data = response.json()
+
+    if received_data["status"] != "OK":
+        raise ValueError(f"Distance Matrix API error: {received_data['status']}")
+
+    return received_data
+
+
+def add_travel_distances_to_pharmacy_data(
+    lat: float, lng: float, pharmacy_data: list
+) -> None:
+    """
+    Get travel distances from origin to multiple destinations
+    using Google Maps Distance Matrix API. And add them to data list.
+    """
+
+    if not pharmacy_data:
+        raise ValueError("Cannot retrieve travel distances. Pharmacy data is empty!")
+
+    # Format destinations for the API request
+    destinations_str = "|".join(
+        f"{d['position']['lat']},{d['position']['lng']}" for d in pharmacy_data
+    )
+    origin_str = f"{lat},{lng}"
+
+    received_data = _get_distance_matrix_data(
+        origins=origin_str, destinations=destinations_str
+    )
+
+    # Add travel information to each destination
+    for i, row in enumerate(received_data["rows"][0]["elements"]):
+        if row["status"] == "OK":
+            pharmacy_data[i]["travel_distance"] = row["distance"]["value"]
+            pharmacy_data[i]["travel_duration"] = row["duration"]["value"]
+        else:
+            pharmacy_data[i]["travel_distance"] = pharmacy_data[i]["distance"]
+            pharmacy_data[i]["travel_duration"] = (
+                pharmacy_data[i]["distance"] / 1000
+            ) * 60  # Convert distance to seconds. A very rough estimate
+
+
+def order_data_by_distance(pharmacy_data: list) -> None:
+    """Order pharmacy data by travel distance"""
+    pharmacy_data.sort(key=lambda x: x["travel_distance"])
 
 
 if __name__ == "__main__":

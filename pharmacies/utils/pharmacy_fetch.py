@@ -3,6 +3,7 @@ from functools import lru_cache
 
 import requests
 from dotenv import load_dotenv
+from requests.exceptions import HTTPError
 
 # Load environment variables once at startup
 load_dotenv()
@@ -21,16 +22,11 @@ def _fetch_pharmacy_data(lat: float, lng: float, keyword: str):
         "key": API_KEY,
     }
 
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("results", [])
-        print(f"API Error: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"Request failed: {str(e)}")
-
-    return []
+    response = requests.get(url, params=params, timeout=10)
+    if response.status_code != 200:
+        raise HTTPError(f"API Error: {response.status_code} - {response.text}")
+    data = response.json()
+    return data.get("results", [])
 
 
 def fetch_nearest_pharmacies(

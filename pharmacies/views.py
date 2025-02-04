@@ -8,15 +8,14 @@ from django.views.decorators.cache import cache_page
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
-    fetch_nearest_pharmacies,
     get_city_name_from_location,
-    get_map_points_from_fetched_data,
-    get_map_points_from_pharmacies,
     get_nearest_pharmacies_on_duty,
+    get_nearest_pharmacies_open,
     round_lat_lng,
 )
 
-TEST_TIME = timezone.now().replace(hour=19, minute=30, second=0, microsecond=0)
+TEST_TIME = timezone.now()
+SHOWN_PHARMACIES = 5
 
 
 def get_pharmacy_points(request):
@@ -36,17 +35,13 @@ def get_pharmacy_points(request):
     print(f"City status: {city_status}")
 
     if city_status == PharmacyStatus.OPEN:
-        pharmacies = fetch_nearest_pharmacies(lat, lng, keyword="pharmacy")
-        points = get_map_points_from_fetched_data(pharmacies)
+        points = get_nearest_pharmacies_open(lat, lng, limit=SHOWN_PHARMACIES)
     else:
-        pharmacies_on_duty = get_nearest_pharmacies_on_duty(
-            lat, lng, city=city_name, time=query_time
+        points = get_nearest_pharmacies_on_duty(
+            lat, lng, city=city_name, time=query_time, limit=SHOWN_PHARMACIES
         )
 
-        points = get_map_points_from_pharmacies(pharmacies_on_duty)
-
     data = {"points": points}
-
     print(f"Pharmacy points: \n {data}")
     return JsonResponse(data)
 
