@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "theme",
     "tailwind",
     "django_browser_reload",
+    "django.contrib.sitemaps",
 ]
 
 TAILWIND_APP_NAME = "theme"

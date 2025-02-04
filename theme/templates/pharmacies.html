@@ -1,18 +1,24 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 
 <head>
-	<title>Eczanerede</title>
-	<meta charset="UTF-8" />
+	<title>Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede</title>
+	<meta name="description" content="Keşfedin: Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+	<meta property="og:title" content="Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede">
+	<meta property="og:description" content="Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
+	<meta property="og:image" content="https://images.seeklogo.com/logo-png/53/1/eczane-logo-png_seeklogo-536923.png">
+	<meta property="og:url" content="https://eczanerede.com">
+
+<meta name="twitter:card" content="summary_large_image">
 	{% tailwind_css %}
 
 	<!-- htmx -->
 	<script src="https://unpkg.com/htmx.org"></script>
 	<!-- Google Maps Proxy -->
-	<script src="/google_maps_proxy"></script>
+	<script src="/google_maps_proxy"></script> 
 	<!-- jQuery -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<!-- Hammer.js (CDN) -->
@@ -26,7 +32,7 @@
 
 			<div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
 				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
-				<img src="static/icons/eczane-logo.png" alt="Pharmacy Icon">
+				<img src="static/icons/eczane-logo.png" alt="Eczanerede - Açık Eczaneler Logosu">
 			</div>
 
 			<div class="h-12 px-8 gap-4 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
@@ -35,7 +41,7 @@
 				bg-secondary border-2 border-secondary text-white">
 				</span>
 				<span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">
-					Eczanerede
+					Açık Eczaneler Yükleniyor...
 				</span>
 			</div>
 
@@ -330,6 +336,20 @@
 				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
 			}
 		});
+	</script>
+
+	<script type="application/ld+json">
+		{
+		  "@context": "https://schema.org",
+		  "@type": "Organization",
+		  "name": "Eczanerede",
+		  "description": "Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.",
+		  "address": {
+			"@type": "PostalAddress",
+			"addressCountry": "TR"
+		  },
+		  "url": "https://eczanerede.com/"
+		}
 	</script>
 </body>
 
