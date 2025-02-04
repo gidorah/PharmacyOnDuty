@@ -48,8 +48,8 @@
 		<div id="pharmacy-list-container"
 			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
 			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
-			<div id="handle" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
-			<h2 class="text-xl font-bold mb-4 mt-4">Eskişehir'deki Açık Eczaneler</h2>
+			<div id="handle" onclick="event.stopPropagation()" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
+			<h2 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h2>
 			<!-- Scrollable Area -->
 			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
 				<div id="pharmacy-items" class="space-y-4">
@@ -187,8 +187,8 @@
 			}
 
 			// Attach click event to handle and to the container for toggling
-			handle.addEventListener('click', toggleBottomSheet)
 			containerElement.addEventListener('click', toggleBottomSheet)
+			handle.addEventListener('click', toggleBottomSheet)
 
 
 			// Attach swipe gestures using Hammer.js
