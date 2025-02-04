@@ -10,7 +10,7 @@ from django.contrib.gis.geos import Point
 from django.utils import timezone
 
 from pharmacies.models import City, Pharmacy
-from pharmacies.utils import get_eskisehir_data, get_istanbul_data
+from pharmacies.utils import get_ankara_data, get_eskisehir_data, get_istanbul_data
 from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 
 
@@ -156,6 +156,9 @@ def _get_city_data(city_name: str):
     if city_name == "istanbul":
         return get_istanbul_data()
 
+    if city_name == "ankara":
+        return get_ankara_data()
+
     raise ValueError("Unknown city")
 
 
@@ -209,6 +212,9 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
 
     if "Eskişehir" in compound_code:
         return "eskisehir"
+
+    if "Ankara" in compound_code:
+        return "ankara"
 
     raise ValueError("Unknown city")
 

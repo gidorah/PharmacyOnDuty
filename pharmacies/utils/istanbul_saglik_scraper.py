@@ -95,50 +95,6 @@ def get_istanbul_data():
         soup = BeautifulSoup(html_content, "html.parser")
         pharmacy_cards = soup.select(".card")
         for card in pharmacy_cards:
-            """
-            <div class="card">
-                <div class="card-header text-center" style="background:#468AA4;color:#fff">
-                    <b>2025-01-31</b> TARİHİNDEKİ <b><u>GÜNGÖREN</u></b> İLEÇESİNDEKİ NÖBETÇİ ECZANELER
-                </div>
-                <div class="card-header text-center" style="background:#F8A854;">
-                    <b>SONAY ECZANESİ</b>
-                </div>
-                <div class="card-body">
-                    <table class="table table-bordered">
-                        <tr>
-                            <td><label><i class="la la-phone"></i> Tel</label></td>
-                            <td><label><a href="0 212 436 94 26">0 212 436 94 26</a></label></td>
-                        </tr>
-                        <tr>
-                            <td><label><i class="la la-fax"></i> Faks</label></td>
-                            <td><label><a href="0 212 461 15 15">0 212 461 15 15 </a></label></td>
-                        </tr>
-                        <tr>
-                            <td><label><i class="la la-bank"></i> SGK Anlaşması</label></td>
-                            <td>
-                                <label>
-                                    <span class="badge badge-success" style="font-size:14px">Var</span>
-                                </label>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><label><i class="la la-home"></i> Adres</label></td>
-                            <td height="75"><label>Güneştepe Mahallesi, Şehit Piyade Er Hasan Sorma Sokak, 6 </label></td>
-                        </tr>
-                        <tr>
-                            <td><label><i class="la la-map"></i> Adres Tarifi</label></td>
-                            <td height="75"><label>Güneştepe ASM Yakını</label></td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="card-footer">
-                    <a class="btn btn-primary btn-block"
-                        href="http://sehirharitasi.ibb.gov.tr/?lat=41.02521600310020&amp;lon=28.86149931963630&amp;zoom=18\"
-                        target="_blank"><i class="la la-map-marker"></i> Haritada Göster</a>
-                </div>
-            </div>
-            """
-
             pharmacy = {"district": district_name}
 
             # Extract name
