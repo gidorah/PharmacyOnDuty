@@ -37,3 +37,6 @@ ENV/
 .DS_Store
 mypy.ini
 ruff.toml
+
+# OSRM data folder
+osrm/

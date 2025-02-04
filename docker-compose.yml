@@ -25,6 +25,15 @@ services:
       - "5432:5432"
     volumes:
       - postgis-data:/var/lib/postgresql/data
+  # osrm:
+  #   platform: linux/amd64
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.osrm
+  #   ports:
+  #     - "5001:5000"
+  #   volumes:
+  #     - ./osrm:/data
 
 volumes:
   postgis-data:
