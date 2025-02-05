@@ -122,7 +122,7 @@ Visit [eczanerede](https://eczanerede.com) for live website.
     - DB_HOST: Database host
     - SENTRY_DSN: Sentry DSN (optional)
     - DJANGO_ALLOWED_HOSTS= www.example.com www.another.com
-    - ALLOWED_REFERERS= http://localhost:8008/ htto://www.example.com #hosts that are allowed to access the API
+    - ALLOWED_REFERERS= http://localhost:8008/ http://www.example.com #hosts that are allowed to access the API
 
 5.	Apply Django migrations:
     ```bash
