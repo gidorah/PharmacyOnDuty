@@ -4,15 +4,26 @@ import requests
 from django.utils import timezone
 
 
-def _get_duty_times(testing=True):
-    if testing:
-        current_time = datetime.now()
-    else:
-        current_time = timezone.now()
+def _get_duty_times():
+    current_time = timezone.now()
 
-    duty_start = current_time.replace(hour=19, minute=0, second=0, microsecond=0)
+    if (
+        current_time.weekday == 6 and current_time.hour >= 6
+    ):  # If it's Sunday, pharmacies are open all day until 9am tomorrow
+        duty_start = current_time.replace(hour=6, minute=0, second=0, microsecond=0)
+        duty_end = current_time.replace(
+            hour=6, minute=0, second=0, microsecond=0
+        ) + timedelta(days=1)
+        return duty_start, duty_end
+
+    if (
+        current_time.hour < 6
+    ):  # If it's before 9am, pharmacies are in duty of the previous day
+        current_time = current_time - timedelta(days=1)
+
+    duty_start = current_time.replace(hour=16, minute=0, second=0, microsecond=0)
     duty_end = current_time.replace(
-        hour=8, minute=30, second=0, microsecond=0
+        hour=6, minute=0, second=0, microsecond=0
     ) + timedelta(days=1)
 
     return duty_start, duty_end

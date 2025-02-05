@@ -41,31 +41,40 @@ def get_nearest_pharmacies_on_duty(
     if time is None:
         time = timezone.now()
 
+    city_object = City.objects.get(name=city)
+
+    if city_object is None:
+        raise ValueError("City not found")
+
     data_status = check_scraped_data_age(city, time=time)
     if data_status is ScrapedDataStatus.OLD:
         city_data = _get_city_data(city_name=city)
         add_scraped_data_to_db(city_data, city_name=city)
-        eskisehir = City.objects.get(name="eskisehir")
-        eskisehir.last_scraped_at = time
-        eskisehir.save()
+
+        city_object.last_scraped_at = time
+        city_object.save()
 
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location
 
     # Filter pharmacies on duty and within the radius
-    pharmacies = (
-        Pharmacy.objects.filter(
-            duty_start__lte=time,
-            duty_end__gte=time,
-            location__distance_lte=(user_location, radius),
-        )
-        .annotate(distance=Distance("location", user_location))  # Calculate distance
-        .order_by("distance")  # Order by nearest first
-    )[: limit * 2]  # Limit to twice the limit to account for travel distances
+    near_pharmacies_on_duty = Pharmacy.objects.filter(city=city_object)
+    near_pharmacies_on_duty = near_pharmacies_on_duty.filter(
+        duty_start__lte=time, duty_end__gte=time
+    )
+    near_pharmacies_on_duty = near_pharmacies_on_duty.annotate(
+        distance=Distance("location", user_location)
+    )
+    near_pharmacies_on_duty = near_pharmacies_on_duty.order_by(
+        "distance"
+    )  # Order by nearest first
+    near_pharmacies_on_duty = near_pharmacies_on_duty[
+        : limit * 2
+    ]  # Limit to twice the limit to account for travel distances
 
     # Get pharmacies with travel distances.
-    pharmacy_data = get_map_points_from_pharmacies(pharmacies)
+    pharmacy_data = get_map_points_from_pharmacies(near_pharmacies_on_duty)
     add_travel_distances_to_pharmacy_data(lat=lat, lng=lng, pharmacy_data=pharmacy_data)
     order_data_by_distance(pharmacy_data)
 
@@ -142,7 +151,7 @@ def check_scraped_data_age(
     if (
         city.last_scraped_at is None
         or city.get_city_status(city.last_scraped_at) == PharmacyStatus.OPEN
-        or city.last_scraped_at.date() < time.date() - timedelta(hours=6)
+        or city.last_scraped_at.date() < time.date() - timedelta(hours=1)
     ):
         return ScrapedDataStatus.OLD
 
@@ -162,20 +171,21 @@ def _get_city_data(city_name: str):
     raise ValueError("Unknown city")
 
 
-def check_if_pharmacy_exists(name: str) -> bool:
-    pharmacy = Pharmacy.objects.filter(name=name).first()
+def check_if_pharmacy_exists(name: str, phone: str) -> bool:
+    pharmacy = Pharmacy.objects.filter(name=name).filter(phone=phone).first()
     return True if pharmacy else False
 
 
 def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
     for item in scraped_data:
-        if not check_if_pharmacy_exists(item["name"]):
+        if not check_if_pharmacy_exists(item["name"], item["phone"]):
             coordinates = item["coordinates"]
             location = Point(float(coordinates["lng"]), float(coordinates["lat"]))
-            city: City = City.objects.get(name=city_name)
 
+            city: City = City.objects.get(name=city_name)
             if not city:
-                pass
+                raise ValueError("City not found")
+
             pharmacy = Pharmacy(
                 name=item["name"],
                 address=item["address"],
@@ -186,6 +196,11 @@ def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
                 district=item["district"],
                 city_id=city.id,
             )
+            pharmacy.save()
+        else:
+            pharmacy = Pharmacy.objects.get(name=item["name"], phone=item["phone"])
+            pharmacy.duty_start = item["duty_start"]
+            pharmacy.duty_end = item["duty_end"]
             pharmacy.save()
 
 
