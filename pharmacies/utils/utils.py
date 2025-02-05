@@ -48,11 +48,14 @@ def get_nearest_pharmacies_on_duty(
 
     data_status = check_scraped_data_age(city, time=time)
     if data_status is ScrapedDataStatus.OLD:
-        city_data = _get_city_data(city_name=city)
-        add_scraped_data_to_db(city_data, city_name=city)
+        try:
+            city_data = _get_city_data(city_name=city)
+            add_scraped_data_to_db(city_data, city_name=city)
 
-        city_object.last_scraped_at = time
-        city_object.save()
+            city_object.last_scraped_at = time
+            city_object.save()
+        except Exception as e:
+            print(f"Error: {e}")
 
     user_location = Point(
         float(lng), float(lat), srid=4326
