@@ -45,4 +45,19 @@ urlpatterns: list = [
         ),
         name="robots_txt",
     ),
+    path(
+        "privacy-policy/",
+        TemplateView.as_view(template_name="privacy_policy.html"),
+        name="privacy_policy",
+    ),
+    path(
+        "terms/",
+        TemplateView.as_view(template_name="terms_of_service.html"),
+        name="terms_of_service",
+    ),
+    path(
+        "cookie-policy/",
+        TemplateView.as_view(template_name="cookie_policy.html"),
+        name="cookie_policy",
+    ),
 ]
