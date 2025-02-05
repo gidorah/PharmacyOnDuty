@@ -106,10 +106,11 @@ Visit [eczanerede](https://eczanerede.com) for live website.
 3. Install dependencies:
     ```bash
     pip install -r requirements.txt
+    ```
 
 4. Set up environment variables:
    
-   Use an .env file or add them to docker-compose.yml
+   Create a .env file or add them to docker-compose.yml
 
     Environment Variables:
     - DJANGO_SECRET_KEY: Django secret key
@@ -123,7 +124,20 @@ Visit [eczanerede](https://eczanerede.com) for live website.
     - DJANGO_ALLOWED_HOSTS= www.example.com www.another.com
     - ALLOWED_REFERERS= http://localhost:8008/ htto://www.example.com #hosts that are allowed to access the API
 
-5. Run with Docker Compose:
+5.	Apply Django migrations:
+    ```bash
+    python manage.py migrate
+    ```
+
+    Note: You may need to create a superuser for the database:
+
+    ```bash
+    python manage.py createsuperuser
+    ```
+
+    Also, you may need to add cities and work schedules to the database
+
+6. Run with Docker Compose:
     ```bash
     docker-compose up --build
     ```  
