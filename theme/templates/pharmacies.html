@@ -8,31 +8,37 @@
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y5F4DN577T"></script>
 	<script>
 		window.dataLayer = window.dataLayer || [];
-		function gtag(){dataLayer.push(arguments);}
+		function gtag() { dataLayer.push(arguments); }
 		gtag('js', new Date());
-		
+
 		gtag('config', 'G-Y5F4DN577T');
 	</script>
-	<meta name="description" content="Keşfedin: Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">	<meta charset="UTF-8" />
+	<meta name="description"
+		content="Keşfedin: Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
+	<meta charset="UTF-8" />
 	<link rel="icon" href="static/favicon.ico" type="image/x-icon">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
 	<meta property="og:title" content="Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede">
-	<meta property="og:description" content="Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
+	<meta property="og:description"
+		content="Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
 	<meta property="og:image" content="https://images.seeklogo.com/logo-png/53/1/eczane-logo-png_seeklogo-536923.png">
 	<meta property="og:url" content="https://eczanerede.com">
-	
+
 
 	{% tailwind_css %}
 
 	<!-- htmx -->
 	<script src="https://unpkg.com/htmx.org"></script>
 	<!-- Google Maps Proxy -->
-	<script src="/google_maps_proxy"></script> 
+	<script src="/google_maps_proxy"></script>
 	<!-- jQuery -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<!-- Hammer.js (CDN) -->
 	<script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+
+	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
+		crossorigin="anonymous"></script>
 
 </head>
 
@@ -65,23 +71,34 @@
 		<div id="pharmacy-list-container"
 			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
 			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
-			<div id="handle" onclick="event.stopPropagation()" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
+			<div id="handle" onclick="event.stopPropagation()" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2">
+			</div>
 			<h1 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h1>
 			<!-- Scrollable Area -->
 			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
 				<div id="pharmacy-items" class="space-y-4">
 					<!-- Pharmacy items will be dynamically inserted here -->
 				</div>
+				<div id="ad-item" class="hidden">
+					<script async
+						src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
+						crossorigin="anonymous"></script>
+					<!-- pharma_list_ad -->
+					<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2058777526611837"
+						data-ad-slot="4575185195" data-ad-format="auto" data-full-width-responsive="true"></ins>
+					<script>
+						(adsbygoogle = window.adsbygoogle || []).push({});
+					</script>
+				</div>
 			</div>
-
 			<footer class="bg-gray-100 p-4 text-center">
 				<p class="text-sm">
-				  &copy; 2025 Eczanerede | 
-				  <a href="/privacy-policy/" class="text-blue-600">Gizlilik Politikası</a> | 
-				  <a href="/terms/" class="text-blue-600">Hizmet Şartları</a> | 
-				  <a href="/cookie-policy/" class="text-blue-600">Çerez Politikası</a>
+					&copy; 2025 Eczanerede |
+					<a href="/privacy-policy/" class="text-blue-600">Gizlilik Politikası</a> |
+					<a href="/terms/" class="text-blue-600">Hizmet Şartları</a> |
+					<a href="/cookie-policy/" class="text-blue-600">Çerez Politikası</a>
 				</p>
-			  </footer>
+			</footer>
 		</div>
 
 	</main>
@@ -354,7 +371,7 @@
 		}
 
 		{% comment %} $.ajaxSetup({
-			beforeSend: function(xhr, settings) {
+			beforeSend: function (xhr, settings) {
 				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
 			}
 		}); {% endcomment %}
