@@ -1,6 +1,6 @@
 # Eczanerede (Pharmacy Locator)
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://example.com)  <!-- Replace with actual build status badge if you have one -->
+      
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Eczanerede is a mobile-first web application designed to help users quickly find open and on-duty pharmacies in Turkish cities.  It currently supports Eskişehir, Istanbul, and Ankara, with plans for expansion. The application provides real-time status updates, location-based search, interactive maps with turn-by-turn directions, and estimated travel distances, all within a user-friendly, responsive interface.
