@@ -3,6 +3,7 @@ from enum import StrEnum
 from typing import Optional
 
 from django.contrib.gis.db import models
+from django.contrib.postgres.indexes import GistIndex
 from django.utils import timezone
 
 
@@ -102,6 +103,14 @@ class Pharmacy(models.Model):
     class Meta:
         verbose_name = "Pharmacy"
         verbose_name_plural = "Pharmacies"
+
+        indexes = [
+            # Spatial Index for location (critical for distance queries)
+            GistIndex(fields=["location"]),
+            # Indexes for time-based filtering
+            models.Index(fields=["duty_start"]),
+            models.Index(fields=["duty_end"]),
+        ]
 
     def __str__(self):
         return self.name
