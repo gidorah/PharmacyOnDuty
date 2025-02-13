@@ -40,3 +40,9 @@ ruff.toml
 
 # OSRM data folder
 osrm/
+
+# nginx
+certs/
+private/
+data/
+remotedev_nginx.conf

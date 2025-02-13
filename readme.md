@@ -24,6 +24,7 @@ Eczanerede is a mobile-first web application designed to help users quickly find
   - [Setup and Installation](#setup-and-installation)
     - [Prerequisites](#prerequisites)
     - [Steps](#steps)
+    - [Remote Development Setup (docker-compose.remotedev.yml)](#remote-development-setup-docker-composeremotedevyml)
   - [Environment Variables](#environment-variables)
   - [Testing](#testing)
   - [Contributing](#contributing)
@@ -278,6 +279,39 @@ PharmacyOnDuty/
     ```
 
     In both cases, the application will be accessible at `http://localhost:8000`. With Docker, the database will be accessible at `http://localhost:5432`, and debugpy will be accessible at `http://localhost:5678`.
+
+### Remote Development Setup (docker-compose.remotedev.yml)
+
+For remote development and debugging within Docker containers, use the `docker-compose.remotedev.yml` file. This configuration includes settings for remote debugging with `debugpy`.
+
+1.  **Generate SSL Certificates:**
+
+    Run this command on your host machine (not inside a container) to generate self-signed SSL certificates for local HTTPS development. This is necessary because the application uses HTTPS, and the browser will not allow insecure connections to localhost. Your own server IP address should be specified in command!
+
+    ```bash
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout private/nginx-selfsigned.key \
+      -out certs/nginx-selfsigned.crt \
+      -subj "/CN=XXX.XXX.XXX.XXX"
+    ```
+
+2.  **Create `remotedev_nginx.conf`:**
+
+    Create a file named `remotedev_nginx.conf` in the project root directory using the `remotedev_nginx.conf.template` as a template:
+
+    ```
+    cp remotedev_nginx.conf.template remotedev_nginx.conf
+    ```
+    
+    Open `remotedev_nginx.conf` and replace `XXX.XXX.XXX.XXX` with your server's public IP address in both `server_name` directives.
+
+3.  **Run with Remote Development Compose File:**
+
+    ```bash
+    docker-compose -f docker-compose.remotedev.yml up --build
+    ```
+
+This will start the application with the remote debugging configuration. You can then attach a debugger (like VS Code's debugger) to the running container on port 5678.
 
 ## Environment Variables
 
