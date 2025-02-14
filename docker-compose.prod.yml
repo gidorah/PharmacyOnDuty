@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: dockerfile.prod
+    restart: always
     ports:
       - "5678:5678" # optional
     volumes:
@@ -23,6 +24,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.postgis
+    restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -35,6 +37,7 @@ services:
   nginx:
     image: nginx:alpine
     container_name: django_nginx
+    restart: always
     depends_on:
       - django
     ports:
@@ -47,6 +50,7 @@ services:
 
   certbot:
     image: certbot/certbot
+    restart: always
     # Temporarily remove the entrypoint so we can do the initial issuance
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     volumes:
