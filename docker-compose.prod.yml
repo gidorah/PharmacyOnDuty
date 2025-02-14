@@ -26,8 +26,8 @@ services:
       dockerfile: Dockerfile.postgis
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: gis
     ports:
       - "5432:5432"
