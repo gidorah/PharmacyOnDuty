@@ -25,6 +25,7 @@ Eczanerede is a mobile-first web application designed to help users quickly find
     - [Prerequisites](#prerequisites)
     - [Steps](#steps)
     - [Remote Development Setup (docker-compose.remotedev.yml)](#remote-development-setup-docker-composeremotedevyml)
+  - [Production Deployment (HTTPS with Docker, Nginx, and Let’s Encrypt)](#production-deployment-https-with-docker-nginx-and-lets-encrypt)
   - [Environment Variables](#environment-variables)
   - [Testing](#testing)
   - [Contributing](#contributing)
@@ -141,6 +142,7 @@ PharmacyOnDuty/
 ├── Dockerfile.postgis      # Dockerfile for building the PostGIS container
 ├── Dockerfile.osrm         # Dockerfile for building the OSRM container (commented out)
 ├── manage.py               # Django management script
+├── nginx.conf              # Nginx configuration for production
 ├── Procfile                # Procfile for Heroku deployment
 ├── readme.md               # This file
 ├── requirements.txt        # Python dependencies
@@ -312,6 +314,234 @@ For remote development and debugging within Docker containers, use the `docker-c
     ```
 
 This will start the application with the remote debugging configuration. You can then attach a debugger (like VS Code's debugger) to the running container on port 5678.
+
+## Production Deployment (HTTPS with Docker, Nginx, and Let’s Encrypt)
+
+This section explains how to run the application in a production setting using docker-compose.prod.yml. It also covers configuring Nginx as a reverse proxy and obtaining an SSL certificate with Certbot for eczanerede.com.
+
+1.  **Prerequisites**
+
+    -   **Domain Name:** You must own a domain (e.g., eczanerede.com) pointing to the IP of your server.
+    -   **DNS Config:** An A-record or CNAME pointing eczanerede.com and (optionally) www.eczanerede.com to your server’s public IP.
+    -   **Ports:** Make sure ports 80 (HTTP) and 443 (HTTPS) are open on your server/firewall.
+    -   **Docker + Docker Compose:** installed on your server.
+
+2.  **Ensure Your docker-compose.prod.yml Is Set for Production**
+
+    A sample docker-compose.prod.yml might contain services for:
+
+    -   django (running Gunicorn on port 8000 internally),
+    -   db (PostgreSQL with PostGIS),
+    -   nginx (serving on ports 80 and 443),
+    -   certbot (for Let’s Encrypt).
+
+    Example snippet (abridged):
+
+    ```yaml
+    version: '3.8'
+
+    services:
+      django:
+        build:
+          context: .
+          dockerfile: dockerfile.prod
+        depends_on:
+          - db
+        environment:
+          - DB_HOST=db
+          - DJANGO_DEBUG=False
+        command: >
+          sh -c "python manage.py collectstatic --noinput &&
+                 gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
+
+      db:
+        build:
+          context: .
+          dockerfile: Dockerfile.postgis
+        environment:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: gis
+
+      nginx:
+        image: nginx:alpine
+        depends_on:
+          - django
+        # Expose both HTTP and HTTPS
+        ports:
+          - "80:80"
+          - "443:443"
+        # Mount config and cert volumes
+        volumes:
+          - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+          - ./certbot_webroot:/var/www/certbot
+          - ./certbot_letsencrypt:/etc/letsencrypt:ro
+
+      certbot:
+        image: certbot/certbot
+        volumes:
+          - ./certbot_webroot:/var/www/certbot
+          - ./certbot_letsencrypt:/etc/letsencrypt
+        # No entrypoint here until we do the initial issuance
+        # entrypoint: ...
+    ```
+
+3.  **Create & Mount the Folders for Certbot**
+
+    On your server (in the project directory):
+
+    ```bash
+    mkdir -p certbot_webroot certbot_letsencrypt
+    ```
+
+    -   `certbot_webroot` is where Let’s Encrypt’s HTTP-01 challenge files go.
+    -   `certbot_letsencrypt` is where your certificates (fullchain + privkey) will be stored.
+
+4.  **Minimal nginx.conf for Production**
+
+    Below is a sample nginx.conf you could commit to version control. It serves two server blocks: one for HTTP (port 80) to allow ACME challenges and redirect to HTTPS, and one for HTTPS on port 443.
+
+    ```nginx
+    server {
+        listen 80;
+        server_name eczanerede.com www.eczanerede.com;
+
+        # Serve Let’s Encrypt ACME challenges from /var/www/certbot
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        # (Optional) Redirect everything else on port 80 to HTTPS
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    server {
+        listen 443 ssl;
+        server_name eczanerede.com www.eczanerede.com;
+
+        # These will be populated by Certbot
+        ssl_certificate /etc/letsencrypt/live/eczanerede.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/eczanerede.com/privkey.pem;
+
+        # Basic security headers (optional)
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Frame-Options "SAMEORIGIN";
+        add_header X-Content-Type-Options "nosniff";
+        add_header X-XSS-Protection "1; mode=block";
+
+        # Proxy requests to Django
+        location / {
+            proxy_pass http://django:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Serve ACME challenges on port 443 as well (not strictly required)
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+    }
+    ```
+
+5.  **Build and Start Containers (HTTP-Only First)**
+
+    Before obtaining a certificate, comment out the HTTPS parts or keep them but point to a dummy certificate. For instance, just remove `listen 443 ssl;` lines until you fetch real certs:
+
+    1.  ```bash
+        docker-compose -f docker-compose.prod.yml up -d --build
+        ```
+    2.  Check logs:
+
+        ```bash
+        docker-compose logs -f
+        ```
+
+        Make sure django, db, and nginx all start without errors.
+
+    At this point, you should be able to reach `http://eczanerede.com` (port 80). If that works, proceed.
+
+6.  **Obtain the Let’s Encrypt Certificate**
+
+    1.  Stop any looping certbot container if it’s in your file:
+
+        ```bash
+        docker-compose -f docker-compose.prod.yml stop certbot
+        ```
+
+    2.  Run a one-time issuance:
+
+        ```bash
+        docker-compose -f docker-compose.prod.yml run --rm certbot \
+          certonly \
+          --webroot \
+          --webroot-path /var/www/certbot \
+          -d eczanerede.com -d www.eczanerede.com \
+          --email <YOUR_EMAIL> \
+          --agree-tos \
+          --no-eff-email \
+          -v
+        ```
+
+        If it succeeds, you’ll see “Successfully received certificate” and the cert files appear in `./certbot_letsencrypt/live/eczanerede.com/`.
+
+7.  **Re-Enable HTTPS in Nginx**
+
+    Now that you have real certificate files, uncomment or update your `nginx.conf` lines for SSL:
+
+    ```
+    server {
+        listen 443 ssl;
+        server_name eczanerede.com www.eczanerede.com;
+
+        ssl_certificate /etc/letsencrypt/live/eczanerede.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/eczanerede.com/privkey.pem;
+
+        ...
+    }
+    ```
+
+    Expose port 443 in `docker-compose.prod.yml`:
+
+    ```
+    nginx:
+      ports:
+        - "80:80"
+        - "443:443"
+    ```
+
+    Then redeploy:
+
+    ```bash
+    docker-compose -f docker-compose.prod.yml up -d --build
+    ```
+
+    Visit `https://eczanerede.com`—you should now have a valid SSL certificate.
+
+8.  **(Optional) Automatic Certificate Renewal**
+
+    To keep your certificate from expiring, add back a looping entrypoint for Certbot:
+
+    ```yaml
+    certbot:
+      image: certbot/certbot
+      volumes:
+        - ./certbot_webroot:/var/www/certbot
+        - ./certbot_letsencrypt:/etc/letsencrypt
+      entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    ```
+
+    Then run:
+
+    ```bash
+    docker-compose -f docker-compose.prod.yml up -d certbot
+    ```
+
+    This container will periodically run `certbot renew`, and as long as port 80 is still accessible and Nginx is configured to serve `/.well-known/acme-challenge/`, renewals will happen automatically.
+
+    That’s it! Your application is now served securely via HTTPS at eczanerede.com.
 
 ## Environment Variables
 
