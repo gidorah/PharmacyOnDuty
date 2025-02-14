@@ -42,7 +42,6 @@ ruff.toml
 osrm/
 
 # nginx
-certs/
-private/
-data/
+certbot_letsencrypt/
+certbot_webroot/
 remotedev_nginx.conf
