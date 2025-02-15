@@ -8,7 +8,6 @@ services:
     volumes:
       - .:/app
     environment:
-      - DB_HOST=db
       - REMOTE_DEBUGGING_PORT=5678
 
   db:

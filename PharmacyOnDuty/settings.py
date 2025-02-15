@@ -203,6 +203,7 @@ if DEBUG and REMOTE_DEBUGGING_PORT:
     except Exception as e:
         print(f"debugpy not available: {e}")
 
+
 # Celery settings
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = "django_celery_results.backends.database:DatabaseBackend"
