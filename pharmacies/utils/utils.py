@@ -187,14 +187,17 @@ def check_if_pharmacy_exists(name: str, phone: str) -> bool:
 
 
 def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
+    city: City = City.objects.get(name=city_name)
+    if not city:
+        raise ValueError("City not found")
+
+    pharmacies_to_create = []
+    pharmacies_to_update = []
+
     for item in scraped_data:
         if not check_if_pharmacy_exists(item["name"], item["phone"]):
             coordinates = item["coordinates"]
             location = Point(float(coordinates["lng"]), float(coordinates["lat"]))
-
-            city: City = City.objects.get(name=city_name)
-            if not city:
-                raise ValueError("City not found")
 
             pharmacy = Pharmacy(
                 name=item["name"],
@@ -206,12 +209,15 @@ def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
                 district=item["district"],
                 city_id=city.id,
             )
-            pharmacy.save()
+            pharmacies_to_create.append(pharmacy)
         else:
             pharmacy = Pharmacy.objects.get(name=item["name"], phone=item["phone"])
             pharmacy.duty_start = item["duty_start"]
             pharmacy.duty_end = item["duty_end"]
-            pharmacy.save()
+            pharmacies_to_update.append(pharmacy)
+
+    Pharmacy.objects.bulk_create(pharmacies_to_create, ignore_conflicts=True)
+    Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
 
 
 @lru_cache(maxsize=1024)
@@ -305,7 +311,7 @@ if __name__ == "__main__":
     from pharmacies.utils.eskisehireo_scraper import get_eskisehir_data
 
     eskisehir_data = get_eskisehir_data()
-    add_scraped_data_to_db(eskisehir_data)
+    add_scraped_data_to_db(eskisehir_data, city_name="eskisehir")
 
 
 def round_lat_lng(lat: float, lng: float, precision: int = 6):
