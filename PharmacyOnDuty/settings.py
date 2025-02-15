@@ -43,7 +43,9 @@ INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", " ").split(" ")
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "CSRF_TRUSTED_ORIGINS", "http://localhost:8000"
+).split(" ")
 
 # Application definition
 
@@ -60,6 +62,7 @@ INSTALLED_APPS = [
     "tailwind",
     "django_browser_reload",
     "django.contrib.sitemaps",
+    "django_celery_beat",
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -198,3 +201,8 @@ if DEBUG and REMOTE_DEBUGGING_PORT:
         print(f"Debugger is listening on port {DEBUG_PORT}")
     except Exception as e:
         print(f"debugpy not available: {e}")
+
+# Celery settings
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

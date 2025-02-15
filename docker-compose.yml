@@ -9,6 +9,7 @@ services:
       - .:/app
     depends_on:
       - db
+      - redis
     environment:
       - DB_HOST=db
       - REMOTE_DEBUGGING_PORT=5678
@@ -25,15 +26,25 @@ services:
       - "5432:5432"
     volumes:
       - postgis-data:/var/lib/postgresql/data
-  # osrm:
-  #   platform: linux/amd64
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.osrm
-  #   ports:
-  #     - "5001:5000"
-  #   volumes:
-  #     - ./osrm:/data
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
+    command: celery -A PharmacyOnDuty worker -l info
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
 
 volumes:
   postgis-data:
+  redis_data:

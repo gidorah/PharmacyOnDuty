@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from enum import StrEnum
 from typing import Optional
@@ -5,6 +6,7 @@ from typing import Optional
 from django.contrib.gis.db import models
 from django.contrib.postgres.indexes import GistIndex
 from django.utils import timezone
+from django_celery_beat.models import IntervalSchedule, PeriodicTask
 
 
 class PharmacyStatus(StrEnum):
@@ -114,3 +116,30 @@ class Pharmacy(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ScraperConfig(models.Model):
+    city = models.OneToOneField(City, on_delete=models.CASCADE, primary_key=True)
+    interval = models.PositiveIntegerField(
+        default=24, help_text="Update interval in hours"
+    )
+    last_run = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._update_celery_schedule()
+
+    def _update_celery_schedule(self):
+        schedule, _ = IntervalSchedule.objects.get_or_create(
+            every=self.interval, period=IntervalSchedule.HOURS
+        )
+
+        PeriodicTask.objects.update_or_create(
+            name=f"Scrape {self.city.name}",
+            defaults={
+                "interval": schedule,
+                "task": "pharmacies.tasks.run_scraper",
+                "args": json.dumps([self.city.id]),
+                "enabled": True,
+            },
+        )
