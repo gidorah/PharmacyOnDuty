@@ -57,9 +57,12 @@ Eczanerede is a mobile-first web application designed to help users quickly find
 *   **PostGIS:**  A spatial database extender for PostgreSQL, enabling efficient storage and querying of geographic data.
 *   **GeoDjango:**  Django's built-in framework for handling geographic data and integrating with PostGIS.
 *   **Gunicorn:**  A production-ready WSGI HTTP server for serving the Django application.
-* **requests**: Python HTTP library for making requests.
-* **beautifulsoup4**: Library used for web scraping.
-* **python-dotenv**: Library for managing .env files.
+*   **requests**: Python HTTP library for making requests.
+*   **beautifulsoup4**: Library used for web scraping.
+*   **python-dotenv**: Library for managing .env files.
+*   **Celery:** A distributed task queue for asynchronous and periodic tasks.
+*   **Redis:** An in-memory data structure store, used as a message broker for Celery.
+*   **django-celery-beat:** A Celery Beat scheduler that stores the periodic task schedule in the Django database.
 
 ### Frontend
 
@@ -101,7 +104,8 @@ PharmacyOnDuty/
 │   │   └── commands/     # Custom Django management commands (e.g., create_working_schedule)
 │   ├── migrations/         # Database migrations
 │   ├── models.py           # Database models (City, Pharmacy, WorkingSchedule)
-│   ├── utils/              # Utility functions and web scrapers
+│   ├── tasks.py            # Celery tasks (e.g., run_scraper)
+│   ├── utils/              # Utility functions and web scrapers (run asynchronously with Celery)
 │   │   ├── ankaraeo_scraper.py      # Scraper for Ankara Eczacılar Odası
 │   │   ├── eskisehireo_scraper.py   # Scraper for Eskişehir Eczacılar Odası
 │   │   ├── istanbul_saglik_scraper.py# Scraper for Istanbul İl Sağlık Müdürlüğü
@@ -131,6 +135,7 @@ PharmacyOnDuty/
 │   └── robots.txt
 ├── PharmacyOnDuty/         # Project-level settings and configuration
 │   ├── asgi.py
+│   ├── celery.py           # Celery configuration
 │   ├── settings.py         # Django settings (database, API keys, etc.)
 │   ├── sitemaps.py          # Sitemap configuration
 │   ├── urls.py             # Project-level URL routing
@@ -139,12 +144,14 @@ PharmacyOnDuty/
 ├── docker-compose.prod.yml # Docker Compose configuration (production)
 ├── Dockerfile              # Dockerfile for building the Django container (development)
 ├── dockerfile.prod         # Dockerfile for building the Django container (production)
+├── dockerfile.scraper      # Dockerfile for building the scraper (worker) container (production)
 ├── Dockerfile.postgis      # Dockerfile for building the PostGIS container
 ├── Dockerfile.osrm         # Dockerfile for building the OSRM container (commented out)
 ├── manage.py               # Django management script
 ├── nginx.conf              # Nginx configuration for production
 ├── Procfile                # Procfile for Heroku deployment
 ├── readme.md               # This file
+├── remotedev_nginx.conf.template # Nginx configuration for remote development
 ├── requirements.txt        # Python dependencies
 └── setup-postgis.sh          # Script for setting up PostGIS extensions
 ```
@@ -153,12 +160,19 @@ PharmacyOnDuty/
 
 1.  **Data Collection (Scraping and APIs):**
 
-    *   **Web Scrapers:** The `pharmacies/utils` directory contains custom web scrapers (`ankaraeo_scraper.py`, `eskisehireo_scraper.py`, `istanbul_saglik_scraper.py`) that extract pharmacy data from the respective city pharmacy chamber websites. These scrapers are designed to handle the specific HTML structure of each website. Data is scraped on-demand when the data in the database is considered "old."
+    *   **Web Scrapers:** The `pharmacies/utils` directory contains custom web scrapers (`ankaraeo_scraper.py`, `eskisehireo_scraper.py`, `istanbul_saglik_scraper.py`) that extract pharmacy data from the respective city pharmacy chamber websites. These scrapers are designed to handle the specific HTML structure of each website. Data is scraped on-demand when the data in the database is considered "old." The scrapers are run asynchronously using Celery to improve performance and overcome potential geoblocking issues.
     *   **Google Places API:** The `pharmacy_fetch.py` module utilizes the Google Places API's Nearby Search to find pharmacies near the user's location. This is used primarily when pharmacies are "open" (during regular business hours). Results are cached using `@lru_cache`.
     *   **Google Maps Geocoding API:** Used in `get_city_name_from_location` (within `utils.py`) to determine the user's city based on their latitude and longitude. This helps determine which city's on-duty pharmacy data to retrieve. Results are cached.
     *   **Google Maps Distance Matrix API:** Used to efficiently calculate travel distances and durations between the user's location and multiple pharmacies. This information is used to sort the pharmacy list by proximity. Results are cached.
 
-2.  **Spatial Database (PostGIS):**
+2.  **Asynchronous Task Processing (Celery):**
+
+    * Celery is used to run the web scrapers asynchronously. This improves the responsiveness of the web application and allows for offloading long-running scraping tasks to a separate worker process.
+    * Redis is used as the message broker for Celery, facilitating communication between the Django application and the Celery workers.
+    * The `pharmacies/tasks.py` file defines the Celery tasks, including the `run_scraper` task, which takes a city name as input and executes the corresponding scraper.
+    *    Celery Beat is used for scheduling periodic tasks. The schedule is stored in the database using `django-celery-beat`.
+
+3.  **Spatial Database (PostGIS):**
 
     *   **Data Models:** The `pharmacies/models.py` file defines three core models:
         *   `City`: Represents a city (e.g., "eskisehir," "istanbul," "ankara"). Stores the city name and the timestamp of the last successful data scrape. Includes methods to check pharmacy status and retrieve on-duty pharmacies.
@@ -166,7 +180,7 @@ PharmacyOnDuty/
         *   `Pharmacy`: Stores information about individual pharmacies, including name, location (as a PostGIS `PointField`), address, contact details, and duty start/end times (when applicable). Has a foreign key relationship with the `City` model.
     *   **Geospatial Queries:** GeoDjango and PostGIS enable efficient spatial queries, such as finding pharmacies within a certain radius of the user's location and ordering them by distance.
 
-3.  **API Layer (Django Views):**
+4.  **API Layer (Django Views):**
 
     *   **`get_pharmacy_points` (POST):** This is the primary API endpoint. It accepts the user's latitude and longitude as input.
         *   Determines the user's city using `get_city_name_from_location`.
@@ -177,14 +191,14 @@ PharmacyOnDuty/
         *   Returns a JSON response containing a list of pharmacy data, including location, name, address, status, and travel distance.
     *   **`google_maps_proxy` (GET):** A proxy endpoint for the Google Maps JavaScript API. This is used to avoid exposing the API key directly in the client-side code and to implement caching. It checks the `Referer` header to prevent unauthorized use.
 
-4.  **Frontend Interface (HTML/CSS/JavaScript):**
+5.  **Frontend Interface (HTML/CSS/JavaScript):**
 
     *   **Interactive Map:** The Google Maps JavaScript API is used to display an interactive map centered on the user's location. Markers are added for the user's location and the nearest pharmacies.
     *   **Pharmacy List:** The list of pharmacies is dynamically generated using JavaScript based on the API response. Each pharmacy item displays relevant information and includes a button to get directions.
     *   **Swipeable Bottom Sheet:** The pharmacy list is presented in a bottom sheet that can be expanded or collapsed by clicking or swiping (using Hammer.js).
     *   **Responsive Design:** Tailwind CSS is used to create a responsive layout that adapts to different screen sizes.
 
-5.  **Infrastructure:**
+6.  **Infrastructure:**
 
     *   **Docker and Docker Compose:** The application is containerized using Docker, making it easy to deploy and run consistently across different environments. Docker Compose is used to define and manage the multi-container setup (Django, PostgreSQL/PostGIS, and potentially OSRM – though OSRM is currently commented out).
     *   **Heroku:** The production environment is hosted on Heroku. The `Procfile` specifies the commands to run the web server (Gunicorn) and perform database migrations.
@@ -277,8 +291,13 @@ PharmacyOnDuty/
     For production, use `docker-compose.prod.yml`:
 
     ```bash
-     docker-compose -f docker-compose.prod.yml up --build
+    # On the main server (runs all services except the Celery worker)
+     docker-compose -f docker-compose.prod.yml up --build -d --no-deps django db nginx redis certbot beat
+
+    # On the worker server (runs only the Celery worker)
+     docker-compose -f docker-compose.prod.yml up --build -d --no-deps worker
     ```
+> Note: Before running these commands, ensure that the necessary environment variables are set, especially `DJANGO_SETTINGS_MODULE` for the worker, and that the dockerfiles (`dockerfile.prod` and `Dockerfile.scraper`) are correctly configured.
 
     In both cases, the application will be accessible at `http://localhost:8000`. With Docker, the database will be accessible at `http://localhost:5432`, and debugpy will be accessible at `http://localhost:5678`.
 
