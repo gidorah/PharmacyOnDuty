@@ -76,6 +76,7 @@ services:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
     volumes:
       - .:/app
+    scale: 4
 
   beat:
     build: .
