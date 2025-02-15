@@ -60,6 +60,7 @@ services:
 
   redis:
     image: redis:alpine
+    restart: always
     ports:
       - "6379:6379"
     volumes:
@@ -69,6 +70,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.scraper
+    restart: always
     command: celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
@@ -77,6 +79,7 @@ services:
 
   beat:
     build: .
+    restart: always
     command: celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
@@ -88,3 +91,4 @@ services:
 
 volumes:
   postgis-data:
+  redis_data:
