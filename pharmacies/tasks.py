@@ -18,14 +18,14 @@ def run_scraper(city_name):
         add_scraped_data_to_db(city_data, city_name=city_name)
         print(f"Scraper data for city {city_name} saved to DB")
 
-        all_scrapers = ScraperConfig.objects.all()
-        for scraper in all_scrapers:
-            print(f"Scraper config for city {scraper.description} exists")
+        # all_scrapers = ScraperConfig.objects.all()
+        # for scraper in all_scrapers:
+        #     print(f"Scraper config for city {scraper.description} exists")
 
-        scraper = ScraperConfig.objects.get(description=city_name)
-        print(f"Updating scraper config for city {city_name}")
-        scraper.last_run = timezone.now()
-        scraper.save()
-        print(f"Scraper config for city {city_name} updated")
+        # scraper = ScraperConfig.objects.get(description=city_name)
+        # print(f"Updating scraper config for city {city_name}")
+        # scraper.last_run = timezone.now()
+        # scraper.save()
+        # print(f"Scraper config for city {city_name} updated")
     except Exception as e:
         print(f"Scraper failed: {str(e)}")
