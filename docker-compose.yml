@@ -9,7 +9,7 @@ services:
       - .:/app
     environment:
       - REMOTE_DEBUGGING_PORT=5678
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
 
   db:
     build:
@@ -30,6 +30,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD}
 
   worker:
     build:
@@ -45,7 +46,7 @@ services:
     build: .
     command: celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - redis
       - db

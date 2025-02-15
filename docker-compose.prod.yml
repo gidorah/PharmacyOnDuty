@@ -15,7 +15,7 @@ services:
     environment:
       - DB_HOST=db
       - DJANGO_DEBUG=False
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     command: >
       sh -c "mkdir -p /app/staticfiles &&
              python manage.py collectstatic --noinput &&
@@ -65,6 +65,7 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --requirepass ${REDIS_PASSWORD}
 
   worker:
     build:
@@ -83,7 +84,7 @@ services:
     restart: always
     command: celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - redis
       - db
