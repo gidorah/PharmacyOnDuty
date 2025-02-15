@@ -15,6 +15,7 @@ services:
     environment:
       - DB_HOST=db
       - DJANGO_DEBUG=False
+      - CELERY_BROKER_URL=redis://redis:6379/0
     command: >
       sh -c "mkdir -p /app/staticfiles &&
              python manage.py collectstatic --noinput &&
@@ -56,6 +57,34 @@ services:
     volumes:
       - ./certbot_webroot:/var/www/certbot
       - ./certbot_letsencrypt:/etc/letsencrypt
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
+    command: celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
+    environment:
+      - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
+    volumes:
+      - .:/app
+
+  beat:
+    build: .
+    command: celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - .:/app
 
 volumes:
   postgis-data:
