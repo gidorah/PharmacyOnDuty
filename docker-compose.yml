@@ -7,9 +7,6 @@ services:
       - "5678:5678"
     volumes:
       - .:/app
-    depends_on:
-      - db
-      - redis
     environment:
       - DB_HOST=db
       - REMOTE_DEBUGGING_PORT=5678
@@ -46,7 +43,6 @@ services:
       - .:/app
     depends_on:
       - redis
-      - db
 
 volumes:
   postgis-data:
