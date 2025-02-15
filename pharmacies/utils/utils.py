@@ -50,12 +50,16 @@ def get_nearest_pharmacies_on_duty(
     if data_status is ScrapedDataStatus.OLD:
         try:
             city_data = get_city_data(city_name=city)
+
+            if city_data is None:
+                raise ValueError("City data is Empty")
+
             add_scraped_data_to_db(city_data, city_name=city)
 
             city_object.last_scraped_at = time
             city_object.save()
         except Exception as e:
-            print(f"Error: {e}")
+            raise ValueError(f"Error: {e}")
 
     user_location = Point(
         float(lng), float(lat), srid=4326
@@ -75,6 +79,9 @@ def get_nearest_pharmacies_on_duty(
     near_pharmacies_on_duty = near_pharmacies_on_duty[
         : limit * 2
     ]  # Limit to twice the limit to account for travel distances
+
+    if near_pharmacies_on_duty.count() == 0:
+        raise ValueError("No pharmacies are on duty at this time.")
 
     # Get pharmacies with travel distances.
     pharmacy_data = get_map_points_from_pharmacies(near_pharmacies_on_duty)

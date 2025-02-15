@@ -61,6 +61,9 @@ def _get_coordinates_from_sehirharitasi_url(url: str):
     lat = query_params.get("lat", [""])[0]
     lon = query_params.get("lon", [""])[0]
 
+    if lat is None or lat == "" or lon is None or lon == "":
+        return None
+
     return {"lat": float(lat), "lng": float(lon)}
 
 
@@ -130,6 +133,10 @@ def get_istanbul_data():
             directions_tag = card.find(name="a", class_="btn btn-primary btn-block")
             directions_url = directions_tag["href"] if directions_tag else "N/A"
             coordinates = _get_coordinates_from_sehirharitasi_url(directions_url)
+            if coordinates is None:
+                print(f"Warning: Unable to get coordinates for {pharmacy['name']}")
+                continue
+
             pharmacy["coordinates"] = coordinates
 
             # Set duty times
