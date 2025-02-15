@@ -11,16 +11,16 @@ from pharmacies.utils import (
 
 
 @shared_task
-def run_scraper(city_id):
-    scraper = ScraperConfig.objects.get(city__id=city_id)
-
+def run_scraper(city_name):
     try:
-        if scraper.city.name == "ankara":
+        if city_name == "ankara":
             ankaraeo_scraper.main()
-        elif scraper.city.name == "eskisehir":
+        elif city_name == "eskisehir":
             eskisehireo_scraper.main()
-        elif scraper.city.name == "istanbul":
+        elif city_name == "istanbul":
             istanbul_saglik_scraper.main()
+
+        scraper = ScraperConfig.objects.get(city__name=city_name)
 
         scraper.last_run = timezone.now()
         scraper.save()

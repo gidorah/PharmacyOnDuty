@@ -34,5 +34,5 @@ class ScraperConfigAdmin(admin.ModelAdmin):
     @admin.action(description="Run selected scrapers now")
     def run_selected_scrapers(self, request, queryset):
         for scraper in queryset:
-            run_scraper.delay(scraper.city.id)
+            run_scraper.delay(scraper.city.name)
         self.message_user(request, f"Queued {queryset.count()} scrapers for execution")
