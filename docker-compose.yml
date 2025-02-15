@@ -9,6 +9,7 @@ services:
       - .:/app
     environment:
       - REMOTE_DEBUGGING_PORT=5678
+      - CELERY_BROKER_URL=redis://redis:6379/0
 
   db:
     build:
@@ -36,12 +37,9 @@ services:
       dockerfile: Dockerfile.scraper
     command: celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
     volumes:
       - .:/app
-    depends_on:
-      - redis
 
 volumes:
   postgis-data:
