@@ -138,11 +138,12 @@ class ScraperConfig(models.Model):
         )
 
         PeriodicTask.objects.update_or_create(
-            name=f"Scrape {self.city.name}",
+            name=f"Scrape {self.city.name} ({self.id})",  # Unique name
             defaults={
                 "interval": schedule,
                 "task": "pharmacies.tasks.run_scraper",
-                "args": json.dumps([self.city.id]),
+                "args": json.dumps([self.city.name]),
                 "enabled": True,
+                "expires": timezone.now() + timezone.timedelta(hours=1),
             },
         )

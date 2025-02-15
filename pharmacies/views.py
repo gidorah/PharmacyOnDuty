@@ -16,7 +16,7 @@ from pharmacies.utils import (
     round_lat_lng,
 )
 
-TEST_TIME = timezone.now() + timedelta(hours=2)
+TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
 
 
