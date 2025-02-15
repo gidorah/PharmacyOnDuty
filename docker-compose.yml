@@ -38,9 +38,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.scraper
-    command: celery -A PharmacyOnDuty worker -l info
+    command: celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
+      - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
+    volumes:
+      - .:/app
     depends_on:
       - redis
       - db

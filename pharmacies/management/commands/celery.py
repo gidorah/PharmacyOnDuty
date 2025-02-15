@@ -1,10 +1,12 @@
-from django.core.management.base import BaseCommand
+from __future__ import absolute_import
 
+import os
 
-class Command(BaseCommand):
-    help = "Start celery worker with production settings"
+from celery import Celery
+from django.conf import settings
 
-    def handle(self, *args, **options):
-        import subprocess
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "PharmacyOnDuty.settings")
 
-        subprocess.run(["celery", "-A", "PharmacyOnDuty", "worker", "-l", "info"])
+app = Celery("PharmacyOnDuty")
+app.config_from_object("django.conf:settings", namespace="CELERY")
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
