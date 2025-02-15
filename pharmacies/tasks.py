@@ -4,21 +4,16 @@ from django.utils import timezone
 
 from pharmacies.models import ScraperConfig
 from pharmacies.utils import (
-    ankaraeo_scraper,
-    eskisehireo_scraper,
-    istanbul_saglik_scraper,
+    add_scraped_data_to_db,
+    get_city_data,
 )
 
 
 @shared_task
 def run_scraper(city_name):
     try:
-        if city_name == "ankara":
-            ankaraeo_scraper.main()
-        elif city_name == "eskisehir":
-            eskisehireo_scraper.main()
-        elif city_name == "istanbul":
-            istanbul_saglik_scraper.main()
+        city_data = get_city_data(city_name=city_name)
+        add_scraped_data_to_db(city_data, city_name=city_name)
 
         scraper = ScraperConfig.objects.get(city__name=city_name)
 

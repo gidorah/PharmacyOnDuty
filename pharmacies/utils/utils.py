@@ -49,7 +49,7 @@ def get_nearest_pharmacies_on_duty(
     data_status = check_scraped_data_age(city, time=time)
     if data_status is ScrapedDataStatus.OLD:
         try:
-            city_data = _get_city_data(city_name=city)
+            city_data = get_city_data(city_name=city)
             add_scraped_data_to_db(city_data, city_name=city)
 
             city_object.last_scraped_at = time
@@ -161,7 +161,7 @@ def check_scraped_data_age(
     return ScrapedDataStatus.OLD
 
 
-def _get_city_data(city_name: str):
+def get_city_data(city_name: str):
     if city_name == "eskisehir":
         return get_eskisehir_data()
 
