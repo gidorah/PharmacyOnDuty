@@ -43,6 +43,9 @@ class City(models.Model):
             raise ValueError("Unable to retrieve city status.")
         return status
 
+    def __str__(self):
+        return self.name
+
 
 class WorkingSchedule(models.Model):
     city = models.OneToOneField(
