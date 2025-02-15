@@ -11,8 +11,8 @@ from pharmacies.utils import (
 
 
 @shared_task
-def run_scraper(scraper_id):
-    scraper = ScraperConfig.objects.get(id=scraper_id)
+def run_scraper(city_id):
+    scraper = ScraperConfig.objects.get(city__id=city_id)
 
     try:
         if scraper.city.name == "ankara":
