@@ -10,6 +10,7 @@ services:
     environment:
       - REMOTE_DEBUGGING_PORT=5678
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - DB_HOST=db
 
   db:
     build:
@@ -39,6 +40,7 @@ services:
     command: celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     volumes:
       - .:/app
 
