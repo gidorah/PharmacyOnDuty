@@ -220,6 +220,22 @@ def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
     Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
 
 
+def extract_city_name_from_google_maps_response(data):
+    if data["status"] != "OK" or not data["results"]:
+        raise ValueError("Unable to retrieve city name: status is not OK")
+
+    compound_code = data["plus_code"].get("compound_code")
+
+    if compound_code is not None:
+        return compound_code
+
+    for component in data["results"][0]["address_components"]:
+        if "administrative_area_level_1" in component["types"]:
+            return component["long_name"]
+
+    raise ValueError("Unknown city")
+
+
 @lru_cache(maxsize=1024)
 def get_city_name_from_location(lat: float, lng: float) -> str:
     """Retrieve city name using Google Maps Geocoding API"""
@@ -232,19 +248,16 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
     if data["status"] != "OK" or not data["results"]:
         raise ValueError("Unable to retrieve city name: status is not OK")
 
-    compound_code: str = data["plus_code"]["compound_code"]
-
-    if compound_code is None:
-        raise ValueError("Unable to retrieve city name: compound_code is None")
+    city_data = extract_city_name_from_google_maps_response(data)
 
     # TODO: find and handle cities via DB
-    if "İstanbul" in compound_code:
+    if "İstanbul" in city_data:
         return "istanbul"
 
-    if "Eskişehir" in compound_code:
+    if "Eskişehir" in city_data:
         return "eskisehir"
 
-    if "Ankara" in compound_code:
+    if "Ankara" in city_data:
         return "ankara"
 
     raise ValueError("Unknown city")
