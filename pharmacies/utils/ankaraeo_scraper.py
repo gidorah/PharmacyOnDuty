@@ -8,7 +8,7 @@ def _get_duty_times():
     current_time = timezone.now()
 
     if (
-        current_time.weekday == 6 and current_time.hour >= 6
+        current_time.weekday() == 6 and current_time.hour >= 6
     ):  # If it's Sunday, pharmacies are open all day until 9am tomorrow
         duty_start = current_time.replace(hour=6, minute=0, second=0, microsecond=0)
         duty_end = current_time.replace(
