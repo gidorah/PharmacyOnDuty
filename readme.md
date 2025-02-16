@@ -242,7 +242,7 @@ PharmacyOnDuty/
 
 4.  **Set Environment Variables:**
 
-   Create a `.env` file in the project root directory (or set these variables directly in your environment, for example in `docker-compose.yml` for Docker-based setups). See the [Environment Variables](#environment-variables) section for details.
+   Create a `.env` file in the project root directory (or set these variables directly in your environment, for example in `docker-compose.yml` for Docker-based setups). See the [Environment Variables](#environment-variables) section for details.  Make sure to set `REDIS_PASSWORD` to a secure password.
 
 5. **Database Setup:**
 
@@ -580,6 +580,7 @@ The following environment variables are used to configure the application:
 | `DJANGO_ALLOWED_HOSTS`   | A list of allowed hostnames for the Django application. Add your domain in production.                                                                                                                                                 | `localhost`   | Yes      |
 | `ALLOWED_REFERERS`        | A list of allowed referrers for the Google Maps proxy. Add your domain in production.                                                                                                                                                  |               | Yes      |
 | `REMOTE_DEBUGGING_PORT` | The port number for remote debugging with `debugpy`.                                                                                                                                                                                    | `5678`        | No       |
+| `REDIS_PASSWORD`          | The password for Redis. Required for both the Redis server and Celery to connect.                                                                                                                                                  |               | Yes      |
 
 ## Testing
 
