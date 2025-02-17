@@ -1,3 +1,8 @@
+# Eczanerede (Pharmacy Locator)
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 Eczanerede is a mobile-first web application designed to help users quickly find open and on-duty pharmacies in Turkish cities. It currently supports Eskişehir, Istanbul, and Ankara, with plans for expansion. The application provides real-time status updates, location-based search, interactive maps with turn-by-turn directions, and estimated travel distances, all within a user-friendly, responsive interface.
 
 **Live Website:** [eczanerede.com](https://eczanerede.com)
@@ -8,28 +13,29 @@ Eczanerede is a mobile-first web application designed to help users quickly find
 
 ## Table of Contents
 
-- [Screenshots](#screenshots)
-- [Table of Contents](#table-of-contents)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-  - [Backend](#backend)
-  - [Frontend](#frontend)
-  - [Database](#database)
-  - [DevOps and Infrastructure](#devops-and-infrastructure)
-  - [Development Tools](#development-tools)
-- [Architecture](#architecture)
-  - [Project Structure](#project-structure)
-  - [Key Components and Workflow](#key-components-and-workflow)
-- [Setup and Installation](#setup-and-installation)
-  - [Prerequisites](#prerequisites)
-  - [Steps](#steps)
-  - [Remote Development Setup (docker-compose.remotedev.yml)](#remote-development-setup-docker-composeremotedevyml)
-- [Production Deployment (HTTPS with Docker, Nginx, and Let’s Encrypt)](#production-deployment-https-with-docker-nginx-and-lets-encrypt)
-- [Environment Variables](#environment-variables)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [Eczanerede (Pharmacy Locator)](#eczanerede-pharmacy-locator)
+  - [Screenshots](#screenshots)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Tech Stack](#tech-stack)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
+    - [Database](#database)
+    - [DevOps and Infrastructure](#devops-and-infrastructure)
+    - [Development Tools](#development-tools)
+  - [Architecture](#architecture)
+    - [Project Structure](#project-structure)
+    - [Key Components and Workflow](#key-components-and-workflow)
+  - [Setup and Installation](#setup-and-installation)
+    - [Prerequisites](#prerequisites)
+    - [Steps](#steps)
+    - [Remote Development Setup (docker-compose.remotedev.yml)](#remote-development-setup-docker-composeremotedevyml)
+  - [Production Deployment (HTTPS with Docker, Nginx, and Let’s Encrypt)](#production-deployment-https-with-docker-nginx-and-lets-encrypt)
+  - [Environment Variables](#environment-variables)
+  - [Testing](#testing)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Contact](#contact)
 
 ## Features
 
