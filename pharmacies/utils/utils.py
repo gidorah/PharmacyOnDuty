@@ -211,7 +211,11 @@ def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
             )
             pharmacies_to_create.append(pharmacy)
         else:
-            pharmacy = Pharmacy.objects.get(name=item["name"], phone=item["phone"])
+            pharmacy = (
+                Pharmacy.objects.filter(name=item["name"])
+                .filter(phone=item["phone"])
+                .first()
+            )
             pharmacy.duty_start = item["duty_start"]
             pharmacy.duty_end = item["duty_end"]
             pharmacies_to_update.append(pharmacy)
