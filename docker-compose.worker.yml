@@ -1,0 +1,13 @@
+services:
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
+    restart: always
+    command: celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
+    environment:
+      - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
+    volumes:
+      - .:/app
+    scale: 4
