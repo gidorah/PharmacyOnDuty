@@ -6,7 +6,7 @@ certifi==2024.12.14
 charset-normalizer==3.4.1
 click==8.1.8
 cloudscraper==1.2.71
-debugpy==1.8.11
+debugpy==1.8.17
 Django==5.1.7
 django-debug-toolbar==4.4.6
 gunicorn==23.0.0
