@@ -67,18 +67,6 @@ wheels = [
 ]
 
 [[package]]
-name = "bs4"
-version = "0.0.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "beautifulsoup4" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/aa/4acaf814ff901145da37332e05bb510452ebed97bc9602695059dd46ef39/bs4-0.0.2.tar.gz", hash = "sha256:a48685c58f50fe127722417bae83fe6badf500d54b55f7e39ffe43b798653925", size = 698, upload-time = "2024-01-17T18:15:47.371Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/bb/bf7aab772a159614954d84aa832c129624ba6c32faa559dfb200a534e50b/bs4-0.0.2-py2.py3-none-any.whl", hash = "sha256:abf8742c0805ef7f662dce4b51cca104cffe52b835238afc169142ab9b3fbccc", size = 1189, upload-time = "2024-01-17T18:15:48.613Z" },
-]
-
-[[package]]
 name = "celery"
 version = "5.5.3"
 source = { registry = "https://pypi.org/simple" }
@@ -492,19 +480,15 @@ source = { virtual = "." }
 dependencies = [
     { name = "asgiref" },
     { name = "beautifulsoup4" },
-    { name = "black" },
-    { name = "bs4" },
     { name = "celery" },
     { name = "certifi" },
     { name = "charset-normalizer" },
     { name = "click" },
-    { name = "debugpy" },
     { name = "django" },
     { name = "django-browser-reload" },
     { name = "django-celery-beat" },
     { name = "django-celery-results" },
     { name = "django-redis" },
-    { name = "django-stubs", extra = ["compatible-mypy"] },
     { name = "django-tailwind" },
     { name = "gunicorn" },
     { name = "idna" },
@@ -517,17 +501,17 @@ dependencies = [
     { name = "python-dotenv" },
     { name = "redis" },
     { name = "requests" },
-    { name = "ruff" },
     { name = "sentry-sdk" },
     { name = "soupsieve" },
     { name = "sqlparse" },
-    { name = "types-requests" },
     { name = "urllib3" },
     { name = "whitenoise" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "black" },
+    { name = "debugpy" },
     { name = "django-stubs", extra = ["compatible-mypy"] },
     { name = "pre-commit" },
     { name = "ruff" },
@@ -538,19 +522,15 @@ dev = [
 requires-dist = [
     { name = "asgiref", specifier = ">=3.9.2" },
     { name = "beautifulsoup4", specifier = ">=4.14.2" },
-    { name = "black", specifier = ">=25.9.0" },
-    { name = "bs4", specifier = ">=0.0.2" },
     { name = "celery", specifier = ">=5.5.3" },
     { name = "certifi", specifier = ">=2025.8.3" },
     { name = "charset-normalizer", specifier = ">=3.4.3" },
     { name = "click", specifier = ">=8.3.0" },
-    { name = "debugpy", specifier = ">=1.8.17" },
     { name = "django", specifier = ">=5.2.7" },
     { name = "django-browser-reload", specifier = ">=1.21.0" },
     { name = "django-celery-beat", specifier = ">=2.8.1" },
     { name = "django-celery-results", specifier = ">=2.6.0" },
     { name = "django-redis", specifier = ">=6.0.0" },
-    { name = "django-stubs", extras = ["compatible-mypy"], specifier = ">=5.2.5" },
     { name = "django-tailwind", specifier = ">=4.2.0" },
     { name = "gunicorn", specifier = ">=23.0.0" },
     { name = "idna", specifier = ">=3.10" },
@@ -563,17 +543,17 @@ requires-dist = [
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "redis", specifier = ">=6.4.0" },
     { name = "requests", specifier = ">=2.32.5" },
-    { name = "ruff", specifier = ">=0.13.3" },
     { name = "sentry-sdk", specifier = ">=2.39.0" },
     { name = "soupsieve", specifier = ">=2.8" },
     { name = "sqlparse", specifier = ">=0.5.3" },
-    { name = "types-requests", specifier = ">=2.32.4.20250913" },
     { name = "urllib3", specifier = ">=2.5.0" },
     { name = "whitenoise", specifier = ">=6.11.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "black", specifier = ">=25.9.0" },
+    { name = "debugpy", specifier = ">=1.8.17" },
     { name = "django-stubs", extras = ["compatible-mypy"], specifier = ">=5.2.5" },
     { name = "pre-commit", specifier = ">=4.3.0" },
     { name = "ruff", specifier = ">=0.13.3" },
