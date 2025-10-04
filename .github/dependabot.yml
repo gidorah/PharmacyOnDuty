@@ -1,8 +1,18 @@
 version: 2
 updates:
-  # Monitor Python dependencies
+  # Monitor uv dependencies (pyproject.toml and uv.lock)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
+      time: "09:00"
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    # Update both direct and indirect dependencies
+    allow:
+      - dependency-type: "all"
+    # Ensure uv.lock is updated when pyproject.toml changes
+    versioning-strategy: "auto"
