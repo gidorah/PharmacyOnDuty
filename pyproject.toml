@@ -56,6 +56,7 @@ django_settings_module = "PharmacyOnDuty.settings"
 [dependency-groups]
 dev = [
     "django-stubs[compatible-mypy]>=5.2.5",
+    "pre-commit>=4.3.0",
     "ruff>=0.13.3",
     "types-requests>=2.32.4.20250913",
 ]
