@@ -22,7 +22,7 @@ requests==2.32.3
 requests-toolbelt==1.0.0
 soupsieve==2.6
 sqlparse==0.5.3
-urllib3==2.3.0
+urllib3==2.5.0
 sentry-sdk==2.20.0
 whitenoise==6.8.2
 django-tailwind==3.8.0
