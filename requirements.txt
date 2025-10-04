@@ -30,5 +30,5 @@ django-browser-reload==1.17.0
 celery==5.4.0
 redis==5.2.1
 django-celery-beat==2.7.0
-django-redis==5.4.0
+django-redis==6.0.0
 django-celery-results==2.5.1
