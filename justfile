@@ -69,8 +69,15 @@ clean:
     docker-compose down -v
     docker-compose -f docker-compose.prod.yml down -v
     docker-compose -f docker-compose.worker.yml down -v
-    docker system prune -f
-    @echo "Docker containers and volumes cleaned"
+    @echo "WARNING: This will remove unused Docker containers, images, and networks."
+    @echo "Images older than 24 hours will be removed. Recent images will be kept."
+    @echo "This operation is less destructive than 'docker system prune -f'."
+    @echo ""
+    @printf "Continue with cleanup? [y/N] " && read -r confirm && [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ] || exit 1
+    docker container prune -f
+    docker image prune --filter "until=24h" -f
+    docker network prune -f
+    @echo "Docker containers, old images, and networks cleaned"
 
 ps:
     docker-compose ps
