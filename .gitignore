@@ -29,6 +29,7 @@ staticfiles/
 
 # Virtual environment
 venv/
+.venv/
 .env/
 env/
 ENV/

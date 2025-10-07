@@ -18,8 +18,8 @@ services:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     command: >
       sh -c "mkdir -p /app/staticfiles &&
-             python manage.py collectstatic --noinput &&
-             gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
+             uv run python manage.py collectstatic --noinput &&
+             uv run gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
 
   db:
     build:
@@ -59,7 +59,7 @@ services:
   beat:
     build: .
     restart: always
-    command: celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:

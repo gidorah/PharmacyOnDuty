@@ -4,20 +4,26 @@ FROM python:3.13-slim
 # Set the working directory
 WORKDIR /app
 
-# Copy project files to the container
-COPY . /app
-
-# Install dependencies
-RUN pip install --upgrade pip && pip install -r requirements.txt
-
 # Install system dependencies for geospatial libraries
 RUN apt-get update && apt-get install -y \
-    binutils libproj-dev gdal-bin \
+    binutils libproj-dev gdal-bin curl \
     && apt-get clean
+
+# Install UV
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies using UV
+RUN uv sync --frozen --no-dev
+
+# Copy project files to the container
+COPY . /app
 
 
 # Expose the port Django will run on
 EXPOSE 8000
 
 # # Run the Django development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]

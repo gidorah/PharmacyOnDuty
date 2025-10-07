@@ -86,19 +86,19 @@ ps:
 
 # Django management commands (dev)
 migrate:
-    docker-compose exec django python manage.py migrate
+    docker-compose exec django uv run python manage.py migrate
 
 makemigrations:
-    docker-compose exec django python manage.py makemigrations
+    docker-compose exec django uv run python manage.py makemigrations
 
 collectstatic:
-    docker-compose exec django python manage.py collectstatic --noinput
+    docker-compose exec django uv run python manage.py collectstatic --noinput
 
 shell:
-    docker-compose exec django python manage.py shell
+    docker-compose exec django uv run python manage.py shell
 
 test:
-    docker-compose exec django python manage.py test
+    docker-compose exec django uv run python manage.py test
 
 # Full development setup
 dev-setup: dev-up migrate

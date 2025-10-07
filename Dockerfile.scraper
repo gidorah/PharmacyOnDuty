@@ -4,17 +4,21 @@ ENV PYTHONUNBUFFERED 1
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-# Install dependencies
-RUN pip install --upgrade pip && pip install -r requirements.txt
-
 # Install system dependencies for geospatial libraries
 RUN apt-get update && apt-get install -y \
-    binutils libproj-dev gdal-bin \
+    binutils libproj-dev gdal-bin curl \
     && apt-get clean
 
-CMD ["celery", "-A", "PharmacyOnDuty", "worker", "-l", "info"]
+# Install UV
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies using UV (production - no dev dependencies)
+RUN uv sync --frozen --no-dev
+
+# Copy project files
+COPY . .
+
+CMD ["uv", "run", "celery", "-A", "PharmacyOnDuty", "worker", "-l", "info"]
