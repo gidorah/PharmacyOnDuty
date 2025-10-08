@@ -19,7 +19,6 @@ dependencies = [
     "django-tailwind>=4.2.0",
     "gunicorn>=23.0.0",
     "idna>=3.10",
-    "mypy-extensions>=1.1.0",
     "packaging>=25.0",
     "pathspec>=0.12.1",
     "platformdirs>=4.4.0",
@@ -35,6 +34,7 @@ dependencies = [
     "whitenoise>=6.11.0",
 ]
 
+
 [tool.mypy]
 python_version = "3.13"
 strict = true
@@ -46,13 +46,3 @@ disallow_untyped_decorators = false
 [tool.django-stubs]
 django_settings_module = "PharmacyOnDuty.settings"
 
-
-[dependency-groups]
-dev = [
-    "black>=25.9.0",
-    "debugpy>=1.8.17",
-    "django-stubs[compatible-mypy]>=5.2.5",
-    "pre-commit>=4.3.0",
-    "ruff>=0.13.3",
-    "types-requests>=2.32.4.20250913",
-]
