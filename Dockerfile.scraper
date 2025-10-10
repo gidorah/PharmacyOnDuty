@@ -21,4 +21,4 @@ RUN uv sync --frozen --no-dev
 # Copy project files
 COPY . .
 
-CMD ["uv", "run", "celery", "-A", "PharmacyOnDuty", "worker", "-l", "info"]
+# CMD ["uv", "run", "celery", "-A", "PharmacyOnDuty", "worker", "-l", "info"]
