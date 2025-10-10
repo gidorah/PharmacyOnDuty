@@ -1,0 +1,32 @@
+{
+    "python.analysis.include": [
+        "./"
+    ],
+    "ruff.lineLength": 88,
+    "python.testing.pytestArgs": [
+        "pharmacies"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "mypy-type-checker.args": [
+        "",
+        ""
+    ],
+    "mypy.debugLogging": false,
+    "mypy.configFile": "pyproject.toml",
+    "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
+    "mypy.mypyExecutable": "${workspaceFolder}/.venv/bin/mypy",
+    "mypy.enabled": true,
+    "python.analysis.inlayHints.callArgumentNames": "all",
+    "notebook.defaultFormatter": "charliermarsh.ruff",
+    "python.analysis.enablePytestSupport": true,
+    "python.analysis.reportExtraTelemetry": false,
+    "python.languageServer": "Pylance",
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.ignore": [
+        "**"
+    ],
+    "ruff.enable": true
+}

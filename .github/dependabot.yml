@@ -1,6 +1,7 @@
 version: 2
 updates:
-  # Monitor uv dependencies (pyproject.toml and uv.lock)
+  # Monitor Python dependencies managed by uv (pyproject.toml)
+  # Note: Dependabot uses pip ecosystem to read pyproject.toml until native uv support is added
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -11,8 +12,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    # Update both direct and indirect dependencies
     allow:
       - dependency-type: "all"
-    # Ensure uv.lock is updated when pyproject.toml changes
     versioning-strategy: "auto"

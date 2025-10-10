@@ -27,8 +27,12 @@ staticfiles/
 # VS Code specific files
 .vscode/
 
+# Zed specific files
+.zed/
+
 # Virtual environment
 venv/
+.venv/
 .env/
 env/
 ENV/

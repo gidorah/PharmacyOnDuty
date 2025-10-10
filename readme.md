@@ -155,9 +155,10 @@ PharmacyOnDuty/
 ├── manage.py               # Django management script
 ├── nginx.conf              # Nginx configuration for production
 ├── Procfile                # Procfile for Heroku deployment
+├── pyproject.toml          # Python dependencies and project metadata (uv)
+├── uv.lock                 # Locked dependency versions (uv)
 ├── readme.md               # This file
 ├── remotedev_nginx.conf.template # Nginx configuration for remote development
-├── requirements.txt        # Python dependencies
 └── setup-postgis.sh          # Script for setting up PostGIS extensions
 ```
 
@@ -217,7 +218,7 @@ PharmacyOnDuty/
 
 *   **Git:** For cloning the repository.
 *   **Python 3.13:** The required Python version.
-*   **pip:** Python package installer.
+*   **uv:** Modern Python package installer and environment manager ([installation guide](https://docs.astral.sh/uv/getting-started/installation/)).
 *   **Docker (and Docker Compose):** For running the application in containers (recommended).
 *   **A Google Maps API Key:** Required for using the Google Maps services.
 *   **A Sentry DSN (Optional):** Required for using Sentry.
@@ -231,19 +232,23 @@ PharmacyOnDuty/
     cd pharmacyonduty
     ```
 
-2.  **Create and Activate a Virtual Environment (Recommended):**
+2.  **Install uv (if not already installed):**
 
     ```bash
-    python3.13 -m venv .venv
-    source .venv/bin/activate  # On Linux/macOS
-    .venv\Scripts\activate    # On Windows
+    # On macOS/Linux
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+
+    # On Windows
+    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
     ```
 
 3.  **Install Dependencies:**
 
     ```bash
-    pip install -r requirements.txt
+    uv sync
     ```
+
+    This will create a virtual environment in `.venv` and install all dependencies from `pyproject.toml`.
 
 4.  **Set Environment Variables:**
 
@@ -261,13 +266,13 @@ PharmacyOnDuty/
 6.  **Apply Database Migrations:**
 
     ```bash
-    python manage.py migrate
+    uv run python manage.py migrate
     ```
 
 7.  **Create a Superuser (Optional):**
 
     ```bash
-    python manage.py createsuperuser
+    uv run python manage.py createsuperuser
     ```
 
 8.  **Add Cities and Working Schedules:**
@@ -275,7 +280,7 @@ PharmacyOnDuty/
     You'll need to populate the `City` and `WorkingSchedule` models with data for the supported cities. You can do this via the Django admin interface (after creating a superuser) or by using a custom management command (like the provided `create_working_schedule.py` example, which you'd need to adapt/extend for other cities). For example, to use `create_working_schedule.py`, run:
 
     ```bash
-    python manage.py create_working_schedule
+    uv run python manage.py create_working_schedule
     ```
 
 9. **Run the Development Server:**
@@ -283,7 +288,7 @@ PharmacyOnDuty/
     *   **Without Docker:**
 
         ```bash
-        python manage.py runserver 0.0.0.0:8000
+        uv run python manage.py runserver 0.0.0.0:8000
         ```
 
     *   **With Docker Compose (Recommended):**
@@ -375,8 +380,8 @@ This section explains how to run the application in a production setting using d
           - DB_HOST=db
           - DJANGO_DEBUG=False
         command: >
-          sh -c "python manage.py collectstatic --noinput &&
-                 gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
+          sh -c "uv run python manage.py collectstatic --noinput &&
+                 uv run gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
 
       db:
         build:
@@ -592,7 +597,7 @@ The following environment variables are used to configure the application:
 To run the tests, use the following command:
 
 ```bash
-python manage.py test
+uv run python manage.py test
 ```
 
 Currently, the test suite is minimal. Contributions to expand test coverage are highly encouraged.  When adding new features or fixing bugs, please include corresponding tests.
@@ -610,7 +615,7 @@ Contributions are welcome! Here's how you can contribute:
 Please follow these guidelines:
 
 *   **Code Style:** Follow PEP 8 for Python code. Use Black for automatic code formatting.
-*   **Testing:** Include tests for new features or bug fixes. Run tests with `python manage.py test`.
+*   **Testing:** Include tests for new features or bug fixes. Run tests with `uv run python manage.py test`.
 *   **Commit Messages:** Write clear and concise commit messages. Explain the purpose of your changes.
 *   **Pull Requests:** Keep your pull requests focused on a single feature or bug fix. Provide a clear description of the changes and any relevant context.
 
