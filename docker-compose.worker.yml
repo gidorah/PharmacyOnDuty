@@ -10,5 +10,3 @@ services:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
     volumes:
       - .:/app
-    deploy:
-      replicas: 4
