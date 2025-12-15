@@ -22,6 +22,7 @@ dependencies = [
     "packaging>=25.0",
     "pathspec>=0.12.1",
     "platformdirs>=4.4.0",
+    "pre-commit>=4.5.0",
     "psycopg2-binary>=2.9.10",
     "pyparsing>=3.2.5",
     "python-dotenv>=1.1.1",

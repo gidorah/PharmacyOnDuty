@@ -1,10 +1,12 @@
 from datetime import datetime
+from typing import Any
 
 import requests
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 
 
-def _get_district_from_name(pharmacy_name):
+def _get_district_from_name(pharmacy_name: str) -> str:
     return pharmacy_name.split(" ")[-1]
 
 
@@ -15,11 +17,11 @@ def _get_duty_dates(operation_times: str) -> tuple[datetime, datetime]:
     return start_date, end_date
 
 
-def get_eskisehir_data() -> list[dict]:
+def get_eskisehir_data() -> list[dict[str, Any]]:
     from pharmacies.utils import get_coordinates_from_google_maps_url
 
     url = "https://www.eskisehireo.org.tr/eskisehir-nobetci-eczaneler"
-    response = requests.get(url)
+    response = requests.get(url, timeout=60)
     soup = BeautifulSoup(response.text, "html.parser")
     pharmacies = soup.find_all("div", class_="nobetci")
 
@@ -27,7 +29,12 @@ def get_eskisehir_data() -> list[dict]:
 
     for pharmacy in pharmacies:
         # Extract name
-        name = pharmacy.find("h4", class_="text-danger").text.strip()
+        h4_tag: Tag | None = pharmacy.find("h4", class_="text-danger")
+
+        if h4_tag is None:
+            continue
+
+        name = h4_tag.text.strip()
 
         district = _get_district_from_name(name) if name else None
 

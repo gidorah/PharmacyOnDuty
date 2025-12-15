@@ -1,7 +1,7 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Optional
+from typing import Any, Optional
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.indexes import GistIndex
@@ -23,7 +23,7 @@ class City(models.Model):
         verbose_name = "City"
         verbose_name_plural = "Cities"
 
-    def get_pharmacies_on_duty(self, current_time: datetime | None = None) -> list:
+    def get_pharmacies_on_duty(self, current_time: datetime | None = None) -> list[Any]:
         """Return pharmacies that are on duty at the given time."""
         current_time = current_time or timezone.now()
         pharmacies_on_duty = list(
@@ -43,7 +43,7 @@ class City(models.Model):
             raise ValueError("Unable to retrieve city status.")
         return status
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -83,7 +83,7 @@ class WorkingSchedule(models.Model):
             else PharmacyStatus.CLOSED
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Schedule for {self.city.name}"
 
 
@@ -117,7 +117,7 @@ class Pharmacy(models.Model):
             models.Index(fields=["duty_end"]),
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -128,11 +128,11 @@ class ScraperConfig(models.Model):
     )
     last_run = models.DateTimeField(null=True, blank=True)
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         super().save(*args, **kwargs)
         self._update_celery_schedule()
 
-    def _update_celery_schedule(self):
+    def _update_celery_schedule(self) -> None:
         schedule, _ = IntervalSchedule.objects.get_or_create(
             every=self.interval, period=IntervalSchedule.HOURS
         )
@@ -144,6 +144,6 @@ class ScraperConfig(models.Model):
                 "task": "pharmacies.tasks.run_scraper",
                 "args": json.dumps([self.city.name]),
                 "enabled": True,
-                "expires": timezone.now() + timezone.timedelta(hours=1),
+                "expires": timezone.now() + timedelta(hours=1),
             },
         )
