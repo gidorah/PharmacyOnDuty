@@ -14,7 +14,7 @@ from pharmacies.utils import get_ankara_data, get_eskisehir_data, get_istanbul_d
 from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 
 
-def get_nearest_pharmacies_open(lat: float, lng: float, limit: int = 5):
+def get_nearest_pharmacies_open(lat: float, lng: float, limit: int = 5) -> list:
     """Get pharmacies that are open"""
     fetched_data = fetch_nearest_pharmacies(lat, lng, limit=limit)
     pharmacy_data = get_map_points_from_fetched_data(fetched_data)

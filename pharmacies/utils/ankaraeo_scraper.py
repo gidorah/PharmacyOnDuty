@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+from typing import Any
 
 import requests
 from django.utils import timezone
 
 
-def _get_duty_times():
+def _get_duty_times() -> tuple[datetime, datetime]:
     current_time = timezone.now()
 
     if (
@@ -29,7 +30,7 @@ def _get_duty_times():
     return duty_start, duty_end
 
 
-def get_ankara_data():
+def get_ankara_data() -> list[Any]:
     """
     Scrape pharmacy data from the Ankara Eczacılar Odası website.
     Returns a list of dictionaries with name, address, district, phone, coordinates.
