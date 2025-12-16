@@ -31,44 +31,44 @@ dev-redis:
  
 # Production commands
 prod-up:
-    docker-compose -f docker-compose.prod.yml up -d
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . up -d
     @echo "Production environment started"
  
 prod-down:
-    docker-compose -f docker-compose.prod.yml down
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . down
     @echo "Production environment stopped"
  
 prod-logs:
-    docker-compose -f docker-compose.prod.yml logs -f
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . logs -f
  
 prod-rebuild:
-    docker-compose -f docker-compose.prod.yml up --build -d
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . up --build -d
     @echo "Production environment rebuilt and started"
  
 prod-django:
-    docker-compose -f docker-compose.prod.yml exec django bash
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . exec django bash
  
 # Worker commands
 worker-up:
-    docker-compose -f docker-compose.worker.yml up -d
+    docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . up -d
     @echo "Worker environment started"
  
 worker-down:
-    docker-compose -f docker-compose.worker.yml down
+    docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . down
     @echo "Worker environment stopped"
  
 worker-logs:
-    docker-compose -f docker-compose.worker.yml logs -f
+    docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . logs -f
  
 worker-rebuild:
-    docker-compose -f docker-compose.worker.yml up --build -d
+    docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . up --build -d
     @echo "Worker environment rebuilt and started"
  
 # Utility commands
 clean:
     docker-compose -f docker/dev/docker-compose.yml --project-directory . down -v
-    docker-compose -f docker-compose.prod.yml down -v
-    docker-compose -f docker-compose.worker.yml down -v
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . down -v
+    docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . down -v
     @echo "WARNING: This will remove unused Docker containers, images, and networks."
     @echo "Images older than 24 hours will be removed. Recent images will be kept."
     @echo "This operation is less destructive than 'docker system prune -f'."
@@ -81,8 +81,8 @@ clean:
  
 ps:
     docker-compose -f docker/dev/docker-compose.yml --project-directory . ps
-    docker-compose -f docker-compose.prod.yml ps
-    docker-compose -f docker-compose.worker.yml ps
+    docker-compose -f docker/prod/services/docker-compose.yml --project-directory . ps
+    docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . ps
  
 # Django management commands (dev)
 migrate:

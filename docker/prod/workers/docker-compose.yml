@@ -1,7 +1,7 @@
 services:
   worker:
     build:
-      context: ../../..
+      context: .
       dockerfile: docker/prod/Dockerfile
     restart: always
     command: uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
