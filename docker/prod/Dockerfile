@@ -26,21 +26,21 @@ RUN groupadd -g 1000 python && \
 RUN mkdir -p /opt/venv /app/staticfiles /app/media && \
     chown -R python:python /opt/venv /app/staticfiles /app/media
 
-# Configure uv/venv for runtime (before switching user)
-ENV UV_PROJECT_ENVIRONMENT=/opt/venv
-ENV UV_COMPILE_BYTECODE=1
-ENV PATH=/opt/venv/bin:$PATH
-
 WORKDIR /app
 
 # Copy dependency files
 COPY pyproject.toml uv.lock ./
 
+# Switch to non-root user for security (before installing deps)
+USER python
+
+# Configure uv/venv for runtime (as non-root user)
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+ENV UV_COMPILE_BYTECODE=1
+ENV PATH=/opt/venv/bin:$PATH
+
 # Install dependencies using UV (production - no dev dependencies)
 RUN uv sync --frozen --no-dev
-
-# Switch to non-root user for security
-USER python
 
 # Copy project files
 COPY --chown=python:python . .
