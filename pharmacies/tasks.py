@@ -1,8 +1,6 @@
 # pharmacies/tasks.py
 from celery import shared_task
-from django.utils import timezone
 
-from pharmacies.models import ScraperConfig
 from pharmacies.utils import (
     add_scraped_data_to_db,
     get_city_data,

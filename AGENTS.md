@@ -8,7 +8,7 @@
 ## Build/Lint/Test Commands
 - **Run tests**: `uv run python manage.py test`
 - **Run single test**: `uv run python manage.py test pharmacies.tests.TestClassName.test_method_name`
-- **Format code**: `uv run black .` (auto-formats all Python files)
+- **Lint & format**: `uv run ruff check --fix . && uv run ruff format .`
 - **Run migrations**: `uv run python manage.py migrate`
 - **Create migrations**: `uv run python manage.py makemigrations`
 - **Run dev server**: `uv run python manage.py runserver 0.0.0.0:8000`
@@ -16,7 +16,7 @@
 - **Install dependencies**: `uv sync` (uses uv.lock)
 
 ## Code Style
-- **Formatting**: Use Black (no line length limit specified)
+- **Formatting & Linting**: Use Ruff (Black-compatible formatter + linter)
 - **Imports**: Standard library → Django → Third-party → Local (see models.py, views.py, utils.py)
 - **Type hints**: Use for function parameters and return types (e.g., `def func(city: str | None = None) -> PharmacyStatus`)
 - **Naming**: snake_case for functions/variables, PascalCase for classes, UPPER_CASE for constants

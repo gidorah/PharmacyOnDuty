@@ -1,5 +1,5 @@
 import csv
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.parse import parse_qs, urlparse
 
 import requests
