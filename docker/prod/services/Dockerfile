@@ -21,12 +21,12 @@ RUN uv sync --frozen --no-dev
 # Copy project files to the container
 COPY . /app
 
+# Copy and set permissions for entrypoint script
+COPY scripts/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Expose the port Django will run on
 EXPOSE 8000
-
-# Run migrate
-RUN uv run python manage.py migrate
-
-# # Run the Django development server
-# CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

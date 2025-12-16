@@ -32,8 +32,15 @@ ENV PATH=/opt/venv/bin:$PATH
 
 WORKDIR /app
 
+# Copy entrypoint script before switching user
+COPY scripts/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Switch to non-root user
 USER python
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Default dev server command (overridable)
 CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
