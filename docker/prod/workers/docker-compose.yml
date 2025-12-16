@@ -6,6 +6,4 @@ services:
     restart: always
     command: uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
-      - DB_HOST=db
-      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
