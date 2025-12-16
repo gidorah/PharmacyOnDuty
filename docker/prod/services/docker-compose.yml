@@ -1,9 +1,9 @@
-version: "3.8"
+
 
 services:
   django:
     build:
-      context: ../../..
+      context: .
       dockerfile: docker/prod/Dockerfile
     restart: always
     ports:
@@ -21,7 +21,7 @@ services:
 
   db:
     build:
-      context: ../../..
+      context: .
       dockerfile: docker/postgis/Dockerfile
     restart: always
     environment:
@@ -44,7 +44,7 @@ services:
 
   beat:
     build:
-      context: ../../..
+      context: .
       dockerfile: docker/prod/Dockerfile
     restart: always
     command: uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
