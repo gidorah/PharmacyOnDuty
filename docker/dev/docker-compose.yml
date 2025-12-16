@@ -4,7 +4,7 @@ services:
 
   django:
     build:
-      context: .
+      context: ..
       dockerfile: docker/dev/Dockerfile
     ports:
       - "8000:8000"
@@ -19,8 +19,8 @@ services:
 
   db:
     build:
-      context: .
-      dockerfile: docker/dev/Dockerfile.postgis
+      context: ..
+      dockerfile: docker/postgis/Dockerfile
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -40,7 +40,7 @@ services:
 
   worker:
     build:
-      context: .
+      context: ..
       dockerfile: docker/dev/Dockerfile
     command: uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
@@ -55,7 +55,7 @@ services:
 
   beat:
     build:
-      context: .
+      context: ..
       dockerfile: docker/dev/Dockerfile
     command: uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:

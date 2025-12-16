@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
     libproj-dev \
     gdal-bin \
     curl \
-    gcc \
     libpq-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -22,8 +21,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 RUN groupadd -g 1000 python && \
     useradd -u 1000 -g python -m python
 
-# Create isolated venv dir owned by non-root user
-RUN mkdir -p /opt/venv && chown python:python /opt/venv
+# Create isolated venv dir and data dirs owned by non-root user
+RUN mkdir -p /opt/venv /app/staticfiles /app/media && \
+    chown -R python:python /opt/venv /app/staticfiles /app/media
 
 # Configure uv/venv for runtime (before switching user)
 ENV UV_PROJECT_ENVIRONMENT=/opt/venv
@@ -32,15 +32,24 @@ ENV PATH=/opt/venv/bin:$PATH
 
 WORKDIR /app
 
-# Copy entrypoint script before switching user
-COPY scripts/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
-# Switch to non-root user
+# Install dependencies using UV (production - no dev dependencies)
+RUN uv sync --frozen --no-dev
+
+# Switch to non-root user for security
 USER python
+
+# Copy project files
+COPY --chown=python:python . .
+
+# Copy and set permissions for entrypoint script
+COPY --chown=python:python scripts/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Set entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-# Default dev server command (overridable)
-CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Expose the port Django will run on
+EXPOSE 8000
