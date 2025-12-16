@@ -7,17 +7,17 @@ from pharmacies.tasks import run_scraper
 
 
 @admin.register(City)
-class CityAdmin(admin.ModelAdmin[City]):
+class CityAdmin(admin.ModelAdmin):
     list_display = ("name", "last_scraped_at")
 
 
 @admin.register(Pharmacy)
-class PharmacyAdmin(admin.ModelAdmin[Pharmacy]):
+class PharmacyAdmin(admin.ModelAdmin):
     list_display = ("name", "location", "city", "phone", "email", "website")
 
 
 @admin.register(WorkingSchedule)
-class WorkingScheduleAdmin(admin.ModelAdmin[WorkingSchedule]):
+class WorkingScheduleAdmin(admin.ModelAdmin):
     list_display = (
         "city",
         "weekday_start",
@@ -28,7 +28,7 @@ class WorkingScheduleAdmin(admin.ModelAdmin[WorkingSchedule]):
 
 
 @admin.register(ScraperConfig)
-class ScraperConfigAdmin(admin.ModelAdmin[ScraperConfig]):
+class ScraperConfigAdmin(admin.ModelAdmin):
     list_display = ("city", "interval", "last_run")
     readonly_fields = ("last_run",)
     actions = ["run_selected_scrapers"]
