@@ -1,12 +1,9 @@
 services:
-
   worker:
     build:
-      context: .
-      dockerfile: Dockerfile.scraper
+      context: ../../..
+      dockerfile: docker/prod/Dockerfile
     restart: always
     command: uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
-    volumes:
-      - .:/app

@@ -9,7 +9,7 @@ RUN apt-get update && \
 
 # Set up Postgres extensions
 # This ensures PostGIS extensions are installed in the database at runtime
-COPY setup-postgis.sh /docker-entrypoint-initdb.d/setup-postgis.sh
+COPY docker/scripts/setup-postgis.sh /docker-entrypoint-initdb.d/setup-postgis.sh
 
 # Expose the default Postgres port
 EXPOSE 5432

@@ -6,7 +6,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_exempt
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (

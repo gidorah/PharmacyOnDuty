@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import Any, Optional
+from typing import Any
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.indexes import GistIndex
@@ -75,7 +75,7 @@ class WorkingSchedule(models.Model):
             and self.saturday_start < current_time < self.saturday_end
         )
 
-    def get_status(self, query_time: Optional[datetime] = None) -> PharmacyStatus:
+    def get_status(self, query_time: datetime | None = None) -> PharmacyStatus:
         """Return the status of the working schedule for the given time."""
         return (
             PharmacyStatus.OPEN

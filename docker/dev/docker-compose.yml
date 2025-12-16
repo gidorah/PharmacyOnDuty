@@ -1,7 +1,11 @@
+
+
 services:
 
   django:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/dev/Dockerfile
     ports:
       - "8000:8000"
       - "5678:5678"
@@ -11,11 +15,13 @@ services:
       - REMOTE_DEBUGGING_PORT=5678
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - DB_HOST=db
+      - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
+      - RUN_MIGRATIONS=true
 
   db:
     build:
-      context: .
-      dockerfile: Dockerfile.postgis
+      context: ..
+      dockerfile: docker/postgis/Dockerfile
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
@@ -35,21 +41,28 @@ services:
 
   worker:
     build:
-      context: .
-      dockerfile: Dockerfile.scraper
+      context: ..
+      dockerfile: docker/dev/Dockerfile
     command: uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - DB_HOST=db
     volumes:
       - .:/app
+    depends_on:
+      - redis
+      - db
 
   beat:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/dev/Dockerfile
     command: uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - DB_HOST=db
+      - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
     depends_on:
       - redis
       - db

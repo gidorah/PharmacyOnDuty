@@ -1,30 +1,28 @@
-version: '3.8'
+version: "3.8"
 
 services:
   django:
     build:
-      context: .
-      dockerfile: Dockerfile.prod
+      context: ../../..
+      dockerfile: docker/prod/Dockerfile
     restart: always
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
     depends_on:
       - db
     environment:
       - DB_HOST=db
       - DJANGO_DEBUG=False
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - RUN_MIGRATIONS=true
     command: >
-      sh -c "mkdir -p /app/staticfiles &&
-             uv run python manage.py collectstatic --noinput &&
+      sh -c "uv run python manage.py collectstatic --noinput &&
              uv run gunicorn PharmacyOnDuty.wsgi:application --bind 0.0.0.0:8000"
 
   db:
     build:
-      context: .
-      dockerfile: Dockerfile.postgis
+      context: ../../..
+      dockerfile: docker/postgis/Dockerfile
     restart: always
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -45,16 +43,17 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
 
   beat:
-    build: .
+    build:
+      context: ../../..
+      dockerfile: docker/prod/Dockerfile
     restart: always
     command: uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     environment:
+      - DB_HOST=db
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       - redis
       - db
-    volumes:
-      - .:/app
 
 volumes:
   postgis-data:
