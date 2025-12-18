@@ -138,7 +138,7 @@ class ScraperConfig(models.Model):
         )
 
         PeriodicTask.objects.update_or_create(
-            name=f"Scrape {self.city.name} ({self.id})",  # Unique name
+            name=f"Scrape {self.city.name} ({self.pk})",  # Unique name
             defaults={
                 "interval": schedule,
                 "task": "pharmacies.tasks.run_scraper",
