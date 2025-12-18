@@ -45,21 +45,6 @@ def get_nearest_pharmacies_on_duty(
     if city_object is None:
         raise ValueError("City not found")
 
-    # data_status = check_scraped_data_age(city, time=time)
-    # if data_status is ScrapedDataStatus.OLD:
-    #     try:
-    #         city_data = get_city_data(city_name=city)
-
-    #         if city_data is None:
-    #             raise ValueError("City data is Empty")
-
-    #         add_scraped_data_to_db(city_data, city_name=city)
-
-    #         city_object.last_scraped_at = time
-    #         city_object.save()
-    #     except Exception as e:
-    #         raise ValueError(f"Error: {e}")
-
     user_location = Point(
         float(lng), float(lat), srid=4326
     )  # Create a point for the given location

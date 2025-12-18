@@ -25,32 +25,38 @@ def get_pharmacy_points(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
 
-    data = json.loads(request.body)
-    user_latitude = float(data["lat"])
-    user_longitude = float(data["lng"])
+    try:
+        data = json.loads(request.body)
+        user_latitude = float(data["lat"])
+        user_longitude = float(data["lng"])
 
-    # First round lat and lng to exclude little variations
-    lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
+        # First round lat and lng to exclude little variations
+        lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
 
-    # decide the city from the user location
-    city_name = get_city_name_from_location(lat, lng)
+        # decide the city from the user location
+        city_name = get_city_name_from_location(lat, lng)
 
-    city = City.objects.get(name=city_name)
+        city = City.objects.get(name=city_name)
 
-    query_time = TEST_TIME if settings.DEBUG else timezone.now()
-    city_status = city.get_city_status(query_time)
-    print(f"City status: {city_status}")
+        query_time = TEST_TIME if settings.DEBUG else timezone.now()
+        city_status = city.get_city_status(query_time)
+        print(f"City status: {city_status}")
 
-    if city_status == PharmacyStatus.OPEN:
-        points = get_nearest_pharmacies_open(lat, lng, limit=SHOWN_PHARMACIES)
-    else:
-        points = get_nearest_pharmacies_on_duty(
-            lat, lng, city=city_name, time=query_time, limit=SHOWN_PHARMACIES
-        )
+        if city_status == PharmacyStatus.OPEN:
+            points = get_nearest_pharmacies_open(lat, lng, limit=SHOWN_PHARMACIES)
+        else:
+            points = get_nearest_pharmacies_on_duty(
+                lat, lng, city=city_name, time=query_time, limit=SHOWN_PHARMACIES
+            )
 
-    data = {"points": points}
-    print(f"Pharmacy points: \n {data}")
-    return JsonResponse(data)
+        response_data = {"points": points}
+        print(f"Pharmacy points: \n {response_data}")
+        return JsonResponse(response_data)
+
+    except (ValueError, City.DoesNotExist) as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    except Exception:
+        return JsonResponse({"error": "An internal server error occurred."}, status=500)
 
 
 def is_allowed_referer(request):

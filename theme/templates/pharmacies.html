@@ -31,14 +31,18 @@
 	<!-- htmx -->
 	<script src="https://unpkg.com/htmx.org"></script>
 	<!-- Google Maps Proxy -->
-	<script src="/google_maps_proxy"></script>
+	<script>
+		window.mapsPromise = new Promise((resolve) => {
+			window.mapsCallback = () => { resolve(); };
+		});
+	</script>
+	<script src="/google_maps_proxy?loading=async&callback=mapsCallback" async defer></script>
 	<!-- jQuery -->
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<!-- Hammer.js (CDN) -->
 	<script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
 
-	<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
-		crossorigin="anonymous"></script>
+
 
 </head>
 
@@ -79,17 +83,7 @@
 				<div id="pharmacy-items" class="space-y-4">
 					<!-- Pharmacy items will be dynamically inserted here -->
 				</div>
-				<div id="ad-item" class="hidden">
-					<script async
-						src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2058777526611837"
-						crossorigin="anonymous"></script>
-					<!-- pharma_list_ad -->
-					<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2058777526611837"
-						data-ad-slot="4575185195" data-ad-format="auto" data-full-width-responsive="true"></ins>
-					<script>
-						(adsbygoogle = window.adsbygoogle || []).push({});
-					</script>
-				</div>
+
 			</div>
 			<footer class="bg-gray-100 p-4 text-center">
 				<p class="text-sm">
@@ -269,9 +263,11 @@
 					callback(response);
 				},
 				error: function (error) {
-					console.error("Error fetching pharmacy points:", error.responseJSON.error);
-					console.warn(error.responseJSON.traceback);
-
+					const message = error.responseJSON?.error || "An unknown server error occurred.";
+					console.error("Error fetching pharmacy points:", message);
+					// Avoid a blocking alert. Update UI to show error.
+					$('#selectedPharmacyName').text("Hata");
+					$('#selectedPharmacyStatus').text(message);
 				}
 			});
 		}
@@ -336,22 +332,39 @@
 
 		// On page load
 		$(document).ready(function () {
-			getUserLocation(function (userLocation) {
-				if (userLocation) {
-					initMap(userLocation);
-					fetchPharmacyPoints(userLocation, "eskisehir", function (result) {
-						if (result) {
-							const points = result.points;
-							updatePharmacyList(points);
-							attachHammerSwipeEvents();
+			const locationPromise = new Promise((resolve) => {
+				getUserLocation((loc) => resolve(loc));
+			});
+
+			Promise.all([window.mapsPromise, locationPromise]).then(([_, location]) => {
+				const defaultLocation = { lat: 39.7767, lng: 30.5206 }; // Eskişehir default
+				const finalLocation = location || defaultLocation;
+
+				// Update global variable if using default
+				if (!location) {
+					console.warn("Geolocation failed or blocked. Using default location (Eskişehir).");
+					userLocation = finalLocation;
+				}
+
+				initMap(finalLocation);
+				
+				fetchPharmacyPoints(finalLocation, "eskisehir", function (result) {
+					if (result) {
+						const points = result.points;
+						updatePharmacyList(points);
+						attachHammerSwipeEvents();
+						
+						// If we have a real location, show directions. 
+						// Otherwise just show markers to avoid confusing directions from city center.
+						if (location) {
 							showDirectionsToPharmacy(points[0]);
 						} else {
-							alert("No pharmacy points found.");
+							addMarkers(points[0]);
 						}
-					});
-				} else {
-					alert("Failed to get user location.");
-				}
+					} else {
+						console.error("No pharmacy points found.");
+					}
+				});
 			});
 		});
 	</script>

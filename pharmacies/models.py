@@ -1,12 +1,12 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.indexes import GistIndex
 from django.utils import timezone
-from django_celery_beat.models import IntervalSchedule, PeriodicTask
+from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
 
 
 class PharmacyStatus(StrEnum):
@@ -59,6 +59,55 @@ class WorkingSchedule(models.Model):
     weekday_end = models.TimeField(null=False, blank=False)
     saturday_start = models.TimeField(null=False, blank=False)
     saturday_end = models.TimeField(null=False, blank=False)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        super().save(*args, **kwargs)
+        self._update_periodic_tasks()
+
+    def _update_periodic_tasks(self) -> None:
+        # Helper to create/get crontab and task
+        def create_task(suffix, hour, minute, days):
+            schedule, _ = CrontabSchedule.objects.get_or_create(
+                minute=minute,
+                hour=hour,
+                day_of_week=days,
+                day_of_month="*",
+                month_of_year="*",
+                timezone="UTC",  # Assuming time fields are in UTC
+            )
+
+            PeriodicTask.objects.update_or_create(
+                name=f"Scrape {self.city.name} {suffix}",
+                defaults={
+                    "crontab": schedule,
+                    "task": "pharmacies.tasks.run_scraper",
+                    "args": json.dumps([self.city.name]),
+                    "enabled": True,
+                },
+            )
+
+        # 1. Weekday Start (Mon-Fri)
+        create_task(
+            "Weekday Start",
+            self.weekday_start.hour,
+            self.weekday_start.minute,
+            "1,2,3,4,5",
+        )
+        # 2. Weekday End (Mon-Fri)
+        create_task(
+            "Weekday End", self.weekday_end.hour, self.weekday_end.minute, "1,2,3,4,5"
+        )
+        # 3. Saturday Start (Sat)
+        create_task(
+            "Saturday Start",
+            self.saturday_start.hour,
+            self.saturday_start.minute,
+            "6",
+        )
+        # 4. Saturday End (Sat)
+        create_task(
+            "Saturday End", self.saturday_end.hour, self.saturday_end.minute, "6"
+        )
 
     class Meta:
         verbose_name = "Working Schedule"
@@ -138,12 +187,11 @@ class ScraperConfig(models.Model):
         )
 
         PeriodicTask.objects.update_or_create(
-            name=f"Scrape {self.city.name} ({self.id})",  # Unique name
+            name=f"Scrape {self.city.name} ({self.pk})",  # Unique name
             defaults={
                 "interval": schedule,
                 "task": "pharmacies.tasks.run_scraper",
                 "args": json.dumps([self.city.name]),
                 "enabled": True,
-                "expires": timezone.now() + timedelta(hours=1),
             },
         )
