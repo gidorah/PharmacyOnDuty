@@ -55,6 +55,19 @@ services:
       - redis
       - db
 
+  flower:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+    restart: always
+    command: uv run --no-dev celery -A PharmacyOnDuty flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      - redis
+
 volumes:
   postgis-data:
   redis_data:
