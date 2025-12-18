@@ -1,5 +1,3 @@
-
-
 services:
   django:
     build:
@@ -7,7 +5,7 @@ services:
       dockerfile: docker/prod/Dockerfile
     restart: always
     ports:
-      - "8000:8000"
+      - "${DJANGO_HOST_PORT:-0}:8000"
     depends_on:
       - db
     environment:
@@ -29,7 +27,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: gis
     ports:
-      - "5432:5432"
+      - "${DB_HOST_PORT:-0}:5432"
     volumes:
       - postgis-data:/var/lib/postgresql/data
 
@@ -37,7 +35,7 @@ services:
     image: redis:alpine
     restart: always
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-0}:6379"
     volumes:
       - redis_data:/data
     command: redis-server --requirepass ${REDIS_PASSWORD}
@@ -54,6 +52,19 @@ services:
     depends_on:
       - redis
       - db
+
+  flower:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+    restart: always
+    command: uv run --no-dev celery -A PharmacyOnDuty flower --port=5555
+    ports:
+      - "${FLOWER_HOST_PORT:-0}:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      - redis
 
 volumes:
   postgis-data:

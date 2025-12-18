@@ -1,10 +1,7 @@
-
-
 services:
-
   django:
     build:
-      context: ..
+      context: .
       dockerfile: docker/dev/Dockerfile
     ports:
       - "8000:8000"
@@ -20,7 +17,7 @@ services:
 
   db:
     build:
-      context: ..
+      context: .
       dockerfile: docker/postgis/Dockerfile
     environment:
       POSTGRES_USER: postgres
@@ -41,9 +38,9 @@ services:
 
   worker:
     build:
-      context: ..
+      context: .
       dockerfile: docker/dev/Dockerfile
-    command: uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
+    command: sh -c "uv sync && uv run celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h"
     environment:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -56,9 +53,9 @@ services:
 
   beat:
     build:
-      context: ..
+      context: .
       dockerfile: docker/dev/Dockerfile
-    command: uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    command: sh -c "uv sync && uv run celery -A PharmacyOnDuty beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler"
     environment:
       - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
       - DB_HOST=db
@@ -66,6 +63,20 @@ services:
     depends_on:
       - redis
       - db
+    volumes:
+      - .:/app
+
+  flower:
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+    command: sh -c "uv sync && uv run celery -A PharmacyOnDuty flower --port=5555"
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+    depends_on:
+      - redis
     volumes:
       - .:/app
 
