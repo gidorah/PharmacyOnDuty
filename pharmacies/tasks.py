@@ -16,11 +16,10 @@ def run_scraper(city_name):
     add_scraped_data_to_db(city_data, city_name=city_name)
     print(f"Scraper data for city {city_name} saved to DB")
 
-    try:
-        scraper = ScraperConfig.objects.get(city__name=city_name)
-        print(f"Updating scraper config for city {city_name}")
-        scraper.last_run = timezone.now()
-        scraper.save()
+    rows_updated = ScraperConfig.objects.filter(city__name=city_name).update(
+        last_run=timezone.now()
+    )
+    if rows_updated:
         print(f"Scraper config for city {city_name} updated")
-    except ScraperConfig.DoesNotExist:
+    else:
         print(f"No ScraperConfig found for city {city_name}")

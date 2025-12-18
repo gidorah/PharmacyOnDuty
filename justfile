@@ -85,21 +85,41 @@ ps:
     docker-compose -f docker/prod/workers/docker-compose.yml --project-directory . ps
  
 # Django management commands (dev)
+manage command:
+    docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run python manage.py {{command}}
+
 migrate:
-    docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run python manage.py migrate
- 
+    @just manage "migrate"
+
 makemigrations:
-    docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run python manage.py makemigrations
- 
+    @just manage "makemigrations"
+
+createsuperuser:
+    @just manage "createsuperuser"
+
 collectstatic:
-    docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run python manage.py collectstatic --noinput
- 
+    @just manage "collectstatic --noinput"
+
 shell:
-    docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run python manage.py shell
- 
+    @just manage "shell"
+
 test:
-    docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run python manage.py test
- 
+    @just manage "test"
+
+# Utility commands
+seed:
+    @just manage "seed_cities"
+
+urls:
+    @just manage "show_urls"
+
+celery-logs:
+    docker-compose -f docker/dev/docker-compose.yml --project-directory . logs -f celery
+
+# Tail logs of a specific service
+logs service:
+    docker-compose -f docker/dev/docker-compose.yml --project-directory . logs -f {{service}}
+
 # Full development setup
 dev-setup: dev-up migrate
     @echo "Development environment setup complete"
