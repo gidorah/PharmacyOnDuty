@@ -9,7 +9,7 @@ from pharmacies.utils import (
 
 
 @shared_task
-def run_scraper(city_name):
+def run_scraper(city_name: str) -> None:
     print(f"Running scraper for city {city_name}")
     city_data = get_city_data(city_name=city_name)
     print(f"Scraper for city {city_name} finished")
