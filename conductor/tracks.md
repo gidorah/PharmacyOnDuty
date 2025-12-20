@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [ ] Track: Improve Test Coverage & Reliability
+## [~] Track: Improve Test Coverage & Reliability
 *Link: [./conductor/tracks/coverage_20251220/](./conductor/tracks/coverage_20251220/)*
 
 ## [ ] Track: Improve user notifications for system availability and empty states

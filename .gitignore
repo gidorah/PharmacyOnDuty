@@ -21,15 +21,6 @@ staticfiles/
 # If you are using Docker:
 *.env
 
-# PyCharm specific files
-.idea/
-
-# VS Code specific files
-.vscode/
-
-# Zed specific files
-.zed/
-
 # Virtual environment
 venv/
 .venv/
@@ -49,3 +40,4 @@ osrm/
 certbot_letsencrypt/
 certbot_webroot/
 remotedev_nginx.conf
+.coverage

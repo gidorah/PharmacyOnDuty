@@ -333,7 +333,7 @@ For remote development and debugging within Docker containers, use the `docker-c
     ```
     cp remotedev_nginx.conf.template remotedev_nginx.conf
     ```
-    
+
     Open `remotedev_nginx.conf` and replace `XXX.XXX.XXX.XXX` with your server's public IP address in both `server_name` directives.
 
 3.  **Run with Remote Development Compose File:**

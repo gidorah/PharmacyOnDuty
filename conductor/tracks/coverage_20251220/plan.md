@@ -1,10 +1,10 @@
 # Track Plan: Improve Test Coverage & Reliability
 
 ## Phase 1: Model & Utility Tests
-- [ ] Task: Create tests for `City` model methods (e.g., `is_open`, `get_or_create_dummy`).
-- [ ] Task: Create tests for `WorkingSchedule` model logic.
-- [ ] Task: Create tests for `Pharmacy` model and spatial queries.
-- [ ] Task: Create unit tests for `utils.py` functions (mocking Google Maps API where needed).
+- [x] Task: Create tests for `City` model methods (e.g., `is_open`, `get_or_create_dummy`).
+- [x] Task: Create tests for `WorkingSchedule` model logic.
+- [x] Task: Create tests for `Pharmacy` model and spatial queries.
+- [x] Task: Create unit tests for `utils.py` functions (mocking Google Maps API where needed).
 - [ ] Task: Conductor - User Manual Verification 'Model & Utility Tests' (Protocol in workflow.md)
 
 ## Phase 2: Scraper Tests

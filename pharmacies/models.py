@@ -44,7 +44,7 @@ class City(models.Model):
         return status
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
 
 
 class WorkingSchedule(models.Model):
@@ -66,7 +66,7 @@ class WorkingSchedule(models.Model):
 
     def _update_periodic_tasks(self) -> None:
         # Helper to create/get crontab and task
-        def create_task(suffix, hour, minute, days):
+        def create_task(suffix: str, hour: int, minute: int, days: str) -> None:
             schedule, _ = CrontabSchedule.objects.get_or_create(
                 minute=minute,
                 hour=hour,
@@ -167,7 +167,7 @@ class Pharmacy(models.Model):
         ]
 
     def __str__(self) -> str:
-        return self.name
+        return str(self.name)
 
 
 class ScraperConfig(models.Model):

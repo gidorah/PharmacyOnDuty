@@ -1,28 +1,60 @@
-exclude: .*migrations\/.*
+exclude: "docs/|node_modules/|migrations/|.git/|.tox/|dist/|build/"
+default_stages: [pre-commit]
+fail_fast: true
+
 repos:
-- repo: local
-  hooks:
-    - id: tailwind-build
-      name: Build Tailwind CSS
-      entry: |
-            bash -c '
-              .venv/bin/python manage.py tailwind build &&
-              git add theme/static/css/*
-            '
-      language: system
-      types_or: [html]
-      stages: [pre-commit]
-      pass_filenames: false
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=5000']
+      - id: debug-statements
 
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
-  hooks:
-    - id: check-yaml
-
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.9
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.2
     hooks:
       - id: ruff
-        args: ["--fix", "--exit-non-zero-on-fix"]
+        args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
 
+  - repo: https://github.com/djlint/djlint
+    rev: v1.36.4
+    hooks:
+      - id: djlint-reformat-django
+      - id: djlint-django
+        args: ["--ignore", "H030,H031,H021,H023,D018,D004,H006"]
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: missing-migrations
+        name: Check for missing migrations
+        entry: uv run python manage.py makemigrations --check --dry-run
+        language: system
+        types: [python]
+        files: "models.py"
+        pass_filenames: false
+
+      - id: tailwind-build
+        name: Build Tailwind CSS
+        entry: |
+          bash -c '
+            uv run python manage.py tailwind build &&
+            git add theme/static/css/*
+          '
+        language: system
+        types_or: [html, python, javascript]
+        pass_filenames: false

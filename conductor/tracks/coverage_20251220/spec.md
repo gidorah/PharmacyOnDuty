@@ -10,6 +10,5 @@ Increase the project's test coverage to at least 80% by implementing comprehensi
 - **Tasks:** Verify Celery task execution (mocking the broker).
 
 ## Implementation Guidelines
-- Use Django's built-in test runner.
-- Use `unittest.mock` to simulate external dependencies (external websites, Google Maps API).
+- Use pytest.
 - Follow the TDD workflow outlined in `conductor/workflow.md`.
