@@ -50,3 +50,9 @@ remotedev_nginx.conf
 
 # Project specific
 osrm/
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json
