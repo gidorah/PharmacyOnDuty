@@ -13,6 +13,25 @@ from pharmacies.utils import get_ankara_data, get_eskisehir_data, get_istanbul_d
 from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 
 
+def normalize_string(s: str) -> str:
+    mapping = {
+        "İ": "i",
+        "I": "i",
+        "ı": "i",
+        "Ş": "s",
+        "ş": "s",
+        "Ğ": "g",
+        "ğ": "g",
+        "Ü": "u",
+        "ü": "u",
+        "Ö": "o",
+        "ö": "o",
+        "Ç": "c",
+        "ç": "c",
+    }
+    return "".join(mapping.get(c, c) for c in s).lower()
+
+
 def get_nearest_pharmacies_open(lat: float, lng: float, limit: int = 5) -> list:
     """Get pharmacies that are open"""
     fetched_data = fetch_nearest_pharmacies(lat, lng, limit=limit)
@@ -237,16 +256,18 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
         raise ValueError("Unable to retrieve city name: status is not OK")
 
     city_data = extract_city_name_from_google_maps_response(data)
+    normalized_city_data = normalize_string(city_data)
 
-    # TODO: find and handle cities via DB
-    if "İstanbul" in city_data:
-        return "istanbul"
+    # Find matching city from DB
+    cities = list(City.objects.all())
+    # Sort by length descending to avoid partial matches (e.g. "Van" in "Tatvan")
+    cities.sort(key=lambda x: len(x.name), reverse=True)
 
-    if "Eskişehir" in city_data:
-        return "eskisehir"
-
-    if "Ankara" in city_data:
-        return "ankara"
+    for city in cities:
+        # Check if normalized city name from DB is in normalized city data from Google
+        normalized_city_name = normalize_string(city.name)
+        if normalized_city_name in normalized_city_data:
+            return normalized_city_name
 
     raise ValueError("Unknown city")
 
