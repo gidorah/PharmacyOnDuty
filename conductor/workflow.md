@@ -44,27 +44,11 @@ All tasks follow a strict lifecycle:
    - Add dated note explaining the change
    - Resume implementation
 
-8. **Commit Code Changes:**
-   - Stage all code changes related to the task.
-   - Propose a clear, concise commit message e.g, `feat(ui): Create basic HTML structure for calculator`.
-   - Perform the commit.
-
-9. **Attach Task Summary with Git Notes:**
-   - **Step 9.1: Get Commit Hash:** Obtain the hash of the *just-completed commit* (`git log -1 --format="%H"`).
-   - **Step 9.2: Draft Note Content:** Create a detailed summary for the completed task. This should include the task name, a summary of changes, a list of all created/modified files, and the core "why" for the change.
-   - **Step 9.3: Attach Note:** Use the `git notes` command to attach the summary to the commit.
-     ```bash
-     # The note content from the previous step is passed via the -m flag.
-     git notes add -m "<note content>" <commit_hash>
-     ```
-
-10. **Get and Record Task Commit SHA:**
-    - **Step 10.1: Update Plan:** Read `plan.md`, find the line for the completed task, update its status from `[~]` to `[x]`, and append the first 7 characters of the *just-completed commit's* commit hash.
-    - **Step 10.2: Write Plan:** Write the updated content back to `plan.md`.
-
-11. **Commit Plan Update:**
-    - **Action:** Stage the modified `plan.md` file.
-    - **Action:** Commit this change with a descriptive message (e.g., `conductor(plan): Mark task 'Create user model' as complete`).
+8. **Mark Task Complete:**
+   - **Action:** Read `plan.md`.
+   - **Action:** Find the line for the completed task and update its status from `[~]` to `[x]`.
+   - **Action:** Write the updated content back to `plan.md`.
+   - **Note:** Do *not* commit changes yet. Commits are performed at the end of the Phase.
 
 ### Phase Completion Verification and Checkpointing Protocol
 
@@ -116,21 +100,24 @@ All tasks follow a strict lifecycle:
     -   **PAUSE** and await the user's response. Do not proceed without an explicit yes or confirmation.
 
 6.  **Create Checkpoint Commit:**
-    -   Stage all changes. If no changes occurred in this step, proceed with an empty commit.
-    -   Perform the commit with a clear and concise message (e.g., `conductor(checkpoint): Checkpoint end of Phase X`).
+    -   **Action:** Stage all application code changes, test files, and documentation (including `readme.md`) modified during the phase.
+    -   **Action:** Perform the commit with a message summarizing the phase (e.g., `feat(phase): Complete Phase X: <Short Description>`).
+    -   **Action:** Record the commit hash (`git log -1 --format="%H"`).
 
 7.  **Attach Auditable Verification Report using Git Notes:**
-    -   **Step 8.1: Draft Note Content:** Create a detailed verification report including the automated test command, the manual verification steps, and the user's confirmation.
-    -   **Step 8.2: Attach Note:** Use the `git notes` command and the full commit hash from the previous step to attach the full report to the checkpoint commit.
+    -   **Step 7.1: Draft Note Content:** Create a comprehensive report including:
+        -   List of all tasks completed in this phase.
+        -   The automated test command used.
+        -   The manual verification steps and results.
+        -   The explicit user confirmation.
+    -   **Step 7.2: Attach Note:** Use `git notes add -m "<report content>" <commit_hash>`.
 
 8.  **Get and Record Phase Checkpoint SHA:**
-    -   **Step 7.1: Get Commit Hash:** Obtain the hash of the *just-created checkpoint commit* (`git log -1 --format="%H"`).
-    -   **Step 7.2: Update Plan:** Read `plan.md`, find the heading for the completed phase, and append the first 7 characters of the commit hash in the format `[checkpoint: <sha>]`.
-    -   **Step 7.3: Write Plan:** Write the updated content back to `plan.md`.
+    -   **Step 8.1: Update Plan:** Read `plan.md`, find the heading for the completed phase, and append the checkpoint SHA in the format `[checkpoint: <sha>]`. Also update the status of the verification task to `[x]`.
+    -   **Step 8.2: Write Plan:** Save the updated `plan.md`.
 
-9. **Commit Plan Update:**
-    - **Action:** Stage the modified `plan.md` file.
-    - **Action:** Commit this change with a descriptive message following the format `conductor(plan): Mark phase '<PHASE NAME>' as complete`.
+9. **Finalize Phase:**
+    - **Action:** Stage and commit the updated `plan.md` with the message `conductor(plan): Mark phase '<PHASE NAME>' as complete`.
 
 10.  **Announce Completion:** Inform the user that the phase is complete and the checkpoint has been created, with the detailed verification report attached as a git note.
 
@@ -267,12 +254,10 @@ A task is complete when:
 1. All code implemented to specification
 2. Unit tests written and passing
 3. Code coverage meets project requirements
-4. Documentation complete (if applicable)
+4. Documentation complete (including `readme.md` if applicable)
 5. Code passes all configured linting and static analysis checks
 6. Works beautifully on mobile (if applicable)
-7. Implementation notes added to `plan.md`
-8. Changes committed with proper message
-9. Git note with task summary attached to the commit
+7. Task marked as `[x]` in `plan.md`
 
 ## Emergency Procedures
 

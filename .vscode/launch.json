@@ -1,0 +1,52 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Django Local",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "python": "${workspaceFolder}/.venv/bin/python",
+      "args": ["runserver", "0.0.0.0:8008"],
+      "django": true,
+      "env": {
+        "DOTENV_PATH": "${workspaceFolder}/.env.local"
+      }
+    },
+    {
+      "name": "Remote Debug (Attach)",
+      "type": "python",
+      "request": "attach",
+      "host": "localhost",
+      "port": 5678,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/app"
+        }
+      ]
+    },
+    {
+      "name": "Render Debug (Attach)",
+      "type": "python",
+      "request": "attach",
+      "host": "pharmacyonduty.onrender.com",
+      "port": 5678,
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/app"
+        }
+      ]
+    },
+    {
+      "name": "Python: Django Tests",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/manage.py",
+      "args": ["test", "--noinput", "--failfast"],
+      "django": true,
+      "justMyCode": false
+    }
+  ]
+}

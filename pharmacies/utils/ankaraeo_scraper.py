@@ -30,7 +30,7 @@ def _get_duty_times() -> tuple[datetime, datetime]:
     return duty_start, duty_end
 
 
-def get_ankara_data() -> list[Any]:
+def get_ankara_data() -> list[dict[str, Any]]:
     """
     Scrape pharmacy data from the Ankara Eczacılar Odası website.
     Returns a list of dictionaries with name, address, district, phone, coordinates.
@@ -43,7 +43,7 @@ def get_ankara_data() -> list[Any]:
     received_data = response.json()
     received_pharmacy_list = received_data["NobetciEczaneBilgisiListesi"]
     duty_start, duty_end = _get_duty_times()
-    pharmacies = []
+    pharmacies: list[dict[str, Any]] = []
     for pharmacy in received_pharmacy_list:
         pharmacies.append(
             {
@@ -64,19 +64,6 @@ def get_ankara_data() -> list[Any]:
 
 
 if __name__ == "__main__":
-    # If you have the HTML saved to a file, you can do something like:
-    # with open("crisis-pha.html", "r", encoding="utf-8") as f:
-    #     html_content = f.read()
-
-    # Or if you want to fetch directly from the website (live scrape):
-    # response = requests.get("https://www.aeo.org.tr/crisis-pha")
-    # html_content = response.text
-
-    # For demonstration, we'll assume you have your full HTML in a string:
-    html_content = """\
-    <!-- Paste or read your attached HTML content here -->
-    """
-
     pharmacies_data = get_ankara_data()
 
     # Print or handle the scraped data

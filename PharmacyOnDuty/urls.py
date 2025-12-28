@@ -15,6 +15,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
+from typing import Any
+
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
@@ -26,7 +28,7 @@ sitemaps_dict = {
     "static": StaticViewSitemap,
 }
 
-urlpatterns: list = [
+urlpatterns: list[Any] = [
     path("admin/", admin.site.urls),
     path("", include("pharmacies.urls")),
     path("", TemplateView.as_view(template_name="pharmacies.html"), name="home"),

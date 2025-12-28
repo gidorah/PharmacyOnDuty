@@ -1,4 +1,5 @@
 from datetime import time
+from typing import Any
 
 from django.core.management.base import BaseCommand
 
@@ -8,7 +9,7 @@ from pharmacies.models import City, ScraperConfig, WorkingSchedule
 class Command(BaseCommand):
     help = "Seeds cities, working schedules and scraper configs"
 
-    def handle(self, *args, **kwargs):
+    def handle(self, *args: Any, **kwargs: Any) -> None:
         cities = ["eskisehir", "istanbul", "ankara"]
 
         # Define working hours in UTC (+3 for istanbul)

@@ -1,0 +1,4 @@
+[tool.djlint]
+ignore = "H030,H031,H021,H023,D018,D004"
+indent = 4
+profile = "django"
