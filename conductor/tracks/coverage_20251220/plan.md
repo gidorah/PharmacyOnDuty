@@ -5,7 +5,7 @@
 - [x] Task: Create tests for `WorkingSchedule` model logic.
 - [x] Task: Create tests for `Pharmacy` model and spatial queries.
 - [x] Task: Create unit tests for `utils.py` functions (mocking Google Maps API where needed).
-- [ ] Task: Conductor - User Manual Verification 'Model & Utility Tests' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Model & Utility Tests' (Protocol in workflow.md)
 
 ## Phase 2: Scraper Tests
 - [ ] Task: Implement tests for `ankaraeo_scraper.py` (using mocks for HTML responses).
