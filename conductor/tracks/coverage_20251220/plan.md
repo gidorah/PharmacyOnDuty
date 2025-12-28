@@ -8,7 +8,7 @@
 - [x] Task: Conductor - User Manual Verification 'Model & Utility Tests' (Protocol in workflow.md) 4568074
 
 ## Phase 2: Scraper Tests
-- [ ] Task: Implement tests for `ankaraeo_scraper.py` (using mocks for HTML responses).
+- [x] Task: Implement tests for `ankaraeo_scraper.py` (using mocks for HTML responses). 80dc1b0
 - [ ] Task: Implement tests for `eskisehireo_scraper.py` (using mocks).
 - [ ] Task: Implement tests for `istanbul_saglik_scraper.py` (using mocks).
 - [ ] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md)
