@@ -1,51 +1,58 @@
-
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Django stuff:
-*.log
-*.pot
 *.pyc
 *.pyo
-*.swp
-db.sqlite3
-*.sqlite3
+
+# Environments
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+! .env.example
+
+# Django
+*.log
 media/
 staticfiles/
 
-# If you are using Docker:
-*.env
+# Database
+*.sqlite3
+db.sqlite3
 
-# PyCharm specific files
-.idea/
-
-# VS Code specific files
-.vscode/
-
-# Zed specific files
-.zed/
-
-# Virtual environment
-venv/
-.venv/
-.env/
-env/
-ENV/
-
-# macOS-specific files
-.DS_Store
+# Tools, Testing & Linting
+.coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+htmlcov/
 mypy.ini
 ruff.toml
+.djlintrc
+# .djlintrc is usually checked in, but if listed here I'll keep it as a placeholder or remove if not needed.
+# Looking at the project tree, .djlintrc exists, so I won't ignore it unless asked.
 
-# OSRM data folder
-osrm/
+# Editor & OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.pot
 
-# nginx
+# Deployment & Proxy (Nginx/Certbot)
 certbot_letsencrypt/
 certbot_webroot/
 remotedev_nginx.conf
+
+# Project specific
+osrm/
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json

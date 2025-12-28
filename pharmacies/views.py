@@ -3,7 +3,8 @@ from datetime import timedelta
 
 import requests
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonResponse
+from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import csrf_exempt
@@ -21,9 +22,9 @@ SHOWN_PHARMACIES = 5
 
 
 @csrf_exempt
-def get_pharmacy_points(request):
+def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
     if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])
+        return HttpResponseNotAllowed(["POST"])  # type: ignore
 
     try:
         data = json.loads(request.body)
@@ -59,13 +60,13 @@ def get_pharmacy_points(request):
         return JsonResponse({"error": "An internal server error occurred."}, status=500)
 
 
-def is_allowed_referer(request):
+def is_allowed_referer(request: HttpRequest) -> bool:
     referer = request.META.get("HTTP_REFERER", "")
     return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
 
 
 @cache_page(60 * 60)  # cache for 1 hour
-def google_maps_proxy(request):
+def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
 
@@ -84,3 +85,7 @@ def google_maps_proxy(request):
         return HttpResponse(response.text, content_type="text/javascript")
     except requests.exceptions.RequestException as e:
         return JsonResponse({"error": str(e)}, status=500)
+
+
+def pharmacies_list(request: HttpRequest) -> HttpResponse:
+    return render(request, "pharmacies.html")

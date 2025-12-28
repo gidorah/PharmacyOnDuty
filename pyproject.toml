@@ -37,13 +37,17 @@ dependencies = [
 ]
 
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "PharmacyOnDuty.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--cov=pharmacies --cov-report=term-missing"
+
 [tool.mypy]
 python_version = "3.13"
 strict = true
 warn_unused_ignores = true
 warn_redundant_casts = true
 warn_unused_configs = true
-disallow_untyped_decorators = false
 plugins = ["mypy_django_plugin.main"]
 
 [[tool.mypy.overrides]]
@@ -98,6 +102,14 @@ exclude = [
     "manage.py",
 ]
 
+[tool.ty.rules]
+# Make ty ignore the things mypy will catch later
+unresolved-attribute = "warn"
+unresolved-import = "warn"
+
+[tool.djlint]
+profile="django"
+
 [dependency-groups]
 dev = [
     "mypy>=1.18.2",
@@ -108,5 +120,8 @@ dev = [
     "types-requests>=2.32.4.20250913",
     "ruff>=0.14.9",
     "pre-commit>=4.5.0",
+    "pytest>=9.0.2",
+    "pytest-django>=4.11.1",
+    "pytest-cov>=7.0.0",
+    "ty>=0.0.4",
 ]
-

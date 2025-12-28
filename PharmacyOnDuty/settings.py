@@ -15,7 +15,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(os.getenv("DOTENV_PATH"))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -198,7 +198,7 @@ if DEBUG and REMOTE_DEBUGGING_PORT:
     print("Starting debugpy with port", DEBUG_PORT)
 
     try:
-        import debugpy
+        import debugpy  # type: ignore
 
         debugpy.listen(("0.0.0.0", DEBUG_PORT))
         print(f"Debugger is listening on port {DEBUG_PORT}")

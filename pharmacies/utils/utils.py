@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import lru_cache
+from typing import Any
 
 import requests
 from django.conf import settings
@@ -32,7 +33,9 @@ def normalize_string(s: str) -> str:
     return "".join(mapping.get(c, c) for c in s).lower()
 
 
-def get_nearest_pharmacies_open(lat: float, lng: float, limit: int = 5) -> list:
+def get_nearest_pharmacies_open(
+    lat: float, lng: float, limit: int = 5
+) -> list[dict[str, Any]]:
     """Get pharmacies that are open"""
     fetched_data = fetch_nearest_pharmacies(lat, lng, limit=limit)
     pharmacy_data = get_map_points_from_fetched_data(fetched_data)
@@ -49,7 +52,7 @@ def get_nearest_pharmacies_on_duty(
     radius: int = 100_000,
     limit: int = 5,
     time: datetime | None = None,
-):
+) -> list[dict[str, Any]]:
     if city is None:
         raise ValueError("City name is required.")
 
@@ -94,14 +97,14 @@ def get_nearest_pharmacies_on_duty(
     return pharmacy_data[:limit]
 
 
-def get_coordinates_from_google_maps_url(url: str):
+def get_coordinates_from_google_maps_url(url: str) -> dict[str, float]:
     coordinate_string = url.split("=")[-1]
     lat = float(coordinate_string.split(",")[0])
     lng = float(coordinate_string.split(",")[1])
     return {"lat": lat, "lng": lng}
 
 
-def get_map_points_from_fetched_data(data):
+def get_map_points_from_fetched_data(data: list[Any]) -> list[dict[str, Any]]:
     points = []
 
     for pharmacy in data:
@@ -121,7 +124,7 @@ def get_map_points_from_fetched_data(data):
     return points
 
 
-def get_map_points_from_pharmacies(pharmacies):
+def get_map_points_from_pharmacies(pharmacies: Any) -> list[dict[str, Any]]:
     points = []
 
     for pharmacy in pharmacies:
@@ -171,8 +174,9 @@ def check_scraped_data_age(
     return ScrapedDataStatus.OLD
 
 
-def get_city_data(city_name: str):
+def get_city_data(city_name: str) -> list[dict[str, Any]]:
     if city_name == "eskisehir":
+        # mypy thinks this cast is redundant because get_eskisehir_data returns Any or correct type
         return get_eskisehir_data()
 
     if city_name == "istanbul":
@@ -189,7 +193,7 @@ def check_if_pharmacy_exists(name: str, phone: str) -> bool:
     return True if pharmacy else False
 
 
-def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
+def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -> None:
     city: City = City.objects.get(name=city_name)
     if not city:
         raise ValueError("City not found")
@@ -214,31 +218,32 @@ def add_scraped_data_to_db(scraped_data, city_name: str) -> None:
             )
             pharmacies_to_create.append(pharmacy)
         else:
-            pharmacy = (
+            existing_pharmacy = (
                 Pharmacy.objects.filter(name=item["name"])
                 .filter(phone=item["phone"])
                 .first()
             )
-            pharmacy.duty_start = item["duty_start"]
-            pharmacy.duty_end = item["duty_end"]
-            pharmacies_to_update.append(pharmacy)
+            if existing_pharmacy:
+                existing_pharmacy.duty_start = item["duty_start"]
+                existing_pharmacy.duty_end = item["duty_end"]
+                pharmacies_to_update.append(existing_pharmacy)
 
     Pharmacy.objects.bulk_create(pharmacies_to_create, ignore_conflicts=True)
     Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
 
 
-def extract_city_name_from_google_maps_response(data):
+def extract_city_name_from_google_maps_response(data: dict[str, Any]) -> str:
     if data["status"] != "OK" or not data["results"]:
         raise ValueError("Unable to retrieve city name: status is not OK")
 
     compound_code = data["plus_code"].get("compound_code")
 
     if compound_code is not None:
-        return compound_code
+        return compound_code  # type: ignore
 
     for component in data["results"][0]["address_components"]:
         if "administrative_area_level_1" in component["types"]:
-            return component["long_name"]
+            return component["long_name"]  # type: ignore
 
     raise ValueError("Unknown city")
 
@@ -267,13 +272,13 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
         # Check if normalized city name from DB is in normalized city data from Google
         normalized_city_name = normalize_string(city.name)
         if normalized_city_name in normalized_city_data:
-            return normalized_city_name
+            return city.name
 
     raise ValueError("Unknown city")
 
 
 @lru_cache(maxsize=1024)
-def _get_distance_matrix_data(origins: str, destinations: str):
+def _get_distance_matrix_data(origins: str, destinations: str) -> dict[str, Any]:
     url = (
         "https://maps.googleapis.com/maps/api/distancematrix/json"
         f"?origins={origins}"
@@ -288,11 +293,11 @@ def _get_distance_matrix_data(origins: str, destinations: str):
     if received_data["status"] != "OK":
         raise ValueError(f"Distance Matrix API error: {received_data['status']}")
 
-    return received_data
+    return received_data  # type: ignore
 
 
 def add_travel_distances_to_pharmacy_data(
-    lat: float, lng: float, pharmacy_data: list
+    lat: float, lng: float, pharmacy_data: list[dict[str, Any]]
 ) -> None:
     """
     Get travel distances from origin to multiple destinations
@@ -324,7 +329,7 @@ def add_travel_distances_to_pharmacy_data(
             ) * 60  # Convert distance to seconds. A very rough estimate
 
 
-def order_data_by_distance(pharmacy_data: list) -> None:
+def order_data_by_distance(pharmacy_data: list[dict[str, Any]]) -> None:
     """Order pharmacy data by travel distance"""
     pharmacy_data.sort(key=lambda x: x["travel_distance"])
 
@@ -336,7 +341,7 @@ if __name__ == "__main__":
     add_scraped_data_to_db(eskisehir_data, city_name="eskisehir")
 
 
-def round_lat_lng(lat: float, lng: float, precision: int = 6):
+def round_lat_lng(lat: float, lng: float, precision: int = 6) -> tuple[float, float]:
     """Rounds lat and lng to given precision"""
 
     return round(lat, precision), round(lng, precision)

@@ -1,106 +1,92 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
 <html lang="tr">
-
-<head>
-	<title>Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede</title>
-	<!-- Google tag (gtag.js) -->
-	<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y5F4DN577T"></script>
-	<script>
+    <head>
+        <title>Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede</title>
+        <!-- Google tag (gtag.js) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y5F4DN577T"></script>
+        <script>
 		window.dataLayer = window.dataLayer || [];
 		function gtag() { dataLayer.push(arguments); }
 		gtag('js', new Date());
 
 		gtag('config', 'G-Y5F4DN577T');
-	</script>
-	<meta name="description"
-		content="Keşfedin: Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
-	<meta charset="UTF-8" />
-	<link rel="icon" href="static/favicon.ico" type="image/x-icon">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
-	<meta property="og:title" content="Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede">
-	<meta property="og:description"
-		content="Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
-	<meta property="og:image" content="https://images.seeklogo.com/logo-png/53/1/eczane-logo-png_seeklogo-536923.png">
-	<meta property="og:url" content="https://eczanerede.com">
-
-
-	{% tailwind_css %}
-
-	<!-- htmx -->
-	<script src="https://unpkg.com/htmx.org"></script>
-	<!-- Google Maps Proxy -->
-	<script>
+        </script>
+        <meta name="description"
+              content="Keşfedin: Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
+        <meta charset="UTF-8" />
+        <link rel="icon" href="static/favicon.ico" type="image/x-icon">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <meta property="og:title"
+              content="Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede">
+        <meta property="og:description"
+              content="Eskişehir’deki, İstanbul'daki ve Ankara'daki size en yakın açık ve nöbetçi eczaneler. Hızlı yol tarifi ve konum bilgileriyle, ihtiyacınız olduğunda en yakın eczaneye kolayca ulaşın.">
+        <meta property="og:image"
+              content="https://images.seeklogo.com/logo-png/53/1/eczane-logo-png_seeklogo-536923.png">
+        <meta property="og:url" content="https://eczanerede.com">
+        {% tailwind_css %}
+        <!-- htmx -->
+        <script src="https://unpkg.com/htmx.org"></script>
+        <!-- Google Maps Proxy -->
+        <script>
 		window.mapsPromise = new Promise((resolve) => {
 			window.mapsCallback = () => { resolve(); };
 		});
-	</script>
-	<script src="/google_maps_proxy?loading=async&callback=mapsCallback" async defer></script>
-	<!-- jQuery -->
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-	<!-- Hammer.js (CDN) -->
-	<script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
-
-
-
-</head>
-
-<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
-
-	<main class="flex-1 flex flex-col bg-gray-50">
-		<div class="flex items-center">
-
-			<div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
-				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
-				<img src="static/icons/eczane-logo.png" alt="Eczanerede - Açık Eczaneler Logosu">
-			</div>
-
-			<div class="h-12 px-8 gap-4 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
-				style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);">
-				<span id="selectedPharmacyStatus" class="inline-block text-sm font-medium px-2 py-2 rounded-full
-				bg-secondary border-2 border-secondary text-white">
-				</span>
-				<span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">
-					Açık Eczaneler Yükleniyor
-				</span>
-			</div>
-
-		</div>
-
-		<!-- Map Section -->
-		<div id="map" class="fixed top-[calc(-14rem)] left-0 right-0 h-[calc(100vh+2rem)] w-full"></div>
-
-		<!-- Pharmacy List Container -->
-		<div id="pharmacy-list-container"
-			class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
-			style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);">
-			<div id="handle" onclick="event.stopPropagation()" class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2">
-			</div>
-			<h1 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h1>
-			<!-- Scrollable Area -->
-			<div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
-				<div id="pharmacy-items" class="space-y-4">
-					<!-- Pharmacy items will be dynamically inserted here -->
-				</div>
-
-			</div>
-			<footer class="bg-gray-100 p-4 text-center">
-				<p class="text-sm">
-					&copy; 2025 Eczanerede |
-					<a href="/privacy-policy/" class="text-blue-600">Gizlilik Politikası</a> |
-					<a href="/terms/" class="text-blue-600">Hizmet Şartları</a> |
-					<a href="/cookie-policy/" class="text-blue-600">Çerez Politikası</a>
-				</p>
-			</footer>
-		</div>
-
-	</main>
-
-
-
-	<!-- Script Logic -->
-	<script>
+        </script>
+        <script src="/google_maps_proxy?loading=async&callback=mapsCallback"
+                async
+                defer></script>
+        <!-- jQuery -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <!-- Hammer.js (CDN) -->
+        <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
+    </head>
+    <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+        <main class="flex-1 flex flex-col bg-gray-50">
+            <div class="flex items-center">
+                <div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
+                     style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)">
+                    <img src="static/icons/eczane-logo.png"
+                         alt="Eczanerede - Açık Eczaneler Logosu">
+                </div>
+                <div class="h-12 px-8 gap-4 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
+                     style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)">
+                    <span id="selectedPharmacyStatus"
+                          class="inline-block text-sm font-medium px-2 py-2 rounded-full bg-secondary border-2 border-secondary text-white">
+                    </span>
+                    <span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">Açık Eczaneler Yükleniyor</span>
+                </div>
+            </div>
+            <!-- Map Section -->
+            <div id="map"
+                 class="fixed top-[calc(-14rem)] left-0 right-0 h-[calc(100vh+2rem)] w-full"></div>
+            <!-- Pharmacy List Container -->
+            <div id="pharmacy-list-container"
+                 class="p-4 bg-primary-100 shadow-slate-600 shadow-lg rounded-t-3xl relative z-20 border-t border-neutral-400 flex flex-col"
+                 style="box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5)">
+                <div id="handle"
+                     onclick="event.stopPropagation()"
+                     class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
+                <h1 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h1>
+                <!-- Scrollable Area -->
+                <div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
+                    <div id="pharmacy-items" class="space-y-4">
+                        <!-- Pharmacy items will be dynamically inserted here -->
+                    </div>
+                </div>
+                <footer class="bg-gray-100 p-4 text-center">
+                    <p class="text-sm">
+                        &copy; 2025 Eczanerede |
+                        <a href="/privacy-policy/" class="text-blue-600">Gizlilik Politikası</a> |
+                        <a href="/terms/" class="text-blue-600">Hizmet Şartları</a> |
+                        <a href="/cookie-policy/" class="text-blue-600">Çerez Politikası</a>
+                    </p>
+                </footer>
+            </div>
+        </main>
+        <!-- Script Logic -->
+        <script>
 		let map;
 		let directionsService;
 		let directionsRenderer;
@@ -179,9 +165,7 @@
 
 			pharmacies.forEach((pharmacy) => {
 				const itemHtml = `
-					<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col
-								md:flex-row items-start md:items-center justify-between"
-						data-name="${pharmacy.title}">
+					<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between" data-name="${pharmacy.title}">
 						<div class="md:flex-grow">
 						<p class="text-lg font-semibold mb-1">${pharmacy.title}</p>
 						<p class="text-sm text-gray-600">
@@ -189,8 +173,7 @@
 						</p>
 						</div>
 						<div class="mt-2 md:mt-0 flex items-center space-x-3">
-						<span class="inline-block text-sm font-medium px-6 py-2 rounded
-									bg-secondary border-2 border-secondary text-white">
+						<span class="inline-block text-sm font-medium px-6 py-2 rounded bg-secondary border-2 border-secondary text-white">
 							${pharmacy.status}
 						</span>
 						<button
@@ -347,14 +330,14 @@
 				}
 
 				initMap(finalLocation);
-				
+
 				fetchPharmacyPoints(finalLocation, "eskisehir", function (result) {
 					if (result) {
 						const points = result.points;
 						updatePharmacyList(points);
 						attachHammerSwipeEvents();
-						
-						// If we have a real location, show directions. 
+
+						// If we have a real location, show directions.
 						// Otherwise just show markers to avoid confusing directions from city center.
 						if (location) {
 							showDirectionsToPharmacy(points[0]);
@@ -367,9 +350,8 @@
 				});
 			});
 		});
-	</script>
-
-	<script>
+        </script>
+        <script>
 		function getCSRFToken() {
 			let cookieValue = null;
 			const cookies = document.cookie.split(';');
@@ -387,10 +369,9 @@
 			beforeSend: function (xhr, settings) {
 				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
 			}
-		}); {% endcomment %}
-	</script>
-
-	<script type="application/ld+json">
+}); {% endcomment %}
+        </script>
+        <script type="application/ld+json">
 		{
 		  "@context": "https://schema.org",
 		  "@type": "Organization",
@@ -402,10 +383,9 @@
 		  },
 		  "url": "https://eczanerede.com/"
 		}
-	</script>
-</body>
-
-<style>
+        </script>
+    </body>
+    <style>
 	#pharmacy-list-container {
 		position: fixed;
 		bottom: 0;
@@ -446,6 +426,5 @@
 	html {
 		overflow: hidden;
 	}
-</style>
-
+    </style>
 </html>

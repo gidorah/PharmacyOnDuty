@@ -18,14 +18,14 @@ def _get_duty_dates(operation_times: str) -> tuple[datetime, datetime]:
 
 
 def get_eskisehir_data() -> list[dict[str, Any]]:
-    from pharmacies.utils import get_coordinates_from_google_maps_url
+    from pharmacies.utils.utils import get_coordinates_from_google_maps_url
 
     url = "https://www.eskisehireo.org.tr/eskisehir-nobetci-eczaneler"
     response = requests.get(url, timeout=60)
     soup = BeautifulSoup(response.text, "html.parser")
     pharmacies = soup.find_all("div", class_="nobetci")
 
-    data = []  # To store extracted data
+    data: list[dict[str, Any]] = []  # To store extracted data
 
     for pharmacy in pharmacies:
         # Extract name
@@ -42,10 +42,11 @@ def get_eskisehir_data() -> list[dict[str, Any]]:
 
         # Address
         address_tag = pharmacy.find("i", class_="fa-home")
+        address: str | None = None
         if address_tag:
-            address = address_tag.next_sibling.strip()  # The text after the <i> icon
-        else:
-            address = None
+            next_sibling = address_tag.next_sibling
+            if next_sibling:
+                address = str(next_sibling).strip()  # The text after the <i> icon
 
         # Phone
         phone_tag = pharmacy.find(
@@ -58,18 +59,22 @@ def get_eskisehir_data() -> list[dict[str, Any]]:
             "a", href=lambda href: href and "google.com/maps" in href
         )
         google_maps = map_tag["href"] if map_tag else None
-        coordinates = (
-            get_coordinates_from_google_maps_url(google_maps) if google_maps else None
-        )
+
+        coordinates: dict[str, float] | None = None
+        if google_maps and isinstance(google_maps, str):
+            coordinates = get_coordinates_from_google_maps_url(google_maps)
 
         # Operation Times
         operation_time_tag = pharmacy.find("span", class_="text-danger")
         operation_times = (
             operation_time_tag.text.strip() if operation_time_tag else None
         )
-        start_date, end_date = (
-            _get_duty_dates(operation_times) if operation_times else (None, None)
-        )
+
+        start_date: datetime | None = None
+        end_date: datetime | None = None
+
+        if operation_times:
+            start_date, end_date = _get_duty_dates(operation_times)
 
         # Append to the data list
         data.append(
