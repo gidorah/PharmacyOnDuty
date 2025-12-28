@@ -4,14 +4,12 @@ on:
   pull_request_review_comment:
     types:
       - 'created'
-      - 'edited'
   pull_request_review:
     types:
       - 'submitted'
   pull_request:
     types:
       - 'opened'
-      - 'synchronize'
   issues:
     types:
       - 'opened'
@@ -19,7 +17,6 @@ on:
   issue_comment:
     types:
       - 'created'
-      - 'edited'
 
 defaults:
   run:
