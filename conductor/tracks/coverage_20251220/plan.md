@@ -7,11 +7,11 @@
 - [x] Task: Create unit tests for `utils.py` functions (mocking Google Maps API where needed).
 - [x] Task: Conductor - User Manual Verification 'Model & Utility Tests' (Protocol in workflow.md) 4568074
 
-## Phase 2: Scraper Tests
+## Phase 2: Scraper Tests [checkpoint: b172036]
 - [x] Task: Implement tests for `ankaraeo_scraper.py` (using mocks for HTML responses). 80dc1b0
 - [x] Task: Implement tests for `eskisehireo_scraper.py` (using mocks). ea5fe6d
 - [x] Task: Implement tests for `istanbul_saglik_scraper.py` (using mocks). e581044
-- [~] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md) b172036
 
 ## Phase 3: API & Integration Tests
 - [ ] Task: Create integration tests for `get_pharmacy_points` view (happy path and error cases).
