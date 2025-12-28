@@ -9,7 +9,7 @@
 
 ## Phase 2: Scraper Tests
 - [x] Task: Implement tests for `ankaraeo_scraper.py` (using mocks for HTML responses). 80dc1b0
-- [ ] Task: Implement tests for `eskisehireo_scraper.py` (using mocks).
+- [x] Task: Implement tests for `eskisehireo_scraper.py` (using mocks). ea5fe6d
 - [ ] Task: Implement tests for `istanbul_saglik_scraper.py` (using mocks).
 - [ ] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md)
 
