@@ -21,3 +21,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## [ ] Track: Refactor architecture: Decouple models/tasks and dynamic city config
 *Link: [./conductor/tracks/arch_refactor_20251220/](./conductor/tracks/arch_refactor_20251220/)*
+
+---
+
+## [ ] Track: Increase docstring coverage to 80% using Google Style
+*Link: [./conductor/tracks/docstrings_20251228/](./conductor/tracks/docstrings_20251228/)*
