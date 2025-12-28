@@ -13,7 +13,7 @@
 - [x] Task: Implement tests for `istanbul_saglik_scraper.py` (using mocks). e581044
 - [x] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md) b172036
 
-## Phase 3: API & Integration Tests
+## Phase 3: API & Integration Tests [checkpoint: 210d5cf]
 - [x] Task: Create integration tests for `get_pharmacy_points` view (happy path and error cases). d579014
 - [x] Task: Create tests for `google_maps_proxy` view (security and caching). d579014
-- [~] Task: Conductor - User Manual Verification 'API & Integration Tests' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'API & Integration Tests' (Protocol in workflow.md) 210d5cf
