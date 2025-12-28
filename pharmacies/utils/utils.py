@@ -213,12 +213,11 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
     Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
 
 
-def extract_city_name_from_google_maps_response(data: dict[str, Any]) -> str:
+def _parse_location_identifier(data: dict[str, Any]) -> str:
     if data["status"] != "OK" or not data["results"]:
-        raise ValueError("Unable to retrieve city name: status is not OK")
+        raise ValueError("Unable to parse_location_identifier: status is not OK")
 
-    compound_code = data["plus_code"].get("compound_code")
-
+    compound_code = data.get("plus_code", {}).get("compound_code")
     if compound_code is not None:
         return compound_code  # type: ignore
 
@@ -226,7 +225,7 @@ def extract_city_name_from_google_maps_response(data: dict[str, Any]) -> str:
         if "administrative_area_level_1" in component["types"]:
             return component["long_name"]  # type: ignore
 
-    raise ValueError("Unknown city")
+    raise ValueError("Unable to parse_location_identifier")
 
 
 @lru_cache(maxsize=1024)
@@ -241,19 +240,16 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
     if data["status"] != "OK" or not data["results"]:
         raise ValueError("Unable to retrieve city name: status is not OK")
 
-    city_data = extract_city_name_from_google_maps_response(data)
+    city_data = _parse_location_identifier(data)
+    normalized_data = normalize_string(city_data)
 
-    # TODO: find and handle cities via DB
-    if "İstanbul" in city_data:
-        return "istanbul"
+    known_cities = list(City.objects.values_list("name", flat=True))
 
-    if "Eskişehir" in city_data:
-        return "eskisehir"
+    for city_slug in known_cities:
+        if city_slug in normalized_data:
+            return city_slug
 
-    if "Ankara" in city_data:
-        return "ankara"
-
-    raise ValueError("Unknown city")
+    raise ValueError(f"Unknown city: {city_data}")
 
 
 @lru_cache(maxsize=1024)
@@ -313,14 +309,33 @@ def order_data_by_distance(pharmacy_data: list[dict[str, Any]]) -> None:
     pharmacy_data.sort(key=lambda x: x["travel_distance"])
 
 
+def round_lat_lng(lat: float, lng: float, precision: int = 6) -> tuple[float, float]:
+    """Rounds lat and lng to given precision"""
+
+    return round(lat, precision), round(lng, precision)
+
+
+def normalize_string(s: str) -> str:
+    mapping = {
+        "İ": "i",
+        "I": "i",
+        "ı": "i",
+        "Ş": "s",
+        "ş": "s",
+        "Ğ": "g",
+        "ğ": "g",
+        "Ü": "u",
+        "ü": "u",
+        "Ö": "o",
+        "ö": "o",
+        "Ç": "c",
+        "ç": "c",
+    }
+    return "".join(mapping.get(c, c) for c in s).lower()
+
+
 if __name__ == "__main__":
     from pharmacies.utils.eskisehireo_scraper import get_eskisehir_data
 
     eskisehir_data = get_eskisehir_data()
     add_scraped_data_to_db(eskisehir_data, city_name="eskisehir")
-
-
-def round_lat_lng(lat: float, lng: float, precision: int = 6) -> tuple[float, float]:
-    """Rounds lat and lng to given precision"""
-
-    return round(lat, precision), round(lng, precision)
