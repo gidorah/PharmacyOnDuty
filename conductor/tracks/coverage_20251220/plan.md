@@ -14,6 +14,6 @@
 - [x] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md) b172036
 
 ## Phase 3: API & Integration Tests
-- [ ] Task: Create integration tests for `get_pharmacy_points` view (happy path and error cases).
+- [x] Task: Create integration tests for `get_pharmacy_points` view (happy path and error cases). d579014
 - [ ] Task: Create tests for `google_maps_proxy` view (security and caching).
 - [ ] Task: Conductor - User Manual Verification 'API & Integration Tests' (Protocol in workflow.md)
