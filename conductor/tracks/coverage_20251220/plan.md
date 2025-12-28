@@ -11,7 +11,7 @@
 - [x] Task: Implement tests for `ankaraeo_scraper.py` (using mocks for HTML responses). 80dc1b0
 - [x] Task: Implement tests for `eskisehireo_scraper.py` (using mocks). ea5fe6d
 - [x] Task: Implement tests for `istanbul_saglik_scraper.py` (using mocks). e581044
-- [ ] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md)
+- [~] Task: Conductor - User Manual Verification 'Scraper Tests' (Protocol in workflow.md)
 
 ## Phase 3: API & Integration Tests
 - [ ] Task: Create integration tests for `get_pharmacy_points` view (happy path and error cases).
