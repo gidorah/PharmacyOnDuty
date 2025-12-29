@@ -2,7 +2,7 @@
 
 This plan outlines the steps to resolve the `NoReverseMatch` error in the sitemap generation and ensure the `home` URL naming convention is consistently applied.
 
-## Phase 1: Fix and Regression Testing
+## Phase 1: Fix and Regression Testing [checkpoint: 4b3413d9661d5eee28cd50cb700523a0008fdd0b]
 
 - [x] **Task 1: Create failing regression test (Red Phase)**
     - [x] Create `pharmacies/tests/test_sitemaps.py` (or update existing if found).
@@ -19,4 +19,4 @@ This plan outlines the steps to resolve the `NoReverseMatch` error in the sitema
     - [x] Run all tests using `uv run python manage.py test`.
     - [x] Verify code coverage for `sitemaps.py` and related logic.
     - [x] Run `ruff` and `mypy` to ensure code standards are met.
-- [~] **Task 5: Conductor - User Manual Verification 'Phase 1: Fix and Regression Testing' (Protocol in workflow.md)**
+- [x] **Task 5: Conductor - User Manual Verification 'Phase 1: Fix and Regression Testing' (Protocol in workflow.md)**
