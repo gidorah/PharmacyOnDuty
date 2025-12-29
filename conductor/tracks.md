@@ -29,7 +29,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [ ] Track: Fix NoReverseMatch in sitemaps.py
+## [~] Track: Fix NoReverseMatch in sitemaps.py
 *Link: [./conductor/tracks/fix_sitemap_20251229/](./conductor/tracks/fix_sitemap_20251229/)*
 
 ---

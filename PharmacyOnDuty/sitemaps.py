@@ -8,7 +8,7 @@ class StaticViewSitemap(Sitemap):  # type: ignore[type-arg]
 
     def items(self) -> list[str]:
         return [
-            "pharmacies_list",
+            "home",
             "privacy_policy",
             "terms_of_service",
             "cookie_policy",
