@@ -175,13 +175,14 @@ SENTRY_DSN: str | None = os.environ.get("SENTRY_DSN")
 if SENTRY_DSN:
     print("Sentry DSN is set, initializing Sentry SDK")
     import sentry_sdk
+    from django.core.exceptions import DisallowedHost
 
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         # Set traces_sample_rate to 1.0 to capture 100%
         # of transactions for tracing.
         traces_sample_rate=1.0,
-        ignore_errors=[SystemExit],
+        ignore_errors=[SystemExit, DisallowedHost],
         _experiments={
             # Set continuous_profiling_auto_start to True
             # to automatically start the profiler on when

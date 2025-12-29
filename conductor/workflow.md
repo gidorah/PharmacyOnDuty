@@ -316,3 +316,104 @@ A task is complete when:
 - Document lessons learned
 - Optimize for user happiness
 - Keep things simple and maintainable
+
+---
+
+## 6.0 SYNCHRONIZE PROJECT DOCUMENTATION
+**PROTOCOL: Update project-level documentation based on the completed track.**
+
+1.  **Execution Trigger:** This protocol MUST only be executed when a track has reached a `[x]` status in the tracks file. DO NOT execute this protocol for any other track status changes.
+
+2.  **Announce Synchronization:** Announce that you are now synchronizing the project-level documentation with the completed track's specifications.
+
+3.  **Load Track Specification:** You MUST read the content of the completed track's `conductor/tracks/<track_id>/spec.md` file into your context.
+
+4.  **Load Project Documents:** You MUST read the contents of the following project-level documents into your context:
+    -   `conductor/product.md`
+    -   `conductor/product-guidelines.md`
+    -   `conductor/tech-stack.md`
+    -   `readme.md`
+
+5.  **Analyze and Update:**
+    a.  **Analyze `spec.md`:** Carefully analyze the `spec.md` to identify any new features, changes in functionality, or updates to the technology stack.
+    b.  **Update `conductor/product.md`:**
+        i. **Condition for Update:** Based on your analysis, you MUST determine if the completed feature or bug fix significantly impacts the description of the product itself.
+        ii. **Propose and Confirm Changes:** If an update is needed, generate the proposed changes. Then, present them to the user for confirmation:
+            > "Based on the completed track, I propose the following updates to `product.md`:"
+            > ```diff
+            > [Proposed changes here, ideally in a diff format]
+            > ```
+            > "Do you approve these changes? (yes/no)"
+        iii. **Action:** Only after receiving explicit user confirmation, perform the file edits to update the `conductor/product.md` file. Keep a record of whether this file was changed.
+    c.  **Update `conductor/tech-stack.md`:**
+        i. **Condition for Update:** Similarly, you MUST determine if significant changes in the technology stack are detected as a result of the completed track.
+        ii. **Propose and Confirm Changes:** If an update is needed, generate the proposed changes. Then, present them to the user for confirmation:
+            > "Based on the completed track, I propose the following updates to `tech-stack.md`:"
+            > ```diff
+            > [Proposed changes here, ideally in a diff format]
+            > ```
+            > "Do you approve these changes? (yes/no)"
+        iii. **Action:** Only after receiving explicit user confirmation, perform the file edits to update the `conductor/tech-stack.md` file. Keep a record of whether this file was changed.
+    d.  **Update `readme.md`:**
+        i. **Condition for Update:** Analyze if the changes affect the project overview, features, installation steps, configuration, or technology list in `readme.md`.
+        ii. **Propose and Confirm Changes:** If an update is needed, generate the proposed changes. Then, present them to the user for confirmation:
+            > "Based on the completed track, I propose the following updates to `readme.md`:"
+            > ```diff
+            > [Proposed changes here, ideally in a diff format]
+            > ```
+            > "Do you approve these changes? (yes/no)"
+        iii. **Action:** Only after receiving explicit user confirmation, perform the file edits to update the `readme.md` file. Keep a record of whether this file was changed.
+    e. **Update `conductor/product-guidelines.md` (Strictly Controlled):**
+        i. **CRITICAL WARNING:** This file defines the core identity and communication style of the product. It should be modified with extreme caution and ONLY in cases of significant strategic shifts, such as a product rebrand or a fundamental change in user engagement philosophy. Routine feature updates or bug fixes should NOT trigger changes to this file.
+        ii. **Condition for Update:** You may ONLY propose an update to this file if the track's `spec.md` explicitly describes a change that directly impacts branding, voice, tone, or other core product guidelines.
+        iii. **Propose and Confirm Changes:** If the conditions are met, you MUST generate the proposed changes and present them to the user with a clear warning:
+            > "WARNING: The completed track suggests a change to the core product guidelines. This is an unusual step. Please review carefully:"
+            > ```diff
+            > [Proposed changes here, ideally in a diff format]
+            > ```
+            > "Do you approve these critical changes to `product-guidelines.md`? (yes/no)"
+        iv. **Action:** Only after receiving explicit user confirmation, perform the file edits. Keep a record of whether this file was changed.
+
+6.  **Final Report:** Announce the completion of the synchronization process and provide a summary of the actions taken.
+    - **Construct the Message:** Based on the records of which files were changed, construct a summary message.
+    - **Example (if product.md was changed, but others were not):**
+        > "Documentation synchronization is complete.
+        > - **Changes made to `product.md`:** The user-facing description of the product was updated to include the new feature.
+        > - **No changes needed for `tech-stack.md`:** The technology stack was not affected.
+        > - **No changes needed for `readme.md`:** The public documentation was not affected.
+        > - **No changes needed for `product-guidelines.md`:** Core product guidelines remain unchanged."
+    - **Example (if no files were changed):**
+        > "Documentation synchronization is complete. No updates were necessary for `product.md`, `tech-stack.md`, `readme.md`, or `product-guidelines.md` based on the completed track."
+
+---
+
+## 7.0 TRACK CLEANUP
+**PROTOCOL: Offer to archive or delete the completed track.**
+
+1.  **Execution Trigger:** This protocol MUST only be executed after the current track has been successfully implemented and the `SYNCHRONIZE PROJECT DOCUMENTATION` step is complete.
+
+2.  **Ask for User Choice:** You MUST prompt the user with the available options for the completed track.
+    > "Track '<track_description>' is now complete. What would you like to do?
+    > A.  **Archive:** Move the track's folder to `conductor/archive/` and remove it from the tracks file.
+    > B.  **Delete:** Permanently delete the track's folder and remove it from the tracks file.
+    > C.  **Skip:** Do nothing and leave it in the tracks file.
+    > Please enter the number of your choice (A, B, or C)."
+
+3.  **Handle User Response:**
+    *   **If user chooses "A" (Archive):**
+        i.   **Create Archive Directory:** Check for the existence of `conductor/archive/`. If it does not exist, create it.
+        ii.  **Archive Track Folder:** Move the track's folder from `conductor/tracks/<track_id>` to `conductor/archive/<track_id>`.
+        iii. **Remove from Tracks File:** Read the content of `conductor/tracks.md`, remove the entire section for the completed track (the part that starts with `---` and contains the track description), and write the modified content back to the file.
+        iv.  **Announce Success:** Announce: "Track '<track_description>' has been successfully archived."
+    *   **If user chooses "B" (Delete):**
+        i. **CRITICAL WARNING:** Before proceeding, you MUST ask for a final confirmation due to the irreversible nature of the action.
+            > "WARNING: This will permanently delete the track folder and all its contents. This action cannot be undone. Are you sure you want to proceed? (yes/no)"
+        ii. **Handle Confirmation:**
+            - **If 'yes'**:
+                a. **Delete Track Folder:** Permanently delete the track's folder from `conductor/tracks/<track_id>`.
+                b. **Remove from Tracks File:** Read the content of `conductor/tracks.md`, remove the entire section for the completed track, and write the modified content back to the file.
+                c. **Announce Success:** Announce: "Track '<track_description>' has been permanently deleted."
+            - **If 'no' (or anything else)**:
+                a. **Announce Cancellation:** Announce: "Deletion cancelled. The track has not been changed."
+    *   **If user chooses "C" (Skip) or provides any other input:**
+        *   Announce: "Okay, the completed track will remain in your tracks file for now."

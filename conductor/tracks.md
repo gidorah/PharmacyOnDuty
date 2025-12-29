@@ -28,7 +28,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 *Link: [./conductor/tracks/docstrings_20251228/](./conductor/tracks/docstrings_20251228/)*
 
 ---
-
-
-## [ ] Track: Filter DisallowedHost in Sentry
-*Link: [./conductor/tracks/filter_sentry_noise_20251229/](./conductor/tracks/filter_sentry_noise_20251229/)*
