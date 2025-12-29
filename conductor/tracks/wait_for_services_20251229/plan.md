@@ -17,7 +17,7 @@ In this phase, we integrate the wait script into the container entrypoint and ve
 - [x] Task: Test the startup flow using `docker-compose` to ensure services wait appropriately.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Integration & Deployment' (Protocol in workflow.md)
 
-## Phase 3: Verification & Cleanup
+## Phase 3: Verification & Cleanup [checkpoint: 089b244c725176d154eb1044f523b02860c417ea]
 Final verification and removal of any temporary reproduction scripts.
 
 - [x] Task: Verify logs show successful "Waiting for..." messages during a fresh `just dev-up`.
