@@ -169,21 +169,23 @@ def get_city_data(city_name: str) -> list[dict[str, Any]]:
     raise ValueError("Unknown city")
 
 
-def check_if_pharmacy_exists(name: str, phone: str) -> bool:
-    pharmacy = Pharmacy.objects.filter(name=name).filter(phone=phone).first()
-    return True if pharmacy else False
-
-
 def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -> None:
     city: City = City.objects.get(name=city_name)
     if not city:
         raise ValueError("City not found")
 
+    # Pre-fetch existing pharmacies for this city
+    existing_pharmacies = Pharmacy.objects.filter(city=city)
+    pharmacy_map = {(p.name, p.phone): p for p in existing_pharmacies}
+
     pharmacies_to_create = []
     pharmacies_to_update = []
 
     for item in scraped_data:
-        if not check_if_pharmacy_exists(item["name"], item["phone"]):
+        key = (item["name"], item["phone"])
+        existing_pharmacy = pharmacy_map.get(key)
+
+        if not existing_pharmacy:
             coordinates = item["coordinates"]
             location = Point(float(coordinates["lng"]), float(coordinates["lat"]))
 
@@ -199,15 +201,9 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
             )
             pharmacies_to_create.append(pharmacy)
         else:
-            existing_pharmacy = (
-                Pharmacy.objects.filter(name=item["name"])
-                .filter(phone=item["phone"])
-                .first()
-            )
-            if existing_pharmacy:
-                existing_pharmacy.duty_start = item["duty_start"]
-                existing_pharmacy.duty_end = item["duty_end"]
-                pharmacies_to_update.append(existing_pharmacy)
+            existing_pharmacy.duty_start = item["duty_start"]
+            existing_pharmacy.duty_end = item["duty_end"]
+            pharmacies_to_update.append(existing_pharmacy)
 
     Pharmacy.objects.bulk_create(pharmacies_to_create, ignore_conflicts=True)
     Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
