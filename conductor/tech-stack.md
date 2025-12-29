@@ -20,6 +20,7 @@
 - **Docker & Docker Compose:** Containerization for consistent development and production environments.
 - **WhiteNoise:** Efficient static file serving for Django.
 - **Sentry:** Real-time error monitoring.
+- **Startup Synchronization:** Custom Python "wait-for" script to ensure service readiness before application boot.
 
 ## Deployment & CI/CD
 - **Hetzner VPS:** Hosting provider for core services (Django app, Database, Redis).
