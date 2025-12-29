@@ -30,7 +30,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 
-## [ ] Track: Fix SystemExit: 1 in Sentry
+## [~] Track: Fix SystemExit: 1 in Sentry
 *Link: [./conductor/tracks/fix_systemexit_20251229/](./conductor/tracks/fix_systemexit_20251229/)*
 
 ---
