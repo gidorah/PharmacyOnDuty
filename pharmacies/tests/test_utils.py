@@ -95,7 +95,7 @@ def test_extract_city_name_from_google_maps_response_address_components() -> Non
 def test_extract_city_name_from_google_maps_response_error() -> None:
     data = {"status": "ZERO_RESULTS", "results": []}
     with pytest.raises(
-        ValueError, match="Unable to retrieve city name: status is not OK"
+        ValueError, match="Unable to parse_location_identifier: status is not OK"
     ):
         _parse_location_identifier(data)
 
