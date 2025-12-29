@@ -12,10 +12,10 @@ In this phase, we create the standalone Python script that will handle the conne
 ## Phase 2: Integration & Deployment
 In this phase, we integrate the wait script into the container entrypoint and verify it works across all relevant services.
 
-- [ ] Task: Update `scripts/entrypoint.sh` to call `wait_for_services.py` before any other commands.
-- [ ] Task: Verify `docker/dev/Dockerfile` and `docker/prod/Dockerfile` correctly include/access the new script.
-- [ ] Task: Test the startup flow using `docker-compose` to ensure services wait appropriately.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Integration & Deployment' (Protocol in workflow.md)
+- [x] Task: Update `scripts/entrypoint.sh` to call `wait_for_services.py` before any other commands.
+- [x] Task: Verify `docker/dev/Dockerfile` and `docker/prod/Dockerfile` correctly include/access the new script.
+- [x] Task: Test the startup flow using `docker-compose` to ensure services wait appropriately.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Integration & Deployment' (Protocol in workflow.md)
 
 ## Phase 3: Verification & Cleanup
 Final verification and removal of any temporary reproduction scripts.

@@ -34,7 +34,8 @@ WORKDIR /app
 
 # Copy entrypoint script before switching user
 COPY scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY scripts/wait_for_services.py /usr/local/bin/wait_for_services.py
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/wait_for_services.py
 
 # Switch to non-root user
 USER python

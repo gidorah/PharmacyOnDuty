@@ -46,11 +46,12 @@ RUN uv sync --frozen --no-dev
 COPY --chown=python:python . .
 
 # Copy and set permissions for entrypoint script
-COPY --chown=python:python scripts/entrypoint.sh /app/entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
+COPY --chown=python:python scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chown=python:python scripts/wait_for_services.py /usr/local/bin/wait_for_services.py
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/wait_for_services.py
 
 # Set entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Expose the port Django will run on
 EXPOSE 8000
