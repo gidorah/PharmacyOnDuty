@@ -2,7 +2,7 @@
 
 This plan outlines the steps to filter out `DisallowedHost` exceptions from being sent to Sentry, reducing noise from automated scanners.
 
-## Phase 1: Implement Sentry Filtering
+## Phase 1: Implement Sentry Filtering [checkpoint: 6d650c1f54e2277736782f302db7f2915db8b0ee]
 
 - [x] **Task 1: Verify Current Sentry Setup and Plan Fix (Red Phase)**
     - [x] Create a temporary test or script to verify if `DisallowedHost` triggers a Sentry event (or identify how to mock this check).
@@ -13,4 +13,4 @@ This plan outlines the steps to filter out `DisallowedHost` exceptions from bein
 - [x] **Task 3: Quality Assurance**
     - [x] Run `uv run python manage.py check` to ensure no settings errors.
     - [x] Run `ruff` and `mypy` on `PharmacyOnDuty/settings.py`.
-- [ ] **Task 4: Conductor - User Manual Verification 'Phase 1: Implement Sentry Filtering' (Protocol in workflow.md)**
+- [x] **Task 4: Conductor - User Manual Verification 'Phase 1: Implement Sentry Filtering' (Protocol in workflow.md)**
