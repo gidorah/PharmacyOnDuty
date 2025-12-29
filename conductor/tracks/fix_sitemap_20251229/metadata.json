@@ -1,0 +1,8 @@
+{
+  "track_id": "fix_sitemap_20251229",
+  "type": "bug",
+  "status": "new",
+  "created_at": "2025-12-29T18:18:00Z",
+  "updated_at": "2025-12-29T18:18:00Z",
+  "description": "Fix NoReverseMatch: 'pharmacies_list' not found in sitemaps.py"
+}

@@ -26,3 +26,18 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ## [ ] Track: Increase docstring coverage to 80% using Google Style
 *Link: [./conductor/tracks/docstrings_20251228/](./conductor/tracks/docstrings_20251228/)*
+
+---
+
+## [ ] Track: Fix NoReverseMatch in sitemaps.py
+*Link: [./conductor/tracks/fix_sitemap_20251229/](./conductor/tracks/fix_sitemap_20251229/)*
+
+---
+
+## [ ] Track: Fix SystemExit: 1 in Sentry
+*Link: [./conductor/tracks/fix_systemexit_20251229/](./conductor/tracks/fix_systemexit_20251229/)*
+
+---
+
+## [ ] Track: Filter DisallowedHost in Sentry
+*Link: [./conductor/tracks/filter_sentry_noise_20251229/](./conductor/tracks/filter_sentry_noise_20251229/)*
