@@ -20,6 +20,6 @@ In this phase, we integrate the wait script into the container entrypoint and ve
 ## Phase 3: Verification & Cleanup
 Final verification and removal of any temporary reproduction scripts.
 
-- [ ] Task: Verify logs show successful "Waiting for..." messages during a fresh `just dev-up`.
-- [ ] Task: Remove `reproduce_connection_issue.py`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Verification & Cleanup' (Protocol in workflow.md)
+- [x] Task: Verify logs show successful "Waiting for..." messages during a fresh `just dev-up`.
+- [x] Task: Remove `reproduce_connection_issue.py`.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Verification & Cleanup' (Protocol in workflow.md)
