@@ -2,7 +2,7 @@
 
 This plan addresses the "Temporary failure in name resolution" errors during container startup by implementing a robust "wait-for-services" mechanism.
 
-## Phase 1: Preparation & Core Logic
+## Phase 1: Preparation & Core Logic [checkpoint: 415506565c97f2d5a5cd2810bbf68e5454f16419]
 In this phase, we create the standalone Python script that will handle the connection checks for PostgreSQL and Redis.
 
 - [x] Task: Create `scripts/wait_for_services.py` with connectivity logic for DB and Redis.
