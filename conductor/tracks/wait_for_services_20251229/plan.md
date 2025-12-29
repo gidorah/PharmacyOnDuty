@@ -9,7 +9,7 @@ In this phase, we create the standalone Python script that will handle the conne
 - [x] Task: Create unit tests for `wait_for_services.py` (mocking socket/psycopg2/redis).
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Preparation & Core Logic' (Protocol in workflow.md)
 
-## Phase 2: Integration & Deployment
+## Phase 2: Integration & Deployment [checkpoint: 8caeb90e752a39e0f84b2409fd6f60182c2782ec]
 In this phase, we integrate the wait script into the container entrypoint and verify it works across all relevant services.
 
 - [x] Task: Update `scripts/entrypoint.sh` to call `wait_for_services.py` before any other commands.
