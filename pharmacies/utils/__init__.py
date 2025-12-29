@@ -10,6 +10,7 @@ from pharmacies.utils.utils import (
     get_city_name_from_location,
     get_nearest_pharmacies_on_duty,
     get_nearest_pharmacies_open,
+    normalize_string,
     round_lat_lng,
 )
 
@@ -26,4 +27,5 @@ __all__ = [
     "get_nearest_pharmacies_on_duty",
     "get_nearest_pharmacies_open",
     "round_lat_lng",
+    "normalize_string",
 ]

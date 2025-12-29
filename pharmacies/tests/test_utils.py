@@ -7,7 +7,7 @@ from django.contrib.gis.geos import Point
 
 from pharmacies.models import City, Pharmacy, WorkingSchedule
 from pharmacies.utils.utils import (
-    extract_city_name_from_google_maps_response,
+    _parse_location_identifier,
     get_city_name_from_location,
     get_coordinates_from_google_maps_url,
     get_map_points_from_fetched_data,
@@ -74,9 +74,7 @@ def test_extract_city_name_from_google_maps_response_compound_code() -> None:
         "plus_code": {"compound_code": "XF+VX Eskişehir, Turkey"},
         "results": [{}],  # Dummy result
     }
-    assert (
-        extract_city_name_from_google_maps_response(data) == "XF+VX Eskişehir, Turkey"
-    )
+    assert _parse_location_identifier(data) == "XF+VX Eskişehir, Turkey"
 
 
 def test_extract_city_name_from_google_maps_response_address_components() -> None:
@@ -91,44 +89,15 @@ def test_extract_city_name_from_google_maps_response_address_components() -> Non
             }
         ],
     }
-    assert extract_city_name_from_google_maps_response(data) == "Eskişehir"
+    assert _parse_location_identifier(data) == "Eskişehir"
 
 
 def test_extract_city_name_from_google_maps_response_error() -> None:
     data = {"status": "ZERO_RESULTS", "results": []}
     with pytest.raises(
-        ValueError, match="Unable to retrieve city name: status is not OK"
+        ValueError, match="Unable to parse_location_identifier: status is not OK"
     ):
-        extract_city_name_from_google_maps_response(data)
-
-
-@patch("pharmacies.utils.utils.requests.get")
-def test_get_city_name_from_location_istanbul(mock_get: MagicMock) -> None:
-    get_city_name_from_location.cache_clear()
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
-        "status": "OK",
-        "plus_code": {"compound_code": "İstanbul, Turkey"},
-        "results": [{}],  # Dummy result
-    }
-    mock_get.return_value = mock_response
-
-    assert get_city_name_from_location(41.0, 28.0) == "istanbul"
-
-
-@patch("pharmacies.utils.utils.requests.get")
-def test_get_city_name_from_location_unknown(mock_get: MagicMock) -> None:
-    get_city_name_from_location.cache_clear()
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
-        "status": "OK",
-        "plus_code": {"compound_code": "SomePlace, Turkey"},
-        "results": [{}],  # Dummy result
-    }
-    mock_get.return_value = mock_response
-
-    with pytest.raises(ValueError, match="Unknown city"):
-        get_city_name_from_location(0, 0)
+        _parse_location_identifier(data)
 
 
 @patch("pharmacies.utils.utils.requests.get")
@@ -180,6 +149,34 @@ def test_add_travel_distances_to_pharmacy_data_empty() -> None:
 
 @pytest.mark.django_db
 class TestUtilsDB:
+    @patch("pharmacies.utils.utils.requests.get")
+    def test_get_city_name_from_location_istanbul(self, mock_get: MagicMock) -> None:
+        City.objects.create(name="istanbul")
+        get_city_name_from_location.cache_clear()
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "status": "OK",
+            "plus_code": {"compound_code": "İstanbul, Turkey"},
+            "results": [{}],  # Dummy result
+        }
+        mock_get.return_value = mock_response
+
+        assert get_city_name_from_location(41.0, 28.0) == "istanbul"
+
+    @patch("pharmacies.utils.utils.requests.get")
+    def test_get_city_name_from_location_unknown(self, mock_get: MagicMock) -> None:
+        get_city_name_from_location.cache_clear()
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "status": "OK",
+            "plus_code": {"compound_code": "SomePlace, Turkey"},
+            "results": [{}],  # Dummy result
+        }
+        mock_get.return_value = mock_response
+
+        with pytest.raises(ValueError, match="Unknown city"):
+            get_city_name_from_location(0, 0)
+
     def test_check_if_pharmacy_exists(self) -> None:
         from pharmacies.utils.utils import check_if_pharmacy_exists
 

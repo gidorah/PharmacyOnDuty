@@ -36,7 +36,6 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
 
         # decide the city from the user location
         city_name = get_city_name_from_location(lat, lng)
-
         city = City.objects.get(name=city_name)
 
         query_time = TEST_TIME if settings.DEBUG else timezone.now()
