@@ -11,7 +11,7 @@ import PharmacyOnDuty.settings as settings_module
 
 
 class SentryConfigTest(SimpleTestCase):
-    @patch("PharmacyOnDuty.settings.sentry_sdk.init")
+    @patch("sentry_sdk.init")
     def test_sentry_ignores_system_exit(self, mock_init: Any) -> None:
         # Set environment variable to ensure Sentry initializes
         with patch.dict(
@@ -34,7 +34,7 @@ class SentryConfigTest(SimpleTestCase):
             SystemExit, kwargs["ignore_errors"], "SystemExit should be in ignore_errors"
         )
 
-    @patch("PharmacyOnDuty.settings.sentry_sdk.init")
+    @patch("sentry_sdk.init")
     def test_sentry_ignores_disallowed_host(self, mock_init: Any) -> None:
         # Set environment variable to ensure Sentry initializes
         with patch.dict(

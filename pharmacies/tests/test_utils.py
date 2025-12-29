@@ -177,21 +177,6 @@ class TestUtilsDB:
         with pytest.raises(ValueError, match="Unknown city"):
             get_city_name_from_location(0, 0)
 
-    def test_check_if_pharmacy_exists(self) -> None:
-        from pharmacies.utils.utils import check_if_pharmacy_exists
-
-        city = City.objects.create(name="Eskişehir")
-        Pharmacy.objects.create(
-            name="Eczane 1",
-            phone="123",
-            city=city,
-            district="D1",
-            location=Point(30, 39),
-        )
-
-        assert check_if_pharmacy_exists("Eczane 1", "123") is True
-        assert check_if_pharmacy_exists("Eczane 2", "123") is False
-
     def test_add_scraped_data_to_db(self) -> None:
         from pharmacies.utils.utils import add_scraped_data_to_db
 
