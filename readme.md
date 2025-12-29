@@ -49,6 +49,7 @@ Eczanerede is a mobile-first web application designed to help users quickly find
 *   **Cached API Responses:**  Implements caching for API responses to improve performance and reduce unnecessary API calls.
 *   **SEO Optimized:** Includes `sitemap.xml`, `robots.txt`, and relevant meta tags to improve search engine visibility.
 *   **Error Tracking:** Integrated with Sentry for real-time error monitoring and debugging.
+*   **Startup Reliability:** Implements a robust "wait-for-services" mechanism to ensure the application only starts when database and message broker services are fully ready.
 *   **Static File Optimization:** Uses WhiteNoise for efficient serving of static assets (CSS, JavaScript, images).
 *   **Remote Debugging:** Supports remote debugging using `debugpy` for easier development and troubleshooting, particularly within Docker containers.
 *   **Database Indexes:** Includes indexes on `location`, `duty_start`, and `duty_end` for efficient querying.
@@ -121,6 +122,9 @@ PharmacyOnDuty/
 │   ├── admin.py            # Django admin configuration
 │   ├── apps.py             # App configuration
 │   └── tests.py            # Unit tests (currently empty)
+├── scripts/                # Utility and entrypoint scripts
+│   ├── entrypoint.sh       # Container entrypoint with service wait logic
+│   └── wait_for_services.py# Script to verify DB/Redis availability
 ├── theme/                  # Tailwind CSS configuration and static assets
 │   ├── static/
 │   │   └── css/
@@ -210,6 +214,10 @@ PharmacyOnDuty/
     *   **Heroku:** The production environment is hosted on Heroku. The `Procfile` specifies the commands to run the web server (Gunicorn) and perform database migrations.
     *   **WhiteNoise:** Static files (CSS, JavaScript, images) are served efficiently using WhiteNoise.
     *   **Sentry:** Sentry is integrated for error tracking and monitoring.
+
+7.  **Service Readiness and Startup Synchronization:**
+
+    To prevent "Temporary failure in name resolution" errors during container orchestration, a custom `wait_for_services.py` script runs before migrations or application startup. This script verifies that both PostgreSQL and Redis are accepting connections, providing a robust startup sequence in both development and production environments.
 
 ## Setup and Installation
 
