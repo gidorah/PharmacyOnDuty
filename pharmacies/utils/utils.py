@@ -246,7 +246,7 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
     known_cities = list(City.objects.values_list("name", flat=True))
 
     for city_slug in known_cities:
-        if city_slug in normalized_data:
+        if normalize_string(city_slug) in normalized_data:
             return city_slug
 
     raise ValueError(f"Unknown city: {city_data}")
