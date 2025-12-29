@@ -6,7 +6,6 @@ class SitemapTests(TestCase):
     def test_sitemap_generation(self) -> None:
         """
         Test that the sitemap can be generated successfully.
-        This test is expected to fail initially due to NoReverseMatch.
         """
         try:
             response = self.client.get(reverse("django.contrib.sitemaps.views.sitemap"))
