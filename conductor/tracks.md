@@ -16,9 +16,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 ## [ ] Track: Fix critical security vulnerabilities (DEBUG, API protection, Hardcoded Creds)
 *Link: [./conductor/tracks/security_20251220/](./conductor/tracks/security_20251220/)*
 
-## [~] Track: Optimize scraper N+1 queries
-*Link: [./conductor/tracks/perf_scraper_20251220/](./conductor/tracks/perf_scraper_20251220/)*
-
 ## [ ] Track: Refactor architecture: Decouple models/tasks and dynamic city config
 *Link: [./conductor/tracks/arch_refactor_20251220/](./conductor/tracks/arch_refactor_20251220/)*
 
