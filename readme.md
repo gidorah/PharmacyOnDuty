@@ -119,9 +119,9 @@ PharmacyOnDuty/
 │   │   └── utils.py                 # General utility functions
 │   ├── views.py            # API endpoints and views
 │   ├── urls.py             # URL routing for the pharmacies app
-│   ├── admin.py            # Django admin configuration
-│   ├── apps.py             # App configuration
-│   └── tests.py            # Unit tests (currently empty)
+│   ├───admin.py            # Django admin configuration
+│   ├───apps.py             # App configuration
+│   └── tests/              # Unit tests and regression tests
 ├── scripts/                # Utility and entrypoint scripts
 │   ├── entrypoint.sh       # Container entrypoint with service wait logic
 │   └── wait_for_services.py# Script to verify DB/Redis availability
@@ -608,7 +608,7 @@ To run the tests, use the following command:
 uv run python manage.py test
 ```
 
-Currently, the test suite is minimal. Contributions to expand test coverage are highly encouraged.  When adding new features or fixing bugs, please include corresponding tests.
+The project maintains a comprehensive test suite with high code coverage (>90%). It uses `pytest` and `coverage` to ensure reliability. Contributions should include tests to maintain this standard.
 
 ## Contributing
 
