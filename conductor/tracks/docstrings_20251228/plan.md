@@ -7,12 +7,12 @@ This plan outlines the systematic approach to increase docstring coverage from 9
 - [x] Task: Create a baseline coverage report to identify all missing docstrings.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Tooling and Baseline Establishment' (Protocol in workflow.md)
 
-## Phase 2: Core Application Documentation (`pharmacies/`)
-- [ ] Task: Add docstrings to `pharmacies/models.py`.
-- [ ] Task: Add docstrings to `pharmacies/views.py`.
-- [ ] Task: Add docstrings to `pharmacies/tasks.py`.
-- [ ] Task: Add docstrings to `pharmacies/apps.py` and `pharmacies/urls.py`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Core Application Documentation' (Protocol in workflow.md)
+## Phase 2: Core Application Documentation (`pharmacies/`) [checkpoint: 2e2039f383f2b21cc03a934afdd8ff62cdbe6e26]
+- [x] Task: Add docstrings to `pharmacies/models.py`.
+- [x] Task: Add docstrings to `pharmacies/views.py`.
+- [x] Task: Add docstrings to `pharmacies/tasks.py`.
+- [x] Task: Add docstrings to `pharmacies/apps.py` and `pharmacies/urls.py`.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Core Application Documentation' (Protocol in workflow.md)
 
 ## Phase 3: Utilities and Scrapers Documentation (`pharmacies/utils/`)
 - [ ] Task: Add docstrings to `pharmacies/utils/utils.py` and `pharmacies/utils/pharmacy_fetch.py`.
