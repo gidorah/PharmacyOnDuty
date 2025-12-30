@@ -1,3 +1,10 @@
+"""
+Utility functions for the Pharmacies application.
+
+This module provides helpers for scraping, geospatial calculations,
+and interacting with the Google Maps API.
+"""
+
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import lru_cache
@@ -17,7 +24,12 @@ from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 def get_nearest_pharmacies_open(
     lat: float, lng: float, limit: int = 5
 ) -> list[dict[str, Any]]:
-    """Get pharmacies that are open"""
+    """
+    Get pharmacies that are open (standard working hours) near a location.
+
+    Fetches nearest pharmacies from Google Places API, calculates travel distances,
+    and sorts them by distance.
+    """
     fetched_data = fetch_nearest_pharmacies(lat, lng, limit=limit)
     pharmacy_data = get_map_points_from_fetched_data(fetched_data)
     add_travel_distances_to_pharmacy_data(lat=lat, lng=lng, pharmacy_data=pharmacy_data)
@@ -34,6 +46,13 @@ def get_nearest_pharmacies_on_duty(
     limit: int = 5,
     time: datetime | None = None,
 ) -> list[dict[str, Any]]:
+    """
+    Get nearest duty pharmacies (Nöbetçi Eczane) for a given location and time.
+
+    1. Checks if the city and coordinates are valid.
+    2. Filters pharmacies in the database that are on duty at the specified time.
+    3. Sorts by distance and calculates travel metrics using Google Maps.
+    """
     if city is None:
         raise ValueError("City name is required.")
 
@@ -79,6 +98,11 @@ def get_nearest_pharmacies_on_duty(
 
 
 def get_coordinates_from_google_maps_url(url: str) -> dict[str, float]:
+    """
+    Extract latitude and longitude from a Google Maps URL.
+
+    Example URL format: ...?q=lat,lng
+    """
     coordinate_string = url.split("=")[-1]
     lat = float(coordinate_string.split(",")[0])
     lng = float(coordinate_string.split(",")[1])
@@ -86,6 +110,7 @@ def get_coordinates_from_google_maps_url(url: str) -> dict[str, float]:
 
 
 def get_map_points_from_fetched_data(data: list[Any]) -> list[dict[str, Any]]:
+    """Convert raw Google Places API data into frontend-friendly map points."""
     points = []
 
     for pharmacy in data:
@@ -106,6 +131,7 @@ def get_map_points_from_fetched_data(data: list[Any]) -> list[dict[str, Any]]:
 
 
 def get_map_points_from_pharmacies(pharmacies: Any) -> list[dict[str, Any]]:
+    """Convert Pharmacy model instances into frontend-friendly map points."""
     points = []
 
     for pharmacy in pharmacies:
@@ -125,6 +151,8 @@ def get_map_points_from_pharmacies(pharmacies: Any) -> list[dict[str, Any]]:
 
 
 class ScrapedDataStatus(Enum):
+    """Enum for the status of scraped data (New or Old)."""
+
     OLD = "old"
     NEW = "new"
 
@@ -132,6 +160,12 @@ class ScrapedDataStatus(Enum):
 def check_scraped_data_age(
     city_name: str | None = None, time: datetime | None = None
 ) -> ScrapedDataStatus:
+    """
+    Check if the scraped data for a city is considered 'new' or 'old'.
+
+    Returns 'NEW' if the city is currently 'OPEN' (standard hours).
+    Returns 'OLD' if the last scrape was too long ago or during open hours.
+    """
     from pharmacies.models import City, PharmacyStatus
 
     if city_name is None:
@@ -156,6 +190,9 @@ def check_scraped_data_age(
 
 
 def get_city_data(city_name: str) -> list[dict[str, Any]]:
+    """
+    Dispatcher function to call the appropriate scraper for a given city.
+    """
     if city_name == "eskisehir":
         # mypy thinks this cast is redundant because get_eskisehir_data returns Any or correct type
         return get_eskisehir_data()
@@ -170,6 +207,11 @@ def get_city_data(city_name: str) -> list[dict[str, Any]]:
 
 
 def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -> None:
+    """
+    Save scraped pharmacy data to the database.
+
+    Updates existing pharmacies or creates new ones. Optimized using bulk operations.
+    """
     city: City = City.objects.get(name=city_name)
     if not city:
         raise ValueError("City not found")
@@ -210,6 +252,7 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
 
 
 def _parse_location_identifier(data: dict[str, Any]) -> str:
+    """Extract a location identifier (compound code or admin area) from Geocoding results."""
     if data["status"] != "OK" or not data["results"]:
         raise ValueError("Unable to parse_location_identifier: status is not OK")
 
@@ -250,6 +293,7 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
 
 @lru_cache(maxsize=1024)
 def _get_distance_matrix_data(origins: str, destinations: str) -> dict[str, Any]:
+    """Fetch distance matrix data from Google Maps API (Cached)."""
     url = (
         "https://maps.googleapis.com/maps/api/distancematrix/json"
         f"?origins={origins}"
@@ -312,6 +356,11 @@ def round_lat_lng(lat: float, lng: float, precision: int = 6) -> tuple[float, fl
 
 
 def normalize_string(s: str) -> str:
+    """
+    Normalize Turkish characters to English equivalents and lowercase the string.
+
+    Example: "ÇANKAYA" -> "cankaya"
+    """
     mapping = {
         "İ": "i",
         "I": "i",

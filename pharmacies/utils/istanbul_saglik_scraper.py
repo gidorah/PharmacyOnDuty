@@ -1,3 +1,9 @@
+"""
+Scraper for İstanbul İl Sağlık Müdürlüğü.
+
+Fetches duty pharmacy data for all districts in Istanbul.
+"""
+
 import csv
 from datetime import datetime, timedelta
 from typing import Any
@@ -56,9 +62,14 @@ DISTRICTS: list[str] = [
 
 
 def _get_coordinates_from_sehirharitasi_url(url: str) -> dict[str, float] | None:
-    #  href="http://sehirharitasi.ibb.gov.tr/?lat=41.01569563781570&amp;lon=28.89617195242220&amp;zoom=18
+    """
+    Extract coordinates from Istanbul Municipality Map (sehirharitasi) URL.
 
+    Example URL: http://sehirharitasi.ibb.gov.tr/?lat=...&lon=...
+    """
+    #  href="http://sehirharitasi.ibb.gov.tr/?lat=41.01569563781570&amp;lon=28.89617195242220&amp;zoom=18
     parsed_url = urlparse(url)
+
     query_params = parse_qs(parsed_url.query)
     lat_list = query_params.get("lat", [""])
     lon_list = query_params.get("lon", [""])
@@ -73,6 +84,11 @@ def _get_coordinates_from_sehirharitasi_url(url: str) -> dict[str, float] | None
 
 
 def _get_duty_times() -> tuple[datetime, datetime]:
+    """
+    Calculate duty start and end times for Istanbul.
+
+    Same logic as Ankara: shifts start at 16:00 UTC (19:00 TRT) and end next morning.
+    """
     current_time = timezone.now()
 
     if (
@@ -98,6 +114,12 @@ def _get_duty_times() -> tuple[datetime, datetime]:
 
 
 def get_istanbul_data() -> list[dict[str, Any]]:
+    """
+    Scrape pharmacy data for all Istanbul districts.
+
+    Iterates through all districts, posts to the endpoint, parses the HTML response,
+    and extracts pharmacy details including coordinates from the map link.
+    """
     all_pharmacies: list[dict[str, Any]] = []
 
     for district_name in DISTRICTS:
@@ -175,6 +197,7 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
 
 def save_to_csv(data: list[dict[str, Any]], filename: str = "pharmacies.csv") -> None:
+    """Helper to save scraped data to CSV for debugging."""
     keys = data[0].keys() if data else []
     with open(filename, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=keys)

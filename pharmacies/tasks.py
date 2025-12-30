@@ -1,3 +1,10 @@
+"""
+Celery tasks for the Pharmacies application.
+
+This module defines background tasks for scraping pharmacy data from various sources
+and updating the database.
+"""
+
 from celery import shared_task
 from django.utils import timezone
 
@@ -10,6 +17,14 @@ from pharmacies.utils import (
 
 @shared_task
 def run_scraper(city_name: str) -> None:
+    """
+    Execute the scraper for a specific city and save results to the database.
+
+    This Celery task:
+    1. Fetches data for the given city using the appropriate scraper strategy.
+    2. Saves the scraped pharmacy data to the database.
+    3. Updates the ScraperConfig's last_run timestamp.
+    """
     print(f"Running scraper for city {city_name}")
     city_data = get_city_data(city_name=city_name)
     print(f"Scraper for city {city_name} finished")

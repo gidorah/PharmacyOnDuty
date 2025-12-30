@@ -1,3 +1,7 @@
+"""
+Management command to seed the database with initial city data.
+"""
+
 from datetime import time
 from typing import Any
 
@@ -7,9 +11,19 @@ from pharmacies.models import City, ScraperConfig, WorkingSchedule
 
 
 class Command(BaseCommand):
+    """
+    Management command to seed initial city data.
+
+    This command creates or updates:
+    - City records (Eskişehir, İstanbul, Ankara).
+    - WorkingSchedules with default hours.
+    - ScraperConfigs with default intervals.
+    """
+
     help = "Seeds cities, working schedules and scraper configs"
 
     def handle(self, *args: Any, **kwargs: Any) -> None:
+        """Execute the seeding process."""
         cities = ["eskisehir", "istanbul", "ankara"]
 
         # Define working hours in UTC (+3 for istanbul)

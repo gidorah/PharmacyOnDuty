@@ -1,3 +1,9 @@
+"""
+Scraper for Eskişehir Eczacı Odası (EEO).
+
+Fetches duty pharmacy data from the official Eskişehir Chamber of Pharmacists website.
+"""
+
 from datetime import datetime
 from typing import Any
 
@@ -7,10 +13,16 @@ from bs4.element import Tag
 
 
 def _get_district_from_name(pharmacy_name: str) -> str:
+    """Extract district name from pharmacy name (e.g., 'X Pharmacy - Odunpazarı')."""
     return pharmacy_name.split(" ")[-1]
 
 
 def _get_duty_dates(operation_times: str) -> tuple[datetime, datetime]:
+    """
+    Parse duty start and end dates from the operation times string.
+
+    Format: "DD.MM.YYYY HH:MM - DD.MM.YYYY HH:MM"
+    """
     parts = operation_times.split(" ")
     start_date = datetime.strptime(parts[0] + " " + parts[1], "%d.%m.%Y %H:%M")
     end_date = datetime.strptime(parts[3] + " " + parts[4], "%d.%m.%Y %H:%M")
@@ -18,6 +30,11 @@ def _get_duty_dates(operation_times: str) -> tuple[datetime, datetime]:
 
 
 def get_eskisehir_data() -> list[dict[str, Any]]:
+    """
+    Scrape pharmacy data from the Eskişehir Eczacı Odası website.
+
+    Extracts name, address, district, phone, coordinates, and duty times.
+    """
     from pharmacies.utils.utils import get_coordinates_from_google_maps_url
 
     url = "https://www.eskisehireo.org.tr/eskisehir-nobetci-eczaneler"
