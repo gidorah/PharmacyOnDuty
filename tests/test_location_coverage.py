@@ -82,9 +82,25 @@ class TestLocationCoverage:
                 assert (
                     "points" in data
                 ), f"No points returned for {scenario['description']}"
+                points = data["points"]
                 assert (
-                    len(data["points"]) > 0
+                    len(points) > 0
                 ), f"Empty points list for {scenario['description']}"
+
+                prev_distance = -1
+                for point in points:
+                    assert (
+                        "travel_distance" in point
+                    ), f"Missing travel_distance in {point}"
+                    assert (
+                        "travel_duration" in point
+                    ), f"Missing travel_duration in {point}"
+
+                    curr_distance = point["travel_distance"]
+                    assert (
+                        curr_distance >= prev_distance
+                    ), f"Points not sorted by distance for {scenario['description']}"
+                    prev_distance = curr_distance
             else:
                 assert (
                     response.status_code in [200, 400]
