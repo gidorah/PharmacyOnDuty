@@ -1,3 +1,7 @@
+"""
+Module for fetching pharmacy data from external APIs (Google Places).
+"""
+
 import os
 from functools import lru_cache
 from typing import Any
@@ -13,8 +17,11 @@ API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
 
 @lru_cache(maxsize=1024)
 def _fetch_pharmacy_data(lat: float, lng: float, keyword: str) -> list[dict[str, Any]]:
-    """Cached function that handles the actual API call"""
+    """
+    Perform the actual HTTP request to Google Places API.
 
+    Cached to prevent redundant API calls for the same coordinates.
+    """
     url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
     params = {
         "location": f"{lat},{lng}",
@@ -34,7 +41,10 @@ def _fetch_pharmacy_data(lat: float, lng: float, keyword: str) -> list[dict[str,
 def fetch_nearest_pharmacies(
     lat: float, lng: float, keyword: str = "pharmacy", limit: int = 5
 ) -> list[dict[str, Any]]:
-    """Returns cached pharmacy results with limit applied"""
+    """
+    Retrieve nearest pharmacies from Google Places API.
 
+    Wraps the cached `_fetch_pharmacy_data` function and applies a limit.
+    """
     results = _fetch_pharmacy_data(lat, lng, keyword)
     return results[:limit]

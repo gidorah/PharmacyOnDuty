@@ -1,3 +1,9 @@
+"""
+Scraper for Ankara Eczacılar Odası (AEO).
+
+Fetches duty pharmacy data from the official Ankara Chamber of Pharmacists API.
+"""
+
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -6,6 +12,12 @@ from django.utils import timezone
 
 
 def _get_duty_times() -> tuple[datetime, datetime]:
+    """
+    Calculate the start and end times for the duty shift.
+
+    Duty shifts typically start at 18:30 or 19:00 (handled here as 16:00 UTC?)
+    and end at 08:30 or 09:00 the next day.
+    """
     current_time = timezone.now()
 
     if (
