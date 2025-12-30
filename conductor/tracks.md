@@ -4,7 +4,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-## [~] Track: add tests for multiple user locations to project
+## [x] Track: add tests for multiple user locations to project
 *Link: [./conductor/tracks/location_tests_20251230/](./conductor/tracks/location_tests_20251230/)*
 
 ## [ ] Track: Improve user notifications for system availability and empty states
