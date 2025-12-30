@@ -1,0 +1,373 @@
+[
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Kadikoy Bull Statue",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 40.9908,
+    "longitude": 29.0293
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Taksim Square",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0369,
+    "longitude": 28.9851
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Besiktas Eagle Statue",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0428,
+    "longitude": 29.0075
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Uskudar Coast",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0268,
+    "longitude": 29.0152
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Sultanahmet Square",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0054,
+    "longitude": 28.9768
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Sisli Cevahir Mall",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0634,
+    "longitude": 28.9926
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Sariyer Coast",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.1666,
+    "longitude": 29.0553
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Maltepe Piazza",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 40.9234,
+    "longitude": 29.1558
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Pendik Marina",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 40.8753,
+    "longitude": 29.2312
+  },
+  {
+    "category": "in_scope",
+    "description": "Istanbul - Basaksehir Fatih Terim Stadium",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.1226,
+    "longitude": 28.8093
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Kizilay Square",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9208,
+    "longitude": 32.8541
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Anitkabir",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9255,
+    "longitude": 32.8369
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Atakule",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.8892,
+    "longitude": 32.8569
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Tunali Hilmi Street",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9079,
+    "longitude": 32.8623
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Bahcelievler 7. Street",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9272,
+    "longitude": 32.8239
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Etimesgut Train Station",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9485,
+    "longitude": 32.6738
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Golbasi Mogan Park",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7915,
+    "longitude": 32.8028
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Keceoren Waterfall",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9754,
+    "longitude": 32.8718
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Sincan Center",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9634,
+    "longitude": 32.5831
+  },
+  {
+    "category": "in_scope",
+    "description": "Ankara - Bilkent University",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.8683,
+    "longitude": 32.7486
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Odunpazari Modern Museum",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7656,
+    "longitude": 30.5234
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Porsuk River (Adalar)",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7735,
+    "longitude": 30.5186
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Espark Mall",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7824,
+    "longitude": 30.5085
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Sazova Park",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7664,
+    "longitude": 30.4704
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Kent Park",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7788,
+    "longitude": 30.5482
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Anadolu University",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7906,
+    "longitude": 30.5028
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Osmangazi University",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7533,
+    "longitude": 30.4828
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Tepebasi Municipality",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7842,
+    "longitude": 30.5015
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Train Station",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7801,
+    "longitude": 30.5144
+  },
+  {
+    "category": "in_scope",
+    "description": "Eskisehir - Batikent",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.7963,
+    "longitude": 30.4856
+  },
+  {
+    "category": "border",
+    "description": "Border - Istanbul (Tuzla) / Kocaeli (Gebze)",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 40.8351,
+    "longitude": 29.3562
+  },
+  {
+    "category": "border",
+    "description": "Border - Istanbul (Silivri) / Tekirdag",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0734,
+    "longitude": 28.2467
+  },
+  {
+    "category": "border",
+    "description": "Border - Ankara (Elmadag) / Kirikkale",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9231,
+    "longitude": 33.2289
+  },
+  {
+    "category": "border",
+    "description": "Border - Ankara (Polatli) / Eskisehir",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.5843,
+    "longitude": 32.1469
+  },
+  {
+    "category": "border",
+    "description": "Border - Eskisehir (Sivrihisar) / Ankara",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.4475,
+    "longitude": 31.5336
+  },
+  {
+    "category": "border",
+    "description": "Border - Eskisehir / Kutahya",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.4182,
+    "longitude": 30.2798
+  },
+  {
+    "category": "border",
+    "description": "Border - Eskisehir / Bilecik",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 39.9021,
+    "longitude": 30.1582
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Bursa (Ulu Cami)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.1843,
+    "longitude": 29.0621
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Kocaeli (Izmit Clock Tower)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.7634,
+    "longitude": 29.9408
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Tekirdag (Center)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.9781,
+    "longitude": 27.5118
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Sakarya (Serdivan)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.7725,
+    "longitude": 30.3698
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Bolu (Lake Abant)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.6053,
+    "longitude": 31.2789
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Konya (Mevlana)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 37.8711,
+    "longitude": 32.505
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Neighbor - Afyonkarahisar (Castle)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 38.7569,
+    "longitude": 30.5369
+  },
+  {
+    "category": "anomaly",
+    "description": "Anomaly - Middle of Marmara Sea",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.8665,
+    "longitude": 28.6924
+  },
+  {
+    "category": "anomaly",
+    "description": "Anomaly - Middle of Bosphorus",
+    "expected_behavior": "should_return_pharmacy",
+    "latitude": 41.0567,
+    "longitude": 29.0435
+  },
+  {
+    "category": "anomaly",
+    "description": "Anomaly - Black Sea (North of Istanbul)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 41.4646,
+    "longitude": 29.1352
+  },
+  {
+    "category": "anomaly",
+    "description": "Anomaly - Lake Tuz (Salt Lake)",
+    "expected_behavior": "error_or_warning",
+    "latitude": 38.8354,
+    "longitude": 33.3364
+  },
+  {
+    "category": "out_of_scope",
+    "description": "International - London, UK",
+    "expected_behavior": "error_or_warning",
+    "latitude": 51.5074,
+    "longitude": -0.1278
+  },
+  {
+    "category": "out_of_scope",
+    "description": "International - New York, USA",
+    "expected_behavior": "error_or_warning",
+    "latitude": 40.7128,
+    "longitude": -74.006
+  },
+  {
+    "category": "out_of_scope",
+    "description": "International - Tokyo, Japan",
+    "expected_behavior": "error_or_warning",
+    "latitude": 35.6762,
+    "longitude": 139.6503
+  },
+  {
+    "category": "out_of_scope",
+    "description": "International - Sydney, Australia",
+    "expected_behavior": "error_or_warning",
+    "latitude": -33.8688,
+    "longitude": 151.2093
+  },
+  {
+    "category": "out_of_scope",
+    "description": "Zero Island",
+    "expected_behavior": "error_or_warning",
+    "latitude": 0,
+    "longitude": 0
+  }
+]
