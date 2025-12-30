@@ -1,12 +1,21 @@
+"""
+Sitemap configuration for SEO.
+"""
+
 from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 
 
 class StaticViewSitemap(Sitemap):  # type: ignore[type-arg]
+    """
+    Sitemap for static pages (Home, Privacy Policy, Terms, etc.).
+    """
+
     priority = 0.5
     changefreq = "daily"
 
     def items(self) -> list[str]:
+        """Return list of static route names."""
         return [
             "home",
             "privacy_policy",
@@ -15,6 +24,7 @@ class StaticViewSitemap(Sitemap):  # type: ignore[type-arg]
         ]
 
     def location(self, item: str) -> str:
+        """Return the URL for the given route name."""
         return reverse(item)
 
 

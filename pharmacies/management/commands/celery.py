@@ -1,3 +1,9 @@
+"""
+Celery management module.
+
+This module provides an entry point for defining Celery application and its configuration.
+"""
+
 import os
 
 from celery import Celery

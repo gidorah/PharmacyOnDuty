@@ -1,3 +1,10 @@
+"""
+Celery Configuration for PharmacyOnDuty.
+
+This module sets up the Celery application, loads settings from Django,
+and auto-discovers tasks.
+"""
+
 import os
 
 from celery import Celery
