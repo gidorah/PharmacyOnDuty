@@ -14,12 +14,12 @@ This plan outlines the systematic approach to increase docstring coverage from 9
 - [x] Task: Add docstrings to `pharmacies/apps.py` and `pharmacies/urls.py`.
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Core Application Documentation' (Protocol in workflow.md)
 
-## Phase 3: Utilities and Scrapers Documentation (`pharmacies/utils/`)
-- [ ] Task: Add docstrings to `pharmacies/utils/utils.py` and `pharmacies/utils/pharmacy_fetch.py`.
-- [ ] Task: Add docstrings to `pharmacies/utils/ankaraeo_scraper.py`.
-- [ ] Task: Add docstrings to `pharmacies/utils/eskisehireo_scraper.py`.
-- [ ] Task: Add docstrings to `pharmacies/utils/istanbul_saglik_scraper.py`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Utilities and Scrapers Documentation' (Protocol in workflow.md)
+## Phase 3: Utilities and Scrapers Documentation (`pharmacies/utils/`) [checkpoint: def8a316f2ee973b9f9ac90a44688634caaa88e0]
+- [x] Task: Add docstrings to `pharmacies/utils/utils.py` and `pharmacies/utils/pharmacy_fetch.py`.
+- [x] Task: Add docstrings to `pharmacies/utils/ankaraeo_scraper.py`.
+- [x] Task: Add docstrings to `pharmacies/utils/eskisehireo_scraper.py`.
+- [x] Task: Add docstrings to `pharmacies/utils/istanbul_saglik_scraper.py`.
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Utilities and Scrapers Documentation' (Protocol in workflow.md)
 
 ## Phase 4: Management Commands and Project Root Documentation
 - [ ] Task: Add docstrings to `pharmacies/management/commands/`.
