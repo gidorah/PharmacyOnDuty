@@ -1,3 +1,10 @@
+"""
+Database models for the Pharmacies application.
+
+This module defines the data structure for Cities, Pharmacies, Working Schedules,
+and Scraper Configurations, including their relationships and logic.
+"""
+
 import json
 from datetime import datetime
 from enum import StrEnum
@@ -10,16 +17,35 @@ from django_celery_beat.models import CrontabSchedule, IntervalSchedule, Periodi
 
 
 class PharmacyStatus(StrEnum):
+    """
+    Enum representing the operational status of a pharmacy or city.
+
+    Attributes:
+        OPEN: The entity is currently open for business.
+        CLOSED: The entity is currently closed.
+        ON_DUTY: The pharmacy is currently serving as a duty pharmacy.
+    """
+
     OPEN = "open"
     CLOSED = "closed"
     ON_DUTY = "on_duty"
 
 
 class City(models.Model):
+    """
+    Model representing a city that contains pharmacies.
+
+    Attributes:
+        name: The name of the city.
+        last_scraped_at: Timestamp of the last successful scraper run for this city.
+    """
+
     name = models.CharField(max_length=100, null=False, blank=False)
     last_scraped_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        """Meta options for City model."""
+
         verbose_name = "City"
         verbose_name_plural = "Cities"
 
@@ -48,6 +74,20 @@ class City(models.Model):
 
 
 class WorkingSchedule(models.Model):
+    """
+    Model defining the standard working hours for pharmacies in a specific city.
+
+    This schedule determines when pharmacies are considered 'OPEN' versus 'CLOSED'
+    (excluding duty shifts).
+
+    Attributes:
+        city: The city this schedule applies to.
+        weekday_start: Opening time on weekdays (Mon-Fri).
+        weekday_end: Closing time on weekdays (Mon-Fri).
+        saturday_start: Opening time on Saturdays.
+        saturday_end: Closing time on Saturdays.
+    """
+
     city = models.OneToOneField(
         City,
         on_delete=models.CASCADE,
@@ -61,12 +101,29 @@ class WorkingSchedule(models.Model):
     saturday_end = models.TimeField(null=False, blank=False)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Save the schedule and update associated periodic tasks.
+
+        This overrides the default save method to ensure that Celery periodic tasks
+        are created or updated whenever the working schedule changes.
+        """
         super().save(*args, **kwargs)
         self._update_periodic_tasks()
 
     def _update_periodic_tasks(self) -> None:
+        """
+        Create or update Celery PeriodicTasks based on the schedule.
+
+        This method generates four periodic tasks for the city:
+        1. Weekday Start
+        2. Weekday End
+        3. Saturday Start
+        4. Saturday End
+        """
+
         # Helper to create/get crontab and task
         def create_task(suffix: str, hour: int, minute: int, days: str) -> None:
+            """Helper to create or update a Celery periodic task."""
             schedule, _ = CrontabSchedule.objects.get_or_create(
                 minute=minute,
                 hour=hour,
@@ -110,6 +167,8 @@ class WorkingSchedule(models.Model):
         )
 
     class Meta:
+        """Meta options for WorkingSchedule model."""
+
         verbose_name = "Working Schedule"
         verbose_name_plural = "Working Schedules"
 
@@ -137,6 +196,22 @@ class WorkingSchedule(models.Model):
 
 
 class Pharmacy(models.Model):
+    """
+    Model representing a specific pharmacy.
+
+    Attributes:
+        name: Name of the pharmacy.
+        location: Geospatial point (latitude/longitude) of the pharmacy.
+        address: Physical address.
+        city: The city the pharmacy belongs to.
+        district: The district within the city.
+        phone: Contact phone number.
+        email: Contact email address.
+        website: URL of the pharmacy's website.
+        duty_start: Start datetime of the current or next duty shift.
+        duty_end: End datetime of the current or next duty shift.
+    """
+
     name = models.CharField(max_length=100, null=False, blank=False)
     location = models.PointField(null=False, blank=False, default="POINT(0 0)")
     address = models.CharField(max_length=200, null=True, blank=True)
@@ -155,6 +230,8 @@ class Pharmacy(models.Model):
     duty_end = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        """Meta options for Pharmacy model."""
+
         verbose_name = "Pharmacy"
         verbose_name_plural = "Pharmacies"
 
@@ -171,6 +248,15 @@ class Pharmacy(models.Model):
 
 
 class ScraperConfig(models.Model):
+    """
+    Configuration for the city-specific scraper.
+
+    Attributes:
+        city: The city this configuration applies to.
+        interval: The frequency (in hours) at which the scraper should run.
+        last_run: Timestamp of the last execution.
+    """
+
     city = models.OneToOneField(City, on_delete=models.CASCADE, primary_key=True)
     interval = models.PositiveIntegerField(
         default=24, help_text="Update interval in hours"
@@ -178,10 +264,17 @@ class ScraperConfig(models.Model):
     last_run = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Save the config and update the Celery schedule.
+
+        Overrides default save to ensure the associated Celery PeriodicTask
+        is updated with the new interval.
+        """
         super().save(*args, **kwargs)
         self._update_celery_schedule()
 
     def _update_celery_schedule(self) -> None:
+        """Create or update the Celery IntervalSchedule and PeriodicTask."""
         schedule, _ = IntervalSchedule.objects.get_or_create(
             every=self.interval, period=IntervalSchedule.HOURS
         )

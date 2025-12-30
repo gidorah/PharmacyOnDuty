@@ -1,3 +1,12 @@
+"""
+Views for the Pharmacies application.
+
+This module handles the HTTP requests for pharmacy data, including:
+- Serving the main map interface.
+- Providing API endpoints for fetching pharmacy data based on location.
+- Proxying requests to the Google Maps API.
+"""
+
 import json
 from datetime import timedelta
 
@@ -23,6 +32,13 @@ SHOWN_PHARMACIES = 5
 
 @csrf_exempt
 def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
+    """
+    Handle POST requests to retrieve the nearest pharmacies based on user location.
+
+    This view calculates the user's city from coordinates, checks the city's
+    working status (Open/Closed), and returns either open pharmacies or
+    pharmacies on duty accordingly.
+    """
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])  # type: ignore
 
@@ -60,12 +76,23 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
 
 
 def is_allowed_referer(request: HttpRequest) -> bool:
+    """
+    Check if the request referrer is allowed.
+
+    Used to protect the Google Maps proxy from unauthorized usage.
+    """
     referer = request.META.get("HTTP_REFERER", "")
     return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
 
 
 @cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
+    """
+    Proxy request to Google Maps API to hide the API key.
+
+    This view validates the referrer before forwarding the request to Google Maps,
+    allowing the frontend to load maps without exposing credentials.
+    """
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
 
@@ -87,4 +114,5 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
 
 
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
+    """Render the main pharmacies page."""
     return render(request, "pharmacies.html")

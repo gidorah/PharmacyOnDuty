@@ -1,3 +1,11 @@
+"""
+URL Configuration for the pharmacies application.
+
+Routes:
+- get_pharmacy_points: API endpoint to fetch pharmacy data.
+- google_maps_proxy: Proxy endpoint for Google Maps API.
+"""
+
 from django.urls import path
 
 from pharmacies import views
