@@ -1,8 +1,0 @@
-{
-  "track_id": "location_tests_20251230",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2025-12-30T17:08:54+03:00",
-  "updated_at": "2025-12-30T17:08:54+03:00",
-  "description": "add tests for multiple user locations to project"
-}
