@@ -21,10 +21,10 @@ This plan outlines the systematic approach to increase docstring coverage from 9
 - [x] Task: Add docstrings to `pharmacies/utils/istanbul_saglik_scraper.py`.
 - [x] Task: Conductor - User Manual Verification 'Phase 3: Utilities and Scrapers Documentation' (Protocol in workflow.md)
 
-## Phase 4: Management Commands and Project Root Documentation
-- [ ] Task: Add docstrings to `pharmacies/management/commands/`.
-- [ ] Task: Add docstrings to root-level files like `manage.py` and `PharmacyOnDuty/*.py`.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: Management Commands and Project Root Documentation' (Protocol in workflow.md)
+## Phase 4: Management Commands and Project Root Documentation [checkpoint: 3b949d4315f508c36458e6db6d438e5891f7eb13]
+- [x] Task: Add docstrings to `pharmacies/management/commands/`.
+- [x] Task: Add docstrings to root-level files like `manage.py` and `PharmacyOnDuty/*.py`.
+- [x] Task: Conductor - User Manual Verification 'Phase 4: Management Commands and Project Root Documentation' (Protocol in workflow.md)
 
 ## Phase 5: Final Verification and Threshold Audit
 - [ ] Task: Run final `interrogate` report to confirm >80% total coverage.
