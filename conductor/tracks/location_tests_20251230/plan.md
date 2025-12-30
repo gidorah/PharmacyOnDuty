@@ -8,7 +8,8 @@
     - Create a temporary utility script (e.g., `scripts/record_distance_matrix.py`) to fetch REAL Google Distance Matrix data for every location in the fixture.
     - Save these responses to `tests/fixtures/google_api_snapshots.json`.
     - *Note:* This ensures our tests use realistic traffic/distance data without incurring repeated API costs.
-- [~] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1' (Protocol in workflow.md)
+    - [checkpoint: d374e4b55dc57384763a4d82dc14f22058b5f24c]
 
 ## Phase 2: Test Implementation (TDD)
 - [ ] Task: Create Test Module `tests/test_location_coverage.py`
