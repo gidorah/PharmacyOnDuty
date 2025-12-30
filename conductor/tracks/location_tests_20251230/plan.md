@@ -35,4 +35,5 @@
     - Run all new tests.
     - Optimize any slow queries discovered by the benchmark.
     - [checkpoint: fe8df1b23ddd96b89990d506af1a2fb5498c4e77]
-- [~] Task: Conductor - User Manual Verification 'Final Verification' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Final Verification' (Protocol in workflow.md)
+    - [checkpoint: 5b5500a]
