@@ -110,6 +110,25 @@ unresolved-import = "warn"
 [tool.djlint]
 profile="django"
 
+[tool.interrogate]
+ignore-init-module = true
+ignore-init-method = true
+ignore-module = false
+ignore-nested-functions = false
+ignore-magic = true
+ignore-semiprivate = false
+ignore-private = false
+ignore-property-decorators = false
+ignore-setters = false
+fail-under = 80
+exclude = ["setup.py", "docs", "build", "*/migrations", "*/tests", "tests"]
+ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*"]
+verbose = 2
+quiet = false
+whitelist-regex = []
+color = true
+omit-covered-files = false
+
 [dependency-groups]
 dev = [
     "mypy>=1.18.2",
@@ -124,4 +143,5 @@ dev = [
     "pytest-django>=4.11.1",
     "pytest-cov>=7.0.0",
     "ty>=0.0.4",
+    "interrogate>=1.7.0",
 ]
