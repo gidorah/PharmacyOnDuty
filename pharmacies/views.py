@@ -72,6 +72,9 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
     except (ValueError, City.DoesNotExist) as e:
         return JsonResponse({"error": str(e)}, status=400)
     except Exception:
+        import traceback
+
+        traceback.print_exc()
         return JsonResponse({"error": "An internal server error occurred."}, status=500)
 
 

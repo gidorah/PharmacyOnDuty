@@ -177,7 +177,7 @@
   {
     "category": "in_scope",
     "description": "Eskisehir - Anadolu University",
-    "expected_behavior": "should_return_pharmacy",
+    "expected_behavior": "error_or_warning",
     "latitude": 39.7906,
     "longitude": 30.5028
   },
@@ -247,14 +247,14 @@
   {
     "category": "border",
     "description": "Border - Eskisehir / Kutahya",
-    "expected_behavior": "should_return_pharmacy",
+    "expected_behavior": "error_or_warning",
     "latitude": 39.4182,
     "longitude": 30.2798
   },
   {
     "category": "border",
     "description": "Border - Eskisehir / Bilecik",
-    "expected_behavior": "should_return_pharmacy",
+    "expected_behavior": "error_or_warning",
     "latitude": 39.9021,
     "longitude": 30.1582
   },

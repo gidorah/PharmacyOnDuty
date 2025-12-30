@@ -12,8 +12,8 @@
     - [checkpoint: d374e4b55dc57384763a4d82dc14f22058b5f24c]
 
 ## Phase 2: Test Implementation (TDD)
-- [ ] Task: Create Test Module `tests/test_location_coverage.py`
-- [ ] Task: Implement Replay Mocking
+- [x] Task: Create Test Module `tests/test_location_coverage.py`
+- [~] Task: Implement Replay Mocking
     - Update `tests/conftest.py` to mock `_get_distance_matrix_data`.
     - The mock must look up the correct response from `google_api_snapshots.json` based on the input coordinates.
 - [ ] Task: Implement Smoke Tests (Status 200)
