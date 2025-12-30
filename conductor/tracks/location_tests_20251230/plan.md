@@ -13,20 +13,26 @@
 
 ## Phase 2: Test Implementation (TDD)
 - [x] Task: Create Test Module `tests/test_location_coverage.py`
-- [~] Task: Implement Replay Mocking
+- [x] Task: Implement Replay Mocking
     - Update `tests/conftest.py` to mock `_get_distance_matrix_data`.
     - The mock must look up the correct response from `google_api_snapshots.json` based on the input coordinates.
-- [ ] Task: Implement Smoke Tests (Status 200)
+    - [checkpoint: fe8df1b23ddd96b89990d506af1a2fb5498c4e77]
+- [x] Task: Implement Smoke Tests (Status 200)
     - Use `pytest.mark.parametrize` to load from the JSON fixture.
     - Assert that valid locations return 200 and invalid/out-of-scope ones handled gracefully.
-- [ ] Task: Implement Logic Verification
+    - [checkpoint: fe8df1b23ddd96b89990d506af1a2fb5498c4e77]
+- [x] Task: Implement Logic Verification
     - Verify that *given* the real snapshot data, the app correctly identifies the optimal pharmacy.
-- [ ] Task: Implement Performance Benchmarks
+    - [checkpoint: 47074cdfd22476709b2502bfcb1d40a2c4519943]
+- [x] Task: Implement Performance Benchmarks
     - Add assertions to ensure the view processing time (excluding the mocked API lookup) is efficient (<200ms).
-- [ ] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+    - [checkpoint: 47074cdfd22476709b2502bfcb1d40a2c4519943]
+- [x] Task: Conductor - User Manual Verification 'Phase 2' (Protocol in workflow.md)
+    - [checkpoint: fe8df1b23ddd96b89990d506af1a2fb5498c4e77]
 
 ## Phase 3: Final Verification
-- [ ] Task: Run Full Suite & Refactor
+- [x] Task: Run Full Suite & Refactor
     - Run all new tests.
     - Optimize any slow queries discovered by the benchmark.
-- [ ] Task: Conductor - User Manual Verification 'Final Verification' (Protocol in workflow.md)
+    - [checkpoint: fe8df1b23ddd96b89990d506af1a2fb5498c4e77]
+- [~] Task: Conductor - User Manual Verification 'Final Verification' (Protocol in workflow.md)
