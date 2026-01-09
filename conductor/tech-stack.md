@@ -33,7 +33,7 @@
 ## Development Tools
 - **uv:** Extremely fast Python package and project manager.
 - **just:** Command runner for common project tasks.
-- **pytest:** Feature-rich testing framework (with pytest-django and pytest-cov).
+- **pytest:** Feature-rich testing framework (with pytest-django and pytest-cov), including snapshot-based location testing.
 - **Ruff:** Fast Python linter and formatter.
 - **Mypy:** Static type checking.
 - **debugpy:** Remote debugging support in Docker.

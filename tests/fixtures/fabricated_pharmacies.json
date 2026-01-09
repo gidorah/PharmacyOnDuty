@@ -1,0 +1,249 @@
+[
+  {
+    "address": "Caferaga Mah. Moda Cd. No:1",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 40.992,
+      "lng": 29.025
+    },
+    "district": "Kadikoy",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Kadikoy Merkez Eczanesi",
+    "phone": "02163334455"
+  },
+  {
+    "address": "Istiklal Cd. No:5",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 41.038,
+      "lng": 28.987
+    },
+    "district": "Beyoglu",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Taksim Meydan Eczanesi",
+    "phone": "02122223344"
+  },
+  {
+    "address": "Ciragan Cd. No:10",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 41.045,
+      "lng": 29.005
+    },
+    "district": "Besiktas",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Besiktas Sahil Eczanesi",
+    "phone": "02123334455"
+  },
+  {
+    "address": "Hakimiyeti Milliye Cd. No:20",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 41.029,
+      "lng": 29.018
+    },
+    "district": "Uskudar",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Uskudar Marmaray Eczanesi",
+    "phone": "02164445566"
+  },
+  {
+    "address": "Divanyolu Cd. No:30",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 41.008,
+      "lng": 28.98
+    },
+    "district": "Fatih",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Sultanahmet Turistik Eczanesi",
+    "phone": "02125556677"
+  },
+  {
+    "address": "Cayirbasi Cd. No:40",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 41.168,
+      "lng": 29.057
+    },
+    "district": "Sariyer",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Sariyer Merkez Eczanesi",
+    "phone": "02126667788"
+  },
+  {
+    "address": "Bagdat Cd. No:50",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 40.925,
+      "lng": 29.158
+    },
+    "district": "Maltepe",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Maltepe Park Eczanesi",
+    "phone": "02167778899"
+  },
+  {
+    "address": "Ankara Cd. No:60",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 40.877,
+      "lng": 29.233
+    },
+    "district": "Pendik",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Pendik Marina Eczanesi",
+    "phone": "02168889900"
+  },
+  {
+    "address": "Hurriyet Blv. No:70",
+    "city": "istanbul",
+    "coordinates": {
+      "lat": 41.124,
+      "lng": 28.811
+    },
+    "district": "Basaksehir",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Basaksehir Fatih Eczanesi",
+    "phone": "02129990011"
+  },
+  {
+    "address": "Ataturk Blv. No:100",
+    "city": "ankara",
+    "coordinates": {
+      "lat": 39.922,
+      "lng": 32.856
+    },
+    "district": "Cankaya",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Kizilay Guven Eczanesi",
+    "phone": "03121112233"
+  },
+  {
+    "address": "Akdeniz Cd. No:20",
+    "city": "ankara",
+    "coordinates": {
+      "lat": 39.927,
+      "lng": 32.84
+    },
+    "district": "Cankaya",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Anitkabir Yan Eczanesi",
+    "phone": "03122223344"
+  },
+  {
+    "address": "Cinnah Cd. No:50",
+    "city": "ankara",
+    "coordinates": {
+      "lat": 39.891,
+      "lng": 32.858
+    },
+    "district": "Cankaya",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Atakule Eczanesi",
+    "phone": "03123334455"
+  },
+  {
+    "address": "Askabat Cd. No:30",
+    "city": "ankara",
+    "coordinates": {
+      "lat": 39.929,
+      "lng": 32.825
+    },
+    "district": "Cankaya",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Bahcelievler 7. Cadde Eczanesi",
+    "phone": "03124445566"
+  },
+  {
+    "address": "Tunali Hilmi Cd. No:40",
+    "city": "ankara",
+    "coordinates": {
+      "lat": 39.909,
+      "lng": 32.864
+    },
+    "district": "Cankaya",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Tunali Hilmi Eczanesi",
+    "phone": "03125556677"
+  },
+  {
+    "address": "Ataturk Blv. No:10",
+    "city": "eskisehir",
+    "coordinates": {
+      "lat": 39.767,
+      "lng": 30.525
+    },
+    "district": "Odunpazari",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Odunpazari Tarihi Eczane",
+    "phone": "02221112233"
+  },
+  {
+    "address": "Universite Cd. No:20",
+    "city": "eskisehir",
+    "coordinates": {
+      "lat": 39.784,
+      "lng": 30.51
+    },
+    "district": "Tepebasi",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Espark AVM Eczanesi",
+    "phone": "02222223344"
+  },
+  {
+    "address": "Adalar Sk. No:5",
+    "city": "eskisehir",
+    "coordinates": {
+      "lat": 39.775,
+      "lng": 30.52
+    },
+    "district": "Odunpazari",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Porsuk Adalar Eczanesi",
+    "phone": "02223334455"
+  },
+  {
+    "address": "Kutahya Yolu No:100",
+    "city": "eskisehir",
+    "coordinates": {
+      "lat": 39.768,
+      "lng": 30.472
+    },
+    "district": "Tepebasi",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Sazova Park Eczanesi",
+    "phone": "02224445566"
+  },
+  {
+    "address": "Kampus Yolu No:1",
+    "city": "eskisehir",
+    "coordinates": {
+      "lat": 39.792,
+      "lng": 30.504
+    },
+    "district": "Tepebasi",
+    "duty_end": "2025-12-31T06:00:00Z",
+    "duty_start": "2025-12-30T16:00:00Z",
+    "name": "Anadolu Univ Eczanesi",
+    "phone": "02225556677"
+  }
+]

@@ -77,3 +77,15 @@ just tailwind     # Build CSS
 - **PostGIS**: Essential. `docker/` handles it.
 - **Sentry**: Auto-init if `SENTRY_DSN` present.
 - **Deployment**: Coolify/PaaS ready via `Procfile` & `Aptfile`.
+
+## Code Standards & Conventions
+
+- **Linting & Formatting:** Ruff. Run `uv run ruff check --fix .` and `uv run ruff format .`.
+- **Type Hints:** Strict typing required. Use `mypy`.
+- **Imports:** Standard Lib -> Django -> Third-party -> Local.
+- **Naming:** `snake_case` for functions/vars, `PascalCase` for classes.
+- **Django Best Practices:**
+    - Use `timezone.now()` for time.
+    - Use GeoDjango for spatial queries.
+    - Use `bulk_create`/`bulk_update` for efficiency.
+- **Comments:** Focus on *why*, not *what*.

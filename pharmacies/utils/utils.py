@@ -67,11 +67,8 @@ def get_nearest_pharmacies_on_duty(
     if city_object is None:
         raise ValueError("City not found")
 
-    user_location = Point(
-        float(lng), float(lat), srid=4326
-    )  # Create a point for the given location
+    user_location = Point(float(lng), float(lat), srid=4326)
 
-    # Filter pharmacies on duty and within the radius
     near_pharmacies_on_duty = Pharmacy.objects.filter(city=city_object)
     near_pharmacies_on_duty = near_pharmacies_on_duty.filter(
         duty_start__lte=time, duty_end__gte=time
@@ -79,17 +76,12 @@ def get_nearest_pharmacies_on_duty(
     near_pharmacies_on_duty = near_pharmacies_on_duty.annotate(
         distance=Distance("location", user_location)
     )
-    near_pharmacies_on_duty = near_pharmacies_on_duty.order_by(
-        "distance"
-    )  # Order by nearest first
-    near_pharmacies_on_duty = near_pharmacies_on_duty[
-        : limit * 2
-    ]  # Limit to twice the limit to account for travel distances
+    near_pharmacies_on_duty = near_pharmacies_on_duty.order_by("distance")
+    near_pharmacies_on_duty = near_pharmacies_on_duty[: limit * 2]
 
     if near_pharmacies_on_duty.count() == 0:
         raise ValueError("No pharmacies are on duty at this time.")
 
-    # Get pharmacies with travel distances.
     pharmacy_data = get_map_points_from_pharmacies(near_pharmacies_on_duty)
     add_travel_distances_to_pharmacy_data(lat=lat, lng=lng, pharmacy_data=pharmacy_data)
     order_data_by_distance(pharmacy_data)
@@ -194,7 +186,6 @@ def get_city_data(city_name: str) -> list[dict[str, Any]]:
     Dispatcher function to call the appropriate scraper for a given city.
     """
     if city_name == "eskisehir":
-        # mypy thinks this cast is redundant because get_eskisehir_data returns Any or correct type
         return get_eskisehir_data()
 
     if city_name == "istanbul":
@@ -216,7 +207,6 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
     if not city:
         raise ValueError("City not found")
 
-    # Pre-fetch existing pharmacies for this city
     existing_pharmacies = Pharmacy.objects.filter(city=city)
     pharmacy_map = {(p.name, p.phone): p for p in existing_pharmacies}
 
@@ -239,7 +229,7 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
                 duty_start=item["duty_start"],
                 duty_end=item["duty_end"],
                 district=item["district"],
-                city_id=city.id,
+                city=city,
             )
             pharmacies_to_create.append(pharmacy)
         else:
@@ -322,7 +312,6 @@ def add_travel_distances_to_pharmacy_data(
     if not pharmacy_data:
         raise ValueError("Cannot retrieve travel distances. Pharmacy data is empty!")
 
-    # Format destinations for the API request
     destinations_str = "|".join(
         f"{d['position']['lat']},{d['position']['lng']}" for d in pharmacy_data
     )
@@ -332,16 +321,13 @@ def add_travel_distances_to_pharmacy_data(
         origins=origin_str, destinations=destinations_str
     )
 
-    # Add travel information to each destination
-    for i, row in enumerate(received_data["rows"][0]["elements"]):
+    for pharmacy_item, row in zip(pharmacy_data, received_data["rows"][0]["elements"]):
         if row["status"] == "OK":
-            pharmacy_data[i]["travel_distance"] = row["distance"]["value"]
-            pharmacy_data[i]["travel_duration"] = row["duration"]["value"]
+            pharmacy_item["travel_distance"] = row["distance"]["value"]
+            pharmacy_item["travel_duration"] = row["duration"]["value"]
         else:
-            pharmacy_data[i]["travel_distance"] = pharmacy_data[i]["distance"]
-            pharmacy_data[i]["travel_duration"] = (
-                pharmacy_data[i]["distance"] / 1000
-            ) * 60  # Convert distance to seconds. A very rough estimate
+            pharmacy_item["travel_distance"] = pharmacy_item["distance"]
+            pharmacy_item["travel_duration"] = (pharmacy_item["distance"] / 1000) * 60
 
 
 def order_data_by_distance(pharmacy_data: list[dict[str, Any]]) -> None:

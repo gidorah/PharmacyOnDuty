@@ -21,3 +21,4 @@ Eczanerede is a mobile-first web application designed to help users in Turkey qu
 - **Mobile-Optimized UI:** A swipeable list interface (powered by Hammer.js) and responsive design (Tailwind CSS) tailored for quick mobile interaction.
 - **Map Integration:** Interactive Google Maps view with markers and direction routing.
 - **Automated Data Refresh:** Background scrapers for Eskişehir, Istanbul, and Ankara to keep duty information current.
+- **Reliability Verified:** Backed by a comprehensive location testing suite covering 50+ scenarios across supported cities and edge cases.
