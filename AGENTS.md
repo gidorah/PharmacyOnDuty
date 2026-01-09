@@ -7,7 +7,6 @@
 ## OVERVIEW
 
 Pharmacy on Duty finder for Turkey. Django 5 (GeoDjango/PostGIS), Tailwind CSS, Celery/Redis.
-**AI-First Architecture**: Uses Gemini for CI/CD.
 
 ## STRUCTURE
 
