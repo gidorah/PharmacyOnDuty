@@ -1,8 +1,7 @@
 version: 2
 updates:
   # Monitor Python dependencies managed by uv (pyproject.toml)
-  # Note: Dependabot uses pip ecosystem to read pyproject.toml until native uv support is added
-  - package-ecosystem: "pip"
+  - package-ecosystem: "uv"
     directory: "/"
     schedule:
       interval: "weekly"
