@@ -2,6 +2,7 @@ import json
 from collections.abc import Generator
 from typing import Any
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
@@ -35,24 +36,22 @@ def mock_google_maps(google_snapshots: dict[str, Any]) -> Generator[Any]:
                 if self.status_code >= 400:
                     raise Exception(f"HTTP Error: {self.status_code}")
 
-        if "geocode" in url:
-            try:
-                latlng_part = url.split("latlng=")[1].split("&")[0]
+        parsed_url = urlparse(url)
+        query_params = parse_qs(parsed_url.query)
+
+        if "geocode" in parsed_url.path:
+            if "latlng" in query_params:
+                latlng_part = query_params["latlng"][0]
                 key = f"geocode:{latlng_part}"
                 if key in google_snapshots:
                     return MockResponse(google_snapshots[key])
-            except IndexError:
-                pass
 
-        elif "distancematrix" in url:
-            try:
-                origins_part = url.split("origins=")[1].split("&")[0]
-
+        elif "distancematrix" in parsed_url.path:
+            if "origins" in query_params:
+                origins_part = query_params["origins"][0]
                 key = f"distancematrix:{origins_part}"
                 if key in google_snapshots:
                     return MockResponse(google_snapshots[key])
-            except IndexError:
-                pass
 
         print(f"WARNING: No snapshot found for URL: {url}")
         return MockResponse(

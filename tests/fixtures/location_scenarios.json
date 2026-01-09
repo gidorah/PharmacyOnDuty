@@ -310,7 +310,7 @@
   {
     "category": "anomaly",
     "description": "Anomaly - Middle of Marmara Sea",
-    "expected_behavior": "error_or_warning",
+    "expected_behavior": "should_return_pharmacy",
     "latitude": 40.8665,
     "longitude": 28.6924
   },

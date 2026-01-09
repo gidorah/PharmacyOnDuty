@@ -102,6 +102,14 @@ class TestLocationCoverage:
                     ), f"Points not sorted by distance for {scenario['description']}"
                     prev_distance = curr_distance
             else:
+                # For scenarios not marked as 'should_return_pharmacy', we expect a 400 Bad Request
+                # because get_city_name_from_location will raise ValueError for unknown/out-of-scope locations,
+                # or City.DoesNotExist will be raised.
                 assert (
-                    response.status_code in [200, 400]
-                ), f"Unexpected status {response.status_code} for {scenario['description']}"
+                    response.status_code == 400
+                ), f"Expected 400 for {scenario['description']} but got {response.status_code}"
+
+                data = response.json()
+                assert (
+                    "error" in data
+                ), f"Missing error message for {scenario['description']}"
