@@ -1,8 +1,0 @@
-{
-  "track_id": "filter_sentry_noise_20251229",
-  "type": "bug",
-  "status": "new",
-  "created_at": "2025-12-29T18:32:00Z",
-  "updated_at": "2025-12-29T18:32:00Z",
-  "description": "Filter DisallowedHost errors from Sentry to reduce noise"
-}
