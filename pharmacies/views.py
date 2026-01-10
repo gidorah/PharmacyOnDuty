@@ -47,6 +47,10 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
         user_latitude = float(data["lat"])
         user_longitude = float(data["lng"])
 
+        # Validate coordinates are within valid range
+        if not (-90 <= user_latitude <= 90) or not (-180 <= user_longitude <= 180):
+            raise ValueError("Invalid coordinates")
+
         # First round lat and lng to exclude little variations
         lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
 
