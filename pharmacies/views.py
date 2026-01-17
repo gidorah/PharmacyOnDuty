@@ -30,7 +30,6 @@ TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
 
 
-@csrf_exempt
 def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
     """
     Handle POST requests to retrieve the nearest pharmacies based on user location.
