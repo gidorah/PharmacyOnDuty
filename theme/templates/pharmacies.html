@@ -44,6 +44,7 @@
     </head>
     <body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
         <main class="flex-1 flex flex-col bg-gray-50">
+            {% csrf_token %}
             <div class="flex items-center">
                 <div class="h-14 w-14 m-5 flex items-center bg-primary-100 rounded-l relative z-10 border-b border-neutral-400"
                      style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)">
@@ -365,11 +366,13 @@
 			return cookieValue;
 		}
 
-		{% comment %} $.ajaxSetup({
+		$.ajaxSetup({
 			beforeSend: function (xhr, settings) {
-				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+				if (!this.crossDomain) {
+					xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+				}
 			}
-}); {% endcomment %}
+		});
         </script>
         <script type="application/ld+json">
 		{
