@@ -352,24 +352,30 @@
 		});
         </script>
         <script>
-		function getCSRFToken() {
+		function getCookie(name) {
 			let cookieValue = null;
-			const cookies = document.cookie.split(';');
-			for (let i = 0; i < cookies.length; i++) {
-				let cookie = cookies[i].trim();
-				if (cookie.startsWith('csrftoken=')) {
-					cookieValue = cookie.substring('csrftoken='.length, cookie.length);
-					break;
+			if (document.cookie && document.cookie !== '') {
+				const cookies = document.cookie.split(';');
+				for (let i = 0; i < cookies.length; i++) {
+					const cookie = cookies[i].trim();
+					if (cookie.substring(0, name.length + 1) === (name + '=')) {
+						cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+						break;
+					}
 				}
 			}
 			return cookieValue;
 		}
 
-		{% comment %} $.ajaxSetup({
+		const csrftoken = getCookie('csrftoken');
+
+		$.ajaxSetup({
 			beforeSend: function (xhr, settings) {
-				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+				if (!this.crossDomain) {
+					xhr.setRequestHeader("X-CSRFToken", csrftoken);
+				}
 			}
-}); {% endcomment %}
+		});
         </script>
         <script type="application/ld+json">
 		{
