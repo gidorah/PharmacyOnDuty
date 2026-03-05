@@ -1,0 +1,4 @@
+## 2025-02-28 - [CRITICAL] Fix CSRF vulnerability in get_pharmacy_points
+**Vulnerability:** The `get_pharmacy_points` POST endpoint had CSRF protection disabled via the `@csrf_exempt` decorator, allowing Cross-Site Request Forgery attacks.
+**Learning:** This endpoint proxies paid Google Maps API requests, so bypassing CSRF allows attackers to potentially abuse the quota and steal funds. Furthermore, the frontend AJAX request lacked configuration to send the Django `csrftoken` back as a header, and the HTML template missed the `{% csrf_token %}` tag ensuring the cookie exists for anonymous users.
+**Prevention:** Always verify if an endpoint is mutating state or triggering paid services. In Django, do not indiscriminately use `@csrf_exempt`. Ensure frontend integrations use `$.ajaxSetup` to include the `X-CSRFToken` header from cookies, and include `{% csrf_token %}` in templates.
