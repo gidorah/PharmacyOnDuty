@@ -365,11 +365,11 @@
 			return cookieValue;
 		}
 
-		{% comment %} $.ajaxSetup({
+		$.ajaxSetup({
 			beforeSend: function (xhr, settings) {
 				xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
 			}
-}); {% endcomment %}
+		});
         </script>
         <script type="application/ld+json">
 		{
