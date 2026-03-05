@@ -1,0 +1,925 @@
+[
+  {
+    "name": "Altu\u011f Eczanesi",
+    "address": "Fatih Cad. No:138/C Ke\u00e7i\u00f6ren / ANKARA ",
+    "district": "Ke\u00e7i\u00f6ren",
+    "phone": "3123142023",
+    "coordinates": {
+      "lat": 39.987905879411656,
+      "lng": 32.866201400756836
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Angora Eczanesi",
+    "address": "Mamak Cad. No:122/2 Mamak/ ANKARA",
+    "district": "Mamak",
+    "phone": "5069721144",
+    "coordinates": {
+      "lat": 39.9325701360746,
+      "lng": 32.905805746559054
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Arinmi\u015f Eczanesi",
+    "address": "Yukar\u0131 Mah. Leblebici Sok.No:19 G\u00fcd\u00fcl/ ANKARA",
+    "district": "G\u00fcd\u00fcl",
+    "phone": "5301178589",
+    "coordinates": {
+      "lat": 40.21053169011905,
+      "lng": 32.24260926246643
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Arti Eczanesi",
+    "address": "Bah\u00e7elievler Mah. 7.Cad. No:70/G \u00c7ankaya/ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3122220776",
+    "coordinates": {
+      "lat": 39.91829141847509,
+      "lng": 32.827639281749725
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Atay Eczanesi",
+    "address": "Nasuh Pa\u015fa Mah. Ankara \u0130stanbul Devlet Yolu Cad. No:92/C Nall\u0131han/ ANKARA",
+    "district": "Nall\u0131han",
+    "phone": "3127851818",
+    "coordinates": {
+      "lat": 40.18641431489452,
+      "lng": 31.349900364875793
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Beta Eczanesi",
+    "address": "Atapark Mah. A\u015f\u0131k Veysel Cad. No:20/B Ke\u00e7i\u00f6ren/ANKARA",
+    "district": "Ke\u00e7i\u00f6ren",
+    "phone": "3123550853",
+    "coordinates": {
+      "lat": 40.006270465895554,
+      "lng": 32.84755332784698
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Bet\u00fcl Eczanesi",
+    "address": "Kemalpa\u015fa Mah. Cumhuriyet Cad. No:52/A Elmada\u011f",
+    "district": "Elmada\u011f",
+    "phone": "3128633902",
+    "coordinates": {
+      "lat": 39.91866890407777,
+      "lng": 33.23124629252561
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Beyza Eczanesi",
+    "address": "\u015eehit Osman Avc\u0131 Mah. 1071 Malazgirt Cad. No:45/5-B Eryaman/ Etimesgut/ ANKARA",
+    "district": "Etimesgut",
+    "phone": "3125035779",
+    "coordinates": {
+      "lat": 39.98317292336083,
+      "lng": 32.65501096844673
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Bi\u0307li\u0307r Eczanesi",
+    "address": "Barbaros Mah. Abay Kunanbay Cad. No:52/B \u00c7ankaya/ ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3124362199",
+    "coordinates": {
+      "lat": 39.90619740671807,
+      "lng": 32.86665201187134
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "B\u00fc\u015fra Eczanesi",
+    "address": "Beytepe Mah. Orhangazi Bulvar\u0131 No:45/H \u00c7ankaya/ ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3125111237",
+    "coordinates": {
+      "lat": 39.84662664565019,
+      "lng": 32.71162039887258
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "B\u00fc\u015fra Kanbolat Eczanesi",
+    "address": "Abidinpa\u015fa Mah. Okul Sok. No:15/A Mamak/ANKARA",
+    "district": "Mamak",
+    "phone": "3123899000",
+    "coordinates": {
+      "lat": 39.927779355872445,
+      "lng": 32.88841009140015
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Cemre Eczanesi",
+    "address": "Demetevler Mh.358.Cd.No:54/D  Demetevler/ Yenimahalle/ANKARA",
+    "district": "Yenimahalle",
+    "phone": "3123369146",
+    "coordinates": {
+      "lat": 39.963524465480994,
+      "lng": 32.78837442398071
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "\u00c7a\u011fda Gi\u0307zem Eczanesi",
+    "address": "Pamuklar Mah. Sivas Cad. No:37/2 Yenimahalle/ ANKARA",
+    "district": "Yenimahalle",
+    "phone": "3123310010",
+    "coordinates": {
+      "lat": 39.98407771809858,
+      "lng": 32.808687122969786
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "\u00c7ali\u015fkan Eczanesi",
+    "address": "Camiatik Mah. Banka Sok. No:7/B Aya\u015f/ ANKARA",
+    "district": "Aya\u015f",
+    "phone": "3127121829",
+    "coordinates": {
+      "lat": 40.018675452628074,
+      "lng": 32.33104705810547
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Devrez Eczanesi",
+    "address": "Merkez Mah. \u015eehit Salim Akg\u00fcl Cad. H\u00fcnkar Sk. No:2/B Pursaklar / ANKARA ",
+    "district": "Pursaklar",
+    "phone": "3123286434",
+    "coordinates": {
+      "lat": 40.038917946926716,
+      "lng": 32.89572715759277
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "D\u00f6rtyol Eczanesi",
+    "address": "Hacettepe Mah. Kestane Cad. Yenik\u00f6k Sok. No:1/22(B) Alt\u0131nda\u011f/ ANKARA",
+    "district": "Alt\u0131nda\u011f",
+    "phone": "3123204893",
+    "coordinates": {
+      "lat": 39.93634668200521,
+      "lng": 32.87212371826172
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Efe Eczanesi",
+    "address": "Ba\u011fl\u0131ca Mah. Mermero\u011flu Cad. No:72/5 Ba\u011fl\u0131ca/ Etimesgut/ ANKARA",
+    "district": "Etimesgut",
+    "phone": "3125435644",
+    "coordinates": {
+      "lat": 39.88709795528091,
+      "lng": 32.63146892655641
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Eli\u0307fi\u0307m Eczanesi",
+    "address": "Feridun \u00c7elik Mah.1048.Cadde No:169/A Alt\u0131nda\u011f/ ANKARA",
+    "district": "Alt\u0131nda\u011f",
+    "phone": "5325078105",
+    "coordinates": {
+      "lat": 39.97968696246288,
+      "lng": 32.93412105180323
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Emre Ege Eczanesi",
+    "address": "Gazi Osman Pa\u015fa Mah. Ada Sokak No:2/D Fatih /Sincan/ ANKARA",
+    "district": "Sincan",
+    "phone": "5013720860",
+    "coordinates": {
+      "lat": 39.99450228805171,
+      "lng": 32.584188580513
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Ercanlar  Eczanesi",
+    "address": "H\u00fcseyin Kahya Mah. Menderes Cad.No:9 Merkez/ KIRIKKALE",
+    "district": "K\u0131r\u0131kkale",
+    "phone": "3182187375",
+    "coordinates": {
+      "lat": 39.8429615102318,
+      "lng": 33.507678508758545
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Eren Topak Eczanesi",
+    "address": "Mustafa Kemal Mah. Orhangazi Cad. No:44/B Yenikent/ Sincan/ ANKARA",
+    "district": "Sincan",
+    "phone": "3122770082",
+    "coordinates": {
+      "lat": 40.0047470352095,
+      "lng": 32.517801225185394
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Esme Eczanesi",
+    "address": "Etlik Mah. Gen.Dr.Tevfik Sa\u011flam Cad.No:123/B Ke\u00e7i\u00f6ren/ANKARA",
+    "district": "Ke\u00e7i\u00f6ren",
+    "phone": "3123211800",
+    "coordinates": {
+      "lat": 39.979343983010146,
+      "lng": 32.83684194087982
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Eva Eczanesi",
+    "address": "Elvan Mah.1934 Sokak No:7/B Etimesgut/ ANKARA",
+    "district": "Etimesgut",
+    "phone": "5437871138",
+    "coordinates": {
+      "lat": 39.953825004036446,
+      "lng": 32.62874843981712
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Evren Eczanesi",
+    "address": "Yeni Mah. Cumhuriyet Cad. No:73/C Evren/ ANKARA",
+    "district": "Evren",
+    "phone": "3128935068",
+    "coordinates": {
+      "lat": 39.020033917449894,
+      "lng": 33.805580735206604
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Feti\u0307h Eczanesi",
+    "address": "Sar\u0131kaya Mah. Ankara Cad. No:181/B \u015eerefliko\u00e7hisar/ ANKARA",
+    "district": "\u015eerefliko\u00e7hisar",
+    "phone": "3126863636",
+    "coordinates": {
+      "lat": 38.93575655396828,
+      "lng": 33.547614589333534
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Feyza Eczanesi",
+    "address": "BALI\u015eEYH _Yeni Mahalle Samsun Cad. No:21/A Bal\u0131\u015feyh / KIRIKKALE (Tel:05060258662)",
+    "district": "Bal\u0131seyh",
+    "phone": "3187137277",
+    "coordinates": {
+      "lat": 39.90984939171284,
+      "lng": 33.71715303452186
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Fi\u0307tofarm Eczanesi",
+    "address": "K\u0131z\u0131l\u0131rmak Mah. Ufuk \u00dcniversitesi Cad. Ba\u015fkent Gaz Kule No:13/A-1 \u00c7ukurambar/ \u00c7ankaya/ ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3125034008",
+    "coordinates": {
+      "lat": 39.907582097745795,
+      "lng": 32.808720686948845
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Galleri\u0307a Eczanesi",
+    "address": "Galleria AVM Mutlukent Mah. 2432.Cad. A Blok No:26 \u00c7ankaya/ ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3122357001",
+    "coordinates": {
+      "lat": 39.895225878771804,
+      "lng": 32.70451839402085
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "G\u00fcl Eczanesi",
+    "address": "Y\u0131ld\u0131r\u0131m Beyaz\u0131t Mah. Ankara Bulvar\u0131 No:1/C \u00c7ubuk",
+    "district": "\u00c7ubuk",
+    "phone": "3128374777",
+    "coordinates": {
+      "lat": 40.2384874722418,
+      "lng": 33.032914195394994
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "G\u00fcne\u015f Eczanesi",
+    "address": "Cumhuriyet Mah. Eti Cad. No:48/A Polatl\u0131 / ANKARA ",
+    "district": "Polatl\u0131",
+    "phone": "3126234452",
+    "coordinates": {
+      "lat": 39.58239058441379,
+      "lng": 32.1445369720459
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Hayat  Eczanesi",
+    "address": "Y\u0131ld\u0131r\u0131m Mah. Ankara Cad. No:22/D Akyurt / ANKARA ",
+    "district": "Akyurt",
+    "phone": "3128441075",
+    "coordinates": {
+      "lat": 40.1292129415606,
+      "lng": 33.09084177017212
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Ilgin Eczanesi",
+    "address": "Seyran Mh.K\u00fc\u00e7\u00fck San. Sit. Yap\u0131 Koop. \u00c7ar\u015f\u0131s\u0131 D\u00fckkan No:1/A Haymana/ANKARA",
+    "district": "Haymana",
+    "phone": "3126581189",
+    "coordinates": {
+      "lat": 39.43482575820539,
+      "lng": 32.49736547470093
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Kayra Eczanesi",
+    "address": "Bas\u0131nevleri Mah. Bas\u0131n Cad.No:47/C Ke\u00e7i\u00f6ren/Ankara",
+    "district": "Ke\u00e7i\u00f6ren",
+    "phone": "3123264344",
+    "coordinates": {
+      "lat": 39.96996700301339,
+      "lng": 32.852715253829956
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Levent  Eczanesi",
+    "address": "Sancak Mah. Tiflis Cad. No:53/E \u00c7ankaya / ANKARA ",
+    "district": "\u00c7ankaya",
+    "phone": "3124395217",
+    "coordinates": {
+      "lat": 39.86944863717306,
+      "lng": 32.8620171546936
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Leyla Eczanesi",
+    "address": "Bostanc\u0131k Mah. 1589. Sok. No:7/A Mamak/-(Alt\u0131nda\u011f) ANKARA",
+    "district": "Mamak",
+    "phone": "3125110007",
+    "coordinates": {
+      "lat": 39.961627974304534,
+      "lng": 32.93579302391663
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Mehmet Eczanesi",
+    "address": "Osman Temiz Mah. 1030.Sok. No:5/A Dikmen/\u00c7ankaya/ ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3124825676",
+    "coordinates": {
+      "lat": 39.87549246279228,
+      "lng": 32.83891797065735
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Mert Eczanesi",
+    "address": "Sarayc\u0131k Mah. 2435. Cad. No:1-OA  (Sarayc\u0131k Toki Konutlar\u0131) Sincan/  ANKARA",
+    "district": "Sincan",
+    "phone": "3125110720",
+    "coordinates": {
+      "lat": 39.93611737011464,
+      "lng": 32.591433227062225
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Mesut Eczanesi",
+    "address": "Dikiciler Sok. No:7 Beypazar\u0131 / ANKARA ",
+    "district": "Beypazar\u0131",
+    "phone": "3127632123",
+    "coordinates": {
+      "lat": 40.153686857794035,
+      "lng": 31.9317626953125
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Muci\u0307ze Eczanesi",
+    "address": "Yeni Bat\u0131 Mah. 5407.Cadde No:118/3F  Yenimahalle/ANKARA",
+    "district": "Yenimahalle",
+    "phone": "5068603925",
+    "coordinates": {
+      "lat": 39.98708076976984,
+      "lng": 32.658863961696625
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Nesli\u0307han Eczanesi",
+    "address": "Atat\u00fcrk Mah. Beng\u00fc Caddesi No:12/C Kahramankazan/ ANKARA",
+    "district": "Kazan",
+    "phone": "3128142980",
+    "coordinates": {
+      "lat": 40.19641509330716,
+      "lng": 32.67590135335922
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Nur Eczanesi",
+    "address": "Yeni\u015fehir Mah. 259. Sok. No:2-A Yah\u015fihan/ KIRIKKALE",
+    "district": "Yah\u015fihan",
+    "phone": "3183101001",
+    "coordinates": {
+      "lat": 39.852082027054415,
+      "lng": 33.52604627609253
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Onur Eczanesi",
+    "address": "Sa\u011fl\u0131k Cad. No:42/A Merkez/ KIRIKKALE ",
+    "district": "K\u0131r\u0131kkale",
+    "phone": "3182245238",
+    "coordinates": {
+      "lat": 39.83536598963288,
+      "lng": 33.49508285522461
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "\u00d6zaslan Eczanesi",
+    "address": "Mara\u015fal \u00c7akmak Mh. Ankara Cd. No:214/15 Sincan /ANKARA",
+    "district": "Sincan",
+    "phone": "3122684763",
+    "coordinates": {
+      "lat": 39.96059284825725,
+      "lng": 32.59861350059509
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Peri\u0307 Eczanesi",
+    "address": "Uyan\u0131\u015f Mah. Anavatan Cad. No:15 Ke\u00e7i\u00f6ren/ ANKARA",
+    "district": "Ke\u00e7i\u00f6ren",
+    "phone": "3123802838",
+    "coordinates": {
+      "lat": 40.00233700732856,
+      "lng": 32.873113453388214
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Rana Eczanesi",
+    "address": "Bozkurt Mah. Mer Sok.No:36 Keskin/KIRIKKALE ",
+    "district": "Keskin",
+    "phone": "3185153257",
+    "coordinates": {
+      "lat": 39.675067378824735,
+      "lng": 33.6145082116127
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Sarah Eczanesi",
+    "address": "Emniyet Mah. Silahtar Cad. No:52/A Yenimahalle/ANKARA",
+    "district": "Yenimahalle",
+    "phone": "3122212918",
+    "coordinates": {
+      "lat": 39.94323904802224,
+      "lng": 32.81858682632446
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Temelli\u0307 Pinar Eczanesi",
+    "address": "TEMELL\u0130-\u0130stiklal Mah. H\u00fcrriyet Cad. No:30/A\r\nTemelli/ Sincan (312 645 17 40)",
+    "district": "Sincan",
+    "phone": "5069267388",
+    "coordinates": {
+      "lat": 39.7289198836246,
+      "lng": 32.35861748456955
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Tozo\u011flu Eczanesi",
+    "address": "Ak\u00e7ay Mah. Cengiz Topel Cad. No:27/B K\u0131z\u0131lcahamam/ ANKARA",
+    "district": "K\u0131z\u0131lcahamam",
+    "phone": "3127361550",
+    "coordinates": {
+      "lat": 40.472634479140496,
+      "lng": 32.648341167550825
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "U\u011furlu Eczanesi",
+    "address": "ELVANKENT/O\u011fuzlar Mah. 1597. Sok. Eray \u00c7ar\u015f\u0131s\u0131 No:9/17-18 Elvankent/Etimesgut/ANKARA ",
+    "district": "Etimesgut",
+    "phone": "3122609995",
+    "coordinates": {
+      "lat": 39.943255499206664,
+      "lng": 32.611799240112305
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Varlik Eczanesi",
+    "address": "Varl\u0131k Mah.Beypazar\u0131 Caddesi No:20/A Yenimahalle/ANKARA",
+    "district": "Yenimahalle",
+    "phone": "3122525052",
+    "coordinates": {
+      "lat": 39.95662180724893,
+      "lng": 32.83329203724861
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Yeni\u0307 Ay\u015fem Eczanesi",
+    "address": "Halit Cevri Aslangil Mah.20. Sok.No:14/C Kalecik/ANKARA ",
+    "district": "Kalecik",
+    "phone": "3128570859",
+    "coordinates": {
+      "lat": 40.09711448043559,
+      "lng": 33.40890884399414
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Yeni\u0307 Nefes Eczanesi",
+    "address": "Kent Koop Mah. 1860.Cadde \u0130lk Umut 90 Sitesi F1 Blok No:29/B Bat\u0131kent/ Yenimahalle/ ANKARA",
+    "district": "Yenimahalle",
+    "phone": "3122504424",
+    "coordinates": {
+      "lat": 39.96678486827,
+      "lng": 32.71898890379816
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Yilmaz Eczanesi",
+    "address": "Menderes Bulvar\u0131 Sa\u011fl\u0131k 1. Sok. No:2 Hasano\u011flan /Elmada\u011f/ ANKARA (2.Tel:3128661233)",
+    "district": "Elmada\u011f",
+    "phone": "3128663771",
+    "coordinates": {
+      "lat": 39.99868995767894,
+      "lng": 33.180084228515625
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Yurtseven Sena Eczanesi",
+    "address": "Kardelen Mah. 2091. Cad. No:4/2 (A\u015fa\u011f\u0131 Emek Sitesi) Bat\u0131kent/Yenimahalle",
+    "district": "Yenimahalle",
+    "phone": "3122515351",
+    "coordinates": {
+      "lat": 39.97757433582785,
+      "lng": 32.71094100178743
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Zehra Karakaya Eczanesi",
+    "address": "K\u00fclt\u00fcr Mah. Ata\u00e7-2 Sok. No:71/A K\u0131z\u0131lay/\u00c7ankaya/ANKARA",
+    "district": "\u00c7ankaya",
+    "phone": "3123677771",
+    "coordinates": {
+      "lat": 39.91947529686882,
+      "lng": 32.861449867486954
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Zeki\u0307 Eczanesi",
+    "address": "General Zeki Do\u011fan Mh.Natayolu Cd. No:26/A Mamak/ANKARA ",
+    "district": "Mamak",
+    "phone": "3123641112",
+    "coordinates": {
+      "lat": 39.91997723044378,
+      "lng": 32.905975580124505
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "Zi\u0307rve Eczanesi",
+    "address": "G.O.P. Mah. Ankara Cad. No:104/A G\u00f6lba\u015f\u0131 / ANKARA ",
+    "district": "G\u00f6lba\u015f\u0131",
+    "phone": "3124846263",
+    "coordinates": {
+      "lat": 39.791877417173595,
+      "lng": 32.80644178390503
+    },
+    "duty_start": "2025-12-30 16:00:00+00:00",
+    "duty_end": "2025-12-31 06:00:00+00:00",
+    "city_name": "ankara"
+  },
+  {
+    "name": "N\u0130SA ECZANES\u0130",
+    "address": "71 EVLER MAH. ERTA\u015e CAD. NO:313/B AQUAPARK \u0130LER\u0130S\u0130 ATILGAN D\u00dc\u011e\u00dcN SALONU KAR\u015eISI",
+    "district": "MERKEZ-ODUNPAZARI",
+    "phone": "05013026070",
+    "coordinates": {
+      "lat": 39.742849,
+      "lng": 30.582158
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "AKTUNA ECZANES\u0130",
+    "address": "DEL\u0130KL\u0130TA\u015e MAH. DEL\u0130KL\u0130TA\u015e CAD. NO:22/A  K\u0131z \u0130mam Hatip Lisesi aral\u0131\u011f\u0131, Deliklita\u015f ASM kar\u015f\u0131 s\u0131ras\u0131",
+    "district": "MERKEZ-ODUNPAZARI",
+    "phone": "02222320246",
+    "coordinates": {
+      "lat": 39.769104,
+      "lng": 30.524136
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "\u0130REM ECZANES\u0130",
+    "address": "\u0130ST\u0130KLAL MAH. \u015eA\u0130R FUZUL\u0130 CAD. 72/C",
+    "district": "MERKEZ-ODUNPAZARI",
+    "phone": "02222349249",
+    "coordinates": {
+      "lat": 39.773946,
+      "lng": 30.513676
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "POLEN  ECZANES\u0130",
+    "address": "V\u0130\u015eNEL\u0130K MAH. ATAT\u00dcRK BULVARI NO:88/B   MAHMUD SAM\u0130 RAMAZANO\u011eLU CAM\u0130 YANI, STARBUCKS COFFEE KAR\u015eISI",
+    "district": "MERKEZ-ODUNPAZARI",
+    "phone": "02222251848",
+    "coordinates": {
+      "lat": 39.76519,
+      "lng": 30.505726
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "ERM\u0130\u015e ECZANES\u0130",
+    "address": "BATIKENT MAH.CO\u015eTU SOK.NO:95/A PARK WEST AVM KAR\u015eISI, SABLON F\u0130T KAR\u015eISI",
+    "district": "MERKEZ-TEPEBA\u015eI",
+    "phone": "02222250105",
+    "coordinates": {
+      "lat": 39.789764,
+      "lng": 30.449482
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "G\u00dcVEN ECZANES\u0130",
+    "address": "HACIALIBEY MAH. SIVRIHISAR CAD. 5 HACIALIBEY MAH. SIVRIHISAR CAD. 5 \u0130\u015e BANKASI MERKEZ \u015eUBE KAR\u015eISI",
+    "district": "MERKEZ-TEPEBA\u015eI",
+    "phone": "02222314349",
+    "coordinates": {
+      "lat": 39.776032,
+      "lng": 30.520192
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "NUMUNE ECZANES\u0130",
+    "address": "YE\u015e\u0130LTEPE MAH. BEYKOZ SOK. NO:44/B",
+    "district": "MERKEZ-TEPEBA\u015eI",
+    "phone": "02223250405",
+    "coordinates": {
+      "lat": 39.80069,
+      "lng": 30.498421
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "KESK\u0130N  ECZANES\u0130",
+    "address": "FAT\u0130H MAH. DURAK SOK. NO:24/B ALPU \u0130L\u00c7ES\u0130 ESK\u0130\u015eEH\u0130R",
+    "district": "ALPU",
+    "phone": "02225112121",
+    "coordinates": {
+      "lat": 39.773155,
+      "lng": 30.96744
+    },
+    "duty_start": "2025-12-30 18:00:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "DERMAN ECZANES\u0130",
+    "address": "YENI MAH.IN\u00d6N\u00dc CAD. NO: 76",
+    "district": "BEYL\u0130KOVA",
+    "phone": "02225313032",
+    "coordinates": {
+      "lat": 39.689823,
+      "lng": 31.205556
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:00:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "HALK ECZANES\u0130",
+    "address": "ADALAR MH.KUYUCAK CD.NO:11",
+    "district": "\u00c7\u0130FTELER",
+    "phone": "02225412221",
+    "coordinates": {
+      "lat": 39.375033,
+      "lng": 31.038699
+    },
+    "duty_start": "2025-12-30 18:00:00",
+    "duty_end": "2025-12-31 09:00:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "G\u00dcNEY ECZANES\u0130",
+    "address": "I\u015eIKLAR MAH. BANKA CAD. NO:6/C Mahmudiye Ziraat Bankas\u0131 Kar\u015f\u0131s\u0131",
+    "district": "MAHMUD\u0130YE",
+    "phone": "02226113310",
+    "coordinates": {
+      "lat": 39.4945,
+      "lng": 30.9871
+    },
+    "duty_start": "2025-12-30 18:00:00",
+    "duty_end": "2025-12-31 09:00:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "DADAK ECZANES\u0130",
+    "address": "MEDRESE MAH. CUMHUR\u0130YET MEYDANI NO:27/27A M\u0130HALI\u00c7CIK",
+    "district": "M\u0130HALIC\u00c7IK",
+    "phone": "05544420268",
+    "coordinates": {
+      "lat": 39.866733,
+      "lng": 31.495766
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "DERMAN ECZANES\u0130",
+    "address": "YUNUS MAH. KAZIM SAKARYA CAD. 17/D",
+    "district": "SEY\u0130TGAZ\u0130",
+    "phone": "02226713443",
+    "coordinates": {
+      "lat": 39.445623,
+      "lng": 30.696054
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:00:00",
+    "city_name": "eskisehir"
+  },
+  {
+    "name": "HIZIR  ECZANES\u0130",
+    "address": "Cumhuriyet Mah. Prof. Dr. Nabi Avc\u0131 Cad. No:48//A",
+    "district": "S\u0130VR\u0130H\u0130SAR",
+    "phone": "02227114031",
+    "coordinates": {
+      "lat": 39.449511,
+      "lng": 31.538748
+    },
+    "duty_start": "2025-12-30 18:30:00",
+    "duty_end": "2025-12-31 08:30:00",
+    "city_name": "eskisehir"
+  }
+]
