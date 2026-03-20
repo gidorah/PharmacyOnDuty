@@ -3,6 +3,7 @@ from datetime import UTC, datetime, time
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.conf import settings
 from django.test import Client
 from django.urls import reverse
 
@@ -20,9 +21,8 @@ class TestGetPharmacyPointsNoDb:
         response = client.post(
             url, data="invalid-json", content_type="application/json"
         )
-        assert (
-            response.status_code == 400
-        )  # JSONDecodeError (ValueError) caught in view
+        assert response.status_code == 400  # JSONDecodeError is explicitly caught
+        assert response.json()["error"] == "Invalid JSON payload."
 
     def test_get_pharmacy_points_missing_coordinates(self, client: Client) -> None:
         url = reverse("pharmacies:get_pharmacy_points")
@@ -33,7 +33,7 @@ class TestGetPharmacyPointsNoDb:
         )
 
         assert response.status_code == 400
-        assert response.json()["error"] == "'lng'"
+        assert response.json()["error"] == "Missing required fields: lng."
 
 
 @pytest.mark.django_db
@@ -125,7 +125,7 @@ class TestGetPharmacyPoints:
             content_type="application/json",
         )
         assert response.status_code == 400
-        assert "City matching query does not exist" in response.json()["error"]
+        assert response.json()["error"] == "No city found for the provided location."
 
 
 class TestOtherViews:
@@ -134,7 +134,7 @@ class TestOtherViews:
         response = client.get(url)
         assert response.status_code == 200
         assert "pharmacies.html" in [t.name for t in response.templates]
-        assert "csrftoken" in response.cookies
+        assert settings.CSRF_COOKIE_NAME in response.cookies
 
     def test_get_pharmacy_points_requires_csrf(self) -> None:
         client = Client(enforce_csrf_checks=True)

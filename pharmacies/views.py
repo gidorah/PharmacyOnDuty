@@ -42,13 +42,29 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
 
     try:
         data = loads(request.body)
+    except JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Invalid JSON payload."}, status=400)
+
+    missing_fields = sorted({"lat", "lng"} - data.keys())
+    if missing_fields:
+        fields = ", ".join(missing_fields)
+        return JsonResponse(
+            {"error": f"Missing required fields: {fields}."}, status=400
+        )
+
+    try:
         user_latitude = float(data["lat"])
         user_longitude = float(data["lng"])
+    except (TypeError, ValueError):
+        return JsonResponse({"error": "Invalid coordinates."}, status=400)
 
-        # Validate coordinates are within valid range
-        if not (-90 <= user_latitude <= 90) or not (-180 <= user_longitude <= 180):
-            raise ValueError("Invalid coordinates")
+    if not (-90 <= user_latitude <= 90) or not (-180 <= user_longitude <= 180):
+        return JsonResponse({"error": "Invalid coordinates."}, status=400)
 
+    try:
         # First round lat and lng to exclude little variations
         lat, lng = round_lat_lng(user_latitude, user_longitude, precision=4)
 
@@ -71,8 +87,10 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
         print(f"Pharmacy points: \n {response_data}")
         return JsonResponse(response_data)
 
-    except (JSONDecodeError, KeyError, TypeError, ValueError, City.DoesNotExist) as e:
-        return JsonResponse({"error": str(e)}, status=400)
+    except City.DoesNotExist:
+        return JsonResponse(
+            {"error": "No city found for the provided location."}, status=400
+        )
     except Exception:
         import traceback
 
