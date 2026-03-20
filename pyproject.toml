@@ -144,4 +144,5 @@ dev = [
     "pytest-cov>=7.0.0",
     "ty>=0.0.4",
     "interrogate>=1.7.0",
+    "faker>=40.1.0",
 ]
