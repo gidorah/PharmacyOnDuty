@@ -9,6 +9,33 @@ from django.urls import reverse
 from pharmacies.models import City, WorkingSchedule
 
 
+class TestGetPharmacyPointsNoDb:
+    def test_get_pharmacy_points_not_post(self, client: Client) -> None:
+        url = reverse("pharmacies:get_pharmacy_points")
+        response = client.get(url)
+        assert response.status_code == 405
+
+    def test_get_pharmacy_points_invalid_json(self, client: Client) -> None:
+        url = reverse("pharmacies:get_pharmacy_points")
+        response = client.post(
+            url, data="invalid-json", content_type="application/json"
+        )
+        assert (
+            response.status_code == 400
+        )  # JSONDecodeError (ValueError) caught in view
+
+    def test_get_pharmacy_points_missing_coordinates(self, client: Client) -> None:
+        url = reverse("pharmacies:get_pharmacy_points")
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "'lng'"
+
+
 @pytest.mark.django_db
 class TestGetPharmacyPoints:
     @pytest.fixture
@@ -22,11 +49,6 @@ class TestGetPharmacyPoints:
             saturday_end=time(13, 0),
         )
         return city
-
-    def test_get_pharmacy_points_not_post(self, client: Client) -> None:
-        url = reverse("pharmacies:get_pharmacy_points")
-        response = client.get(url)
-        assert response.status_code == 405
 
     @patch("pharmacies.views.get_city_name_from_location")
     @patch("pharmacies.views.get_nearest_pharmacies_open")
@@ -90,15 +112,6 @@ class TestGetPharmacyPoints:
         assert "points" in data
         assert data["points"][0]["title"] == "Duty Pharmacy"
 
-    def test_get_pharmacy_points_invalid_json(self, client: Client) -> None:
-        url = reverse("pharmacies:get_pharmacy_points")
-        response = client.post(
-            url, data="invalid-json", content_type="application/json"
-        )
-        assert (
-            response.status_code == 400
-        )  # JSONDecodeError (ValueError) caught in view
-
     @patch("pharmacies.views.get_city_name_from_location")
     def test_get_pharmacy_points_city_not_found(
         self, mock_get_city: MagicMock, client: Client
@@ -115,13 +128,25 @@ class TestGetPharmacyPoints:
         assert "City matching query does not exist" in response.json()["error"]
 
 
-@pytest.mark.django_db
 class TestOtherViews:
     def test_pharmacies_list(self, client: Client) -> None:
         url = reverse("home")
         response = client.get(url)
         assert response.status_code == 200
         assert "pharmacies.html" in [t.name for t in response.templates]
+        assert "csrftoken" in response.cookies
+
+    def test_get_pharmacy_points_requires_csrf(self) -> None:
+        client = Client(enforce_csrf_checks=True)
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 403
 
     def test_google_maps_proxy_not_get(self, client: Client) -> None:
         url = reverse("pharmacies:google_maps_proxy")

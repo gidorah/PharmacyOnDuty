@@ -7,8 +7,8 @@ This module handles the HTTP requests for pharmacy data, including:
 - Proxying requests to the Google Maps API.
 """
 
-import json
 from datetime import timedelta
+from json import JSONDecodeError, loads
 
 import requests
 from django.conf import settings
@@ -41,7 +41,7 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
         return HttpResponseNotAllowed(["POST"])  # type: ignore
 
     try:
-        data = json.loads(request.body)
+        data = loads(request.body)
         user_latitude = float(data["lat"])
         user_longitude = float(data["lng"])
 
@@ -71,7 +71,7 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
         print(f"Pharmacy points: \n {response_data}")
         return JsonResponse(response_data)
 
-    except (ValueError, City.DoesNotExist) as e:
+    except (JSONDecodeError, KeyError, TypeError, ValueError, City.DoesNotExist) as e:
         return JsonResponse({"error": str(e)}, status=400)
     except Exception:
         import traceback
