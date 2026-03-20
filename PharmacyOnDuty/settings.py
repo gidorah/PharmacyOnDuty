@@ -15,6 +15,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from PharmacyOnDuty.database_config import get_database_settings
+
 load_dotenv(os.getenv("DOTENV_PATH"))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -110,11 +112,7 @@ WSGI_APPLICATION = "PharmacyOnDuty.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.contrib.gis.db.backends.postgis",
-        "NAME": os.environ.get("DB_NAME", "postgres"),
-        "USER": os.environ.get("DB_USER", "postgres"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "password"),
-        "HOST": os.environ.get("DB_HOST", "db"),
-        "PORT": os.environ.get("DB_PORT", "5432"),
+        **get_database_settings(),
     }
 }
 
