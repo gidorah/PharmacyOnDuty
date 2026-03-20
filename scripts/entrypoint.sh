@@ -2,10 +2,13 @@
 set -e
 
 echo "Waiting for services to be ready..."
-if [ -f "/usr/local/bin/wait_for_services.py" ]; then
+if [ -f "/app/scripts/wait_for_services.py" ]; then
+  uv run python -m scripts.wait_for_services
+elif [ -f "/usr/local/bin/wait_for_services.py" ]; then
   uv run python /usr/local/bin/wait_for_services.py
 else
-  uv run python scripts/wait_for_services.py
+  echo "wait_for_services.py not found" >&2
+  exit 1
 fi
 
 # Only run migrations if explicitly requested
