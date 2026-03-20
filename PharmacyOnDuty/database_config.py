@@ -20,6 +20,8 @@ DATABASE_ENV_ALIASES: Final[dict[str, tuple[str, ...]]] = {
 
 
 def _get_first_env_value(*names: str) -> str | None:
+    """Return the first non-empty value found among the given env vars."""
+
     for name in names:
         value = os.environ.get(name)
         if value:
@@ -28,6 +30,8 @@ def _get_first_env_value(*names: str) -> str | None:
 
 
 def _get_database_url_settings() -> dict[str, str]:
+    """Parse database settings from DATABASE_URL when it is present."""
+
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         return {}
@@ -51,6 +55,8 @@ def _get_database_url_settings() -> dict[str, str]:
 
 
 def get_database_settings() -> dict[str, str]:
+    """Resolve database settings from defaults, DATABASE_URL, and env aliases."""
+
     settings = DEFAULT_DATABASE_SETTINGS.copy()
     settings.update(_get_database_url_settings())
 
@@ -63,6 +69,8 @@ def get_database_settings() -> dict[str, str]:
 
 
 def get_database_connection_kwargs() -> dict[str, str]:
+    """Return psycopg2-compatible keyword arguments for the active DB config."""
+
     settings = get_database_settings()
     return {
         "dbname": settings["NAME"],

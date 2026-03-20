@@ -12,9 +12,10 @@ class TestWaitForServices(unittest.TestCase):
         self.assertTrue(wait_for_services.wait_for_postgres())
         mock_connect.assert_called()
 
+    @patch("scripts.wait_for_services.time.sleep")
     @patch("scripts.wait_for_services.psycopg2.connect")
     def test_wait_for_postgres_failure_then_success(
-        self, mock_connect: MagicMock
+        self, mock_connect: MagicMock, mock_sleep: MagicMock
     ) -> None:
         import psycopg2  # type: ignore
 
@@ -26,6 +27,7 @@ class TestWaitForServices(unittest.TestCase):
         ]
         self.assertTrue(wait_for_services.wait_for_postgres())
         self.assertEqual(mock_connect.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
 
     @patch("scripts.wait_for_services.psycopg2.connect")
     def test_wait_for_postgres_uses_database_url(self, mock_connect: MagicMock) -> None:
@@ -57,8 +59,11 @@ class TestWaitForServices(unittest.TestCase):
             self.assertTrue(wait_for_services.wait_for_redis())
         mock_redis.assert_called()
 
+    @patch("scripts.wait_for_services.time.sleep")
     @patch("scripts.wait_for_services.redis.from_url")
-    def test_wait_for_redis_failure_then_success(self, mock_redis: MagicMock) -> None:
+    def test_wait_for_redis_failure_then_success(
+        self, mock_redis: MagicMock, mock_sleep: MagicMock
+    ) -> None:
         import redis
 
         # Create the success mock first
@@ -76,6 +81,7 @@ class TestWaitForServices(unittest.TestCase):
             self.assertTrue(wait_for_services.wait_for_redis())
 
         self.assertEqual(mock_redis.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 2)
 
 
 if __name__ == "__main__":

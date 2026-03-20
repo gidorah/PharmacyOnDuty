@@ -14,6 +14,8 @@ load_dotenv(os.getenv("DOTENV_PATH", ".env"))
 
 
 def wait_for_postgres() -> bool:
+    """Poll PostgreSQL until a connection succeeds or the timeout expires."""
+
     connection_kwargs = get_database_connection_kwargs()
     dbname = connection_kwargs["dbname"]
     user = connection_kwargs["user"]
@@ -48,6 +50,8 @@ def wait_for_postgres() -> bool:
 
 
 def wait_for_redis() -> bool:
+    """Poll Redis until a ping succeeds or the timeout expires."""
+
     broker_url = os.environ.get("CELERY_BROKER_URL")
     if not broker_url:
         print("CELERY_BROKER_URL not set, skipping Redis wait.")
