@@ -16,7 +16,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonR
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_exempt
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
@@ -30,6 +30,7 @@ TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
 
 
+@csrf_exempt
 def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
     """
     Handle POST requests to retrieve the nearest pharmacies based on user location.
@@ -112,7 +113,6 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@ensure_csrf_cookie
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
     """Render the main pharmacies page."""
     return render(request, "pharmacies.html")
