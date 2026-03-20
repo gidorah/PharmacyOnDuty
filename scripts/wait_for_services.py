@@ -7,23 +7,30 @@ import psycopg2  # type: ignore
 import redis
 from dotenv import load_dotenv
 
+from PharmacyOnDuty.database_config import get_database_connection_kwargs
+
 # Load environment variables (useful for local development)
 load_dotenv(os.getenv("DOTENV_PATH", ".env"))
 
 
 def wait_for_postgres() -> bool:
-    dbname = os.environ.get("DB_NAME", "postgres")
-    user = os.environ.get("DB_USER", "postgres")
-    password = os.environ.get("DB_PASSWORD", "password")
-    host = os.environ.get("DB_HOST", "db")
-    port = os.environ.get("DB_PORT", "5432")
+    connection_kwargs = get_database_connection_kwargs()
+    dbname = connection_kwargs["dbname"]
+    user = connection_kwargs["user"]
+    password = connection_kwargs["password"]
+    host = connection_kwargs["host"]
+    port = connection_kwargs["port"]
 
     print(f"Waiting for PostgreSQL at {host}:{port}...")
     start_time = time.time()
     while time.time() - start_time < 60:
         try:
             conn = psycopg2.connect(
-                dbname=dbname, user=user, password=password, host=host, port=port
+                dbname=dbname,
+                user=user,
+                password=password,
+                host=host,
+                port=port,
             )
             conn.close()
             print("PostgreSQL is ready!")
@@ -74,8 +81,9 @@ def wait_for_redis() -> bool:
 
 if __name__ == "__main__":
     # Flush stdout to ensure logs appear immediately in Docker
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(line_buffering=True)
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(line_buffering=True)
 
     if not wait_for_postgres():
         sys.exit(1)
