@@ -50,7 +50,12 @@ INTERNAL_IPS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    origin for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(" ") if origin
+    origin
+    for origin in os.environ.get(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:8000",
+    ).split(" ")
+    if origin
 ]
 
 SECURE_SSL_REDIRECT = False
