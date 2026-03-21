@@ -34,20 +34,24 @@ GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", " ").split(" ") + [
+ALLOWED_HOSTS = [
+    host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(" ") if host
+] + [
     "localhost",
     "127.0.0.1",
 ]
 
-ALLOWED_REFERERS = os.environ.get("ALLOWED_REFERERS", " ").split(" ")
+ALLOWED_REFERERS = [
+    ref for ref in os.environ.get("ALLOWED_REFERERS", "").split(" ") if ref
+]
 
 INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
-CSRF_TRUSTED_ORIGINS = os.environ.get(
-    "CSRF_TRUSTED_ORIGINS", "http://localhost:8000"
-).split(" ")
+CSRF_TRUSTED_ORIGINS = [
+    origin for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(" ") if origin
+]
 
 SECURE_SSL_REDIRECT = False
 
