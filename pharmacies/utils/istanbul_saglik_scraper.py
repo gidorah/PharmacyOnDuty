@@ -125,14 +125,9 @@ def get_istanbul_data() -> list[dict[str, Any]]:
     for district_name in DISTRICTS:
         payload = {"ilce": district_name}
         response = requests.post(API_ENDPOINT, params=payload, timeout=10)
+        response.raise_for_status()
 
-        if response.status_code != 200:
-            print(
-                f"Error fetching data for district {district_name}: {response.status_code}"
-            )
-            continue
-
-        html_content = response.content.decode("utf-8")
+        html_content = response.text
         soup = BeautifulSoup(html_content, "html.parser")
         pharmacy_cards = soup.select(".card")
         for card in pharmacy_cards:

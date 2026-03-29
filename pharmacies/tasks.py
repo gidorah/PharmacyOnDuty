@@ -5,14 +5,31 @@ This module defines background tasks for scraping pharmacy data from various sou
 and updating the database.
 """
 
+import logging
+from json import JSONDecodeError
+from typing import Any
+
 from celery import shared_task
+from django.db import close_old_connections, transaction
+from django.db.utils import InterfaceError
 from django.utils import timezone
+from requests.exceptions import RequestException
 
 from pharmacies.models import ScraperConfig
 from pharmacies.utils import (
     add_scraped_data_to_db,
     get_city_data,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _persist_scraped_data(city_data: list[dict[str, Any]], city_name: str) -> int:
+    with transaction.atomic():
+        add_scraped_data_to_db(city_data, city_name=city_name)
+        return ScraperConfig.objects.filter(city__name=city_name).update(
+            last_run=timezone.now()
+        )
 
 
 @shared_task
@@ -25,16 +42,41 @@ def run_scraper(city_name: str) -> None:
     2. Saves the scraped pharmacy data to the database.
     3. Updates the ScraperConfig's last_run timestamp.
     """
-    print(f"Running scraper for city {city_name}")
-    city_data = get_city_data(city_name=city_name)
-    print(f"Scraper for city {city_name} finished")
-    add_scraped_data_to_db(city_data, city_name=city_name)
-    print(f"Scraper data for city {city_name} saved to DB")
+    try:
+        close_old_connections()
+        print(f"Running scraper for city {city_name}")
+        city_data = get_city_data(city_name=city_name)
+        print(f"Scraper for city {city_name} finished")
+        if not city_data:
+            logger.warning(
+                "Scraper for city %s returned no data; skipping persistence update.",
+                city_name,
+            )
+            return
 
-    rows_updated = ScraperConfig.objects.filter(city__name=city_name).update(
-        last_run=timezone.now()
-    )
-    if rows_updated:
-        print(f"Scraper config for city {city_name} updated")
-    else:
-        print(f"No ScraperConfig found for city {city_name}")
+        close_old_connections()
+        try:
+            rows_updated = _persist_scraped_data(city_data, city_name)
+        except InterfaceError:
+            logger.warning(
+                "Retrying scraper persistence for city %s after a stale database connection.",
+                city_name,
+                exc_info=True,
+            )
+            close_old_connections()
+            rows_updated = _persist_scraped_data(city_data, city_name)
+
+        print(f"Scraper data for city {city_name} saved to DB")
+        if rows_updated:
+            print(f"Scraper config for city {city_name} updated")
+        else:
+            print(f"No ScraperConfig found for city {city_name}")
+    except (JSONDecodeError, RequestException):
+        logger.warning(
+            "Skipping scraper for city %s due to upstream fetch failure.",
+            city_name,
+            exc_info=True,
+        )
+        return
+    finally:
+        close_old_connections()

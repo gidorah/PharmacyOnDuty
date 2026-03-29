@@ -1,6 +1,9 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
+import pytest
+from requests.exceptions import ConnectionError, HTTPError
+
 from pharmacies.utils.istanbul_saglik_scraper import (
     _get_coordinates_from_sehirharitasi_url,
     _get_duty_times,
@@ -43,7 +46,9 @@ def test_get_istanbul_data(mock_post: MagicMock) -> None:
     """
     mock_response = MagicMock()
     mock_response.status_code = 200
+    mock_response.raise_for_status.return_value = None
     mock_response.content = html_content.encode("utf-8")
+    mock_response.text = html_content
     mock_post.return_value = mock_response
 
     data = get_istanbul_data()
@@ -60,11 +65,39 @@ def test_get_istanbul_data(mock_post: MagicMock) -> None:
 @patch("pharmacies.utils.istanbul_saglik_scraper.DISTRICTS", ["Adalar"])
 def test_get_istanbul_data_failure(mock_post: MagicMock) -> None:
     mock_response = MagicMock()
-    mock_response.status_code = 500
+    mock_response.raise_for_status.side_effect = HTTPError("500")
     mock_post.return_value = mock_response
 
-    data = get_istanbul_data()
-    assert len(data) == 0
+    with pytest.raises(HTTPError):
+        get_istanbul_data()
+
+    mock_response.raise_for_status.assert_called_once()
+
+
+@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
+@patch("pharmacies.utils.istanbul_saglik_scraper.DISTRICTS", ["Adalar", "Ataşehir"])
+def test_get_istanbul_data_raises_on_connection_error_after_partial_fetch(
+    mock_post: MagicMock,
+) -> None:
+    html_content = """
+    <div class="card">
+        <div class="card-header">Ignored</div>
+        <div class="card-header"><b>TEST ECZANESİ</b></div>
+        <label>Ignored</label>
+        <label><a href="tel:123456">123 456</a></label>
+        <i class="la la-home"></i><label>Test Address</label>
+        <a class="btn btn-primary btn-block" href="http://sehirharitasi.ibb.gov.tr/?lat=41.0&lon=28.9">Yol Tarifi</a>
+    </div>
+    """
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.text = html_content
+    mock_post.side_effect = [mock_response, ConnectionError("down")]
+
+    with pytest.raises(ConnectionError):
+        get_istanbul_data()
+
+    assert mock_post.call_count == 2
 
 
 @patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
@@ -89,6 +122,8 @@ def test_get_istanbul_data_missing_tags(mock_post: MagicMock) -> None:
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.content = html_content.encode("utf-8")
+    mock_response.raise_for_status.return_value = None
+    mock_response.text = html_content
     mock_post.return_value = mock_response
 
     # Capture print output to verify warning
@@ -116,6 +151,8 @@ def test_get_istanbul_data_directions_list(mock_post: MagicMock) -> None:
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.content = html_content.encode("utf-8")
+    mock_response.raise_for_status.return_value = None
+    mock_response.text = html_content
     mock_post.return_value = mock_response
 
     # We need to mock BeautifulSoup behavior slightly if we want to test the list branch strictly,
