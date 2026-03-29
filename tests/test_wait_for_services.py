@@ -17,7 +17,7 @@ class TestWaitForServices(unittest.TestCase):
     def test_wait_for_postgres_failure_then_success(
         self, mock_connect: MagicMock, mock_sleep: MagicMock
     ) -> None:
-        import psycopg2  # type: ignore
+        import psycopg2  # type: ignore[import-untyped]
 
         # Fail twice then succeed
         mock_connect.side_effect = [

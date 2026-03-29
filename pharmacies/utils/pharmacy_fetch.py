@@ -4,7 +4,7 @@ Module for fetching pharmacy data from external APIs (Google Places).
 
 import os
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 
 import requests
 from dotenv import load_dotenv
@@ -35,7 +35,7 @@ def _fetch_pharmacy_data(lat: float, lng: float, keyword: str) -> list[dict[str,
         raise HTTPError(f"API Error: {response.status_code} - {response.text}")
     data = response.json()
     results = data.get("results", [])
-    return results  # type: ignore
+    return cast(list[dict[str, Any]], results)
 
 
 def fetch_nearest_pharmacies(
