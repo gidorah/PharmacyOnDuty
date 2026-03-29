@@ -3,7 +3,7 @@ import sys
 import time
 from urllib.parse import urlparse
 
-import psycopg2  # type: ignore
+import psycopg2  # type: ignore[import-untyped]
 import redis
 from dotenv import load_dotenv
 

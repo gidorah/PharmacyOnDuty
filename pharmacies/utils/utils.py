@@ -8,7 +8,7 @@ and interacting with the Google Maps API.
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 
 import requests
 from django.conf import settings
@@ -248,11 +248,11 @@ def _parse_location_identifier(data: dict[str, Any]) -> str:
 
     compound_code = data.get("plus_code", {}).get("compound_code")
     if compound_code is not None:
-        return compound_code  # type: ignore
+        return cast(str, compound_code)
 
     for component in data["results"][0]["address_components"]:
         if "administrative_area_level_1" in component["types"]:
-            return component["long_name"]  # type: ignore
+            return cast(str, component["long_name"])
 
     raise ValueError("Unable to parse_location_identifier")
 
@@ -298,7 +298,7 @@ def _get_distance_matrix_data(origins: str, destinations: str) -> dict[str, Any]
     if received_data["status"] != "OK":
         raise ValueError(f"Distance Matrix API error: {received_data['status']}")
 
-    return received_data  # type: ignore
+    return cast(dict[str, Any], received_data)
 
 
 def add_travel_distances_to_pharmacy_data(
