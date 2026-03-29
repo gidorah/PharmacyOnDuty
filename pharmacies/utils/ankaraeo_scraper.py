@@ -51,9 +51,10 @@ def get_ankara_data() -> list[dict[str, Any]]:
     today = datetime.now()
     url = base_url + today.strftime("%Y-%m-%d")
     response = requests.get(url, timeout=10)
+    response.raise_for_status()
 
     received_data = response.json()
-    received_pharmacy_list = received_data["NobetciEczaneBilgisiListesi"]
+    received_pharmacy_list = received_data.get("NobetciEczaneBilgisiListesi") or []
     duty_start, duty_end = _get_duty_times()
     pharmacies: list[dict[str, Any]] = []
     for pharmacy in received_pharmacy_list:

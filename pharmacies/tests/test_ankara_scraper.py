@@ -1,5 +1,9 @@
 from datetime import UTC, datetime
+from json import JSONDecodeError
 from unittest.mock import MagicMock, patch
+
+import pytest
+from requests.exceptions import HTTPError
 
 from pharmacies.utils.ankaraeo_scraper import _get_duty_times, get_ankara_data
 
@@ -54,6 +58,7 @@ def test_get_ankara_data(mock_duty_times: MagicMock, mock_get: MagicMock) -> Non
     )
 
     mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
 
     mock_response.json.return_value = {
         "NobetciEczaneBilgisiListesi": [
@@ -87,3 +92,46 @@ def test_get_ankara_data(mock_duty_times: MagicMock, mock_get: MagicMock) -> Non
     assert data[0]["duty_start"] == datetime(2025, 12, 16, 16, 0, tzinfo=UTC)
 
     assert data[0]["duty_end"] == datetime(2025, 12, 17, 6, 0, tzinfo=UTC)
+
+
+@patch("pharmacies.utils.ankaraeo_scraper.requests.get")
+def test_get_ankara_data_invalid_json(mock_get: MagicMock) -> None:
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.side_effect = JSONDecodeError("Expecting value", "", 0)
+    mock_get.return_value = mock_response
+
+    with pytest.raises(JSONDecodeError):
+        get_ankara_data()
+
+
+@patch("pharmacies.utils.ankaraeo_scraper.requests.get")
+def test_get_ankara_data_http_error(mock_get: MagicMock) -> None:
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = HTTPError("boom")
+    mock_get.return_value = mock_response
+
+    with pytest.raises(HTTPError):
+        get_ankara_data()
+
+
+@patch("pharmacies.utils.ankaraeo_scraper.requests.get")
+def test_get_ankara_data_missing_pharmacy_list_returns_empty(
+    mock_get: MagicMock,
+) -> None:
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.return_value = {}
+    mock_get.return_value = mock_response
+
+    assert get_ankara_data() == []
+
+
+@patch("pharmacies.utils.ankaraeo_scraper.requests.get")
+def test_get_ankara_data_null_pharmacy_list_returns_empty(mock_get: MagicMock) -> None:
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_response.json.return_value = {"NobetciEczaneBilgisiListesi": None}
+    mock_get.return_value = mock_response
+
+    assert get_ankara_data() == []
