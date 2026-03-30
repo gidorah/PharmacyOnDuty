@@ -584,6 +584,8 @@ This section explains how to run the application in a production setting using d
 
 The following environment variables are used to configure the application:
 
+- `DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER`: Optional. Set it to the exact string `True` to enable proxy HTTPS detection when Django is running behind a trusted reverse proxy that overwrites `X-Forwarded-Proto` (for example Coolify). When unset or set to any other value, the setting stays disabled.
+
 | Variable Name             | Description                                                                                                                                                                                                                            | Default Value | Required |
 | :------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------ | :------- |
 | `DJANGO_SECRET_KEY`       | A secret key used by Django for cryptographic signing. **This should be a long, random, and unpredictable value.**                                                                                                                   |               | Yes      |

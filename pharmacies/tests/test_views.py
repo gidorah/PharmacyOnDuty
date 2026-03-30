@@ -5,9 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.conf import settings
 from django.test import Client
+from django.test.utils import override_settings
 from django.urls import reverse
 
-from pharmacies.models import City, WorkingSchedule
+from pharmacies.models import City, PharmacyStatus, WorkingSchedule
 
 
 class TestGetPharmacyPointsNoDb:
@@ -175,3 +176,51 @@ class TestOtherViews:
         assert response.status_code == 200
         assert response.content == b"console.log('google maps');"
         assert response["Content-Type"] == "text/javascript"
+
+
+class TestProxyAwareCsrf:
+    @override_settings(
+        ALLOWED_HOSTS=["eczanerede.com"],
+        SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"),
+    )
+    @patch("pharmacies.views.City.objects.get")
+    @patch("pharmacies.views.get_city_name_from_location")
+    @patch("pharmacies.views.get_nearest_pharmacies_open")
+    def test_get_pharmacy_points_accepts_same_origin_https_behind_proxy(
+        self,
+        mock_fetch_open: MagicMock,
+        mock_get_city_name: MagicMock,
+        mock_get_city_record: MagicMock,
+    ) -> None:
+        client = Client(enforce_csrf_checks=True)
+        mock_city = MagicMock()
+        mock_city.get_city_status.return_value = PharmacyStatus.OPEN
+        mock_get_city_record.return_value = mock_city
+        mock_get_city_name.return_value = "eskisehir"
+        mock_fetch_open.return_value = [
+            {"title": "Open Pharmacy", "position": {"lat": 39.7, "lng": 30.5}}
+        ]
+
+        home_response = client.get(
+            reverse("home"),
+            HTTP_HOST="eczanerede.com",
+            HTTP_X_FORWARDED_PROTO="https",
+        )
+        assert home_response.status_code == 200
+        assert settings.CSRF_COOKIE_NAME in home_response.cookies
+        csrf_token = home_response.cookies[settings.CSRF_COOKIE_NAME].value
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = datetime(2025, 12, 16, 10, 0, tzinfo=UTC)
+            response = client.post(
+                reverse("pharmacies:get_pharmacy_points"),
+                data=json.dumps({"lat": 39.7, "lng": 30.5}),
+                content_type="application/json",
+                HTTP_HOST="eczanerede.com",
+                HTTP_ORIGIN="https://eczanerede.com",
+                HTTP_X_FORWARDED_PROTO="https",
+                HTTP_X_CSRFTOKEN=csrf_token,
+            )
+
+        assert response.status_code == 200
+        assert response.json()["points"][0]["title"] == "Open Pharmacy"
