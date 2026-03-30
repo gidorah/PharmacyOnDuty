@@ -73,3 +73,37 @@ class SentryConfigTest(SimpleTestCase):
 
         self.assertFalse(settings_module.DEBUG)
         mock_init.assert_not_called()
+
+
+class SecureProxySslHeaderConfigTest(SimpleTestCase):
+    def tearDown(self) -> None:
+        importlib.reload(settings_module)
+
+    def test_secure_proxy_ssl_header_defaults_to_disabled_when_env_var_is_unset(
+        self,
+    ) -> None:
+        with patch.dict(os.environ, {"DJANGO_DEBUG": "False"}, clear=False):
+            os.environ.pop("DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER", None)
+            os.environ.pop("SENTRY_DSN", None)
+            importlib.reload(settings_module)
+
+        self.assertIsNone(settings_module.SECURE_PROXY_SSL_HEADER)
+
+    def test_secure_proxy_ssl_header_enables_only_when_env_var_is_true(
+        self,
+    ) -> None:
+        with patch.dict(
+            os.environ,
+            {
+                "DJANGO_DEBUG": "False",
+                "DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER": "True",
+            },
+            clear=False,
+        ):
+            os.environ.pop("SENTRY_DSN", None)
+            importlib.reload(settings_module)
+
+        self.assertEqual(
+            settings_module.SECURE_PROXY_SSL_HEADER,
+            ("HTTP_X_FORWARDED_PROTO", "https"),
+        )

@@ -179,7 +179,10 @@ class TestOtherViews:
 
 
 class TestProxyAwareCsrf:
-    @override_settings(ALLOWED_HOSTS=["eczanerede.com"])
+    @override_settings(
+        ALLOWED_HOSTS=["eczanerede.com"],
+        SECURE_PROXY_SSL_HEADER=("HTTP_X_FORWARDED_PROTO", "https"),
+    )
     @patch("pharmacies.views.City.objects.get")
     @patch("pharmacies.views.get_city_name_from_location")
     @patch("pharmacies.views.get_nearest_pharmacies_open")
@@ -203,6 +206,8 @@ class TestProxyAwareCsrf:
             HTTP_HOST="eczanerede.com",
             HTTP_X_FORWARDED_PROTO="https",
         )
+        assert home_response.status_code == 200
+        assert settings.CSRF_COOKIE_NAME in home_response.cookies
         csrf_token = home_response.cookies[settings.CSRF_COOKIE_NAME].value
 
         with patch("django.utils.timezone.now") as mock_now:

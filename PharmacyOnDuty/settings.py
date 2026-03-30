@@ -58,7 +58,10 @@ CSRF_TRUSTED_ORIGINS = [
     if origin
 ]
 
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+enable_secure_proxy_ssl_header = os.environ.get("DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER")
+SECURE_PROXY_SSL_HEADER = None
+if enable_secure_proxy_ssl_header == "True":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 SECURE_SSL_REDIRECT = False
 
