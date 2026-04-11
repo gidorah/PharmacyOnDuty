@@ -36,9 +36,9 @@ def test_invalid_coordinates(
     with patch("pharmacies.views.get_nearest_pharmacies_open", return_value=[]):
         response = get_pharmacy_points(request)
 
-    assert (
-        response.status_code == 400
-    ), f"Expected 400 for invalid lat, got {response.status_code}"
+    assert response.status_code == 400, (
+        f"Expected 400 for invalid lat, got {response.status_code}"
+    )
     # The error message content checking is what we want to verify
     assert b"Invalid coordinates" in response.content
 
