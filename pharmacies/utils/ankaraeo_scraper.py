@@ -48,7 +48,7 @@ def get_ankara_data() -> list[dict[str, Any]]:
     Returns a list of dictionaries with name, address, district, phone, coordinates.
     """
     base_url = "https://mvc.aeo.org.tr/home/NobetciEczaneGetirTarih?nobetTarihi="
-    today = datetime.now()
+    today = timezone.localtime()
     url = base_url + today.strftime("%Y-%m-%d")
     response = requests.get(url, timeout=10)
     response.raise_for_status()
