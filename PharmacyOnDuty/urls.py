@@ -17,6 +17,7 @@ Including another URLconf
 
 from typing import Any
 
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
@@ -33,7 +34,6 @@ urlpatterns: list[Any] = [
     path("admin/", admin.site.urls),
     path("", include("pharmacies.urls")),
     path("", pharmacies_views.pharmacies_list, name="home"),
-    path("__reload__/", include("django_browser_reload.urls")),
     path(
         "sitemap.xml",
         sitemap,
@@ -64,3 +64,8 @@ urlpatterns: list[Any] = [
         name="cookie_policy",
     ),
 ]
+
+# django-browser-reload is only mounted when DEBUG is enabled to keep the
+# development helper out of production routing.
+if settings.DEBUG:
+    urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))
