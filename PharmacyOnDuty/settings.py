@@ -30,6 +30,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
+# Map ID required by Google Maps AdvancedMarkerElement and vector maps.
+# Falls back to "DEMO_MAP_ID" so local/dev runs work without extra config;
+# production deployments should set GOOGLE_MAPS_MAP_ID to a real Map ID
+# created in the Google Cloud console.
+GOOGLE_MAPS_MAP_ID = os.environ.get("GOOGLE_MAPS_MAP_ID", "DEMO_MAP_ID")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"

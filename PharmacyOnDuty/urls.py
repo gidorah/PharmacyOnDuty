@@ -23,6 +23,7 @@ from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 from django.views.generic import TemplateView
 
+from pharmacies import views as pharmacies_views
 from PharmacyOnDuty.sitemaps import StaticViewSitemap
 
 sitemaps_dict = {
@@ -32,7 +33,7 @@ sitemaps_dict = {
 urlpatterns: list[Any] = [
     path("admin/", admin.site.urls),
     path("", include("pharmacies.urls")),
-    path("", TemplateView.as_view(template_name="pharmacies.html"), name="home"),
+    path("", pharmacies_views.pharmacies_list, name="home"),
     path(
         "sitemap.xml",
         sitemap,
