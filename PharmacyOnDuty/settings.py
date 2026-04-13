@@ -58,12 +58,35 @@ CSRF_TRUSTED_ORIGINS = [
     if origin
 ]
 
-enable_secure_proxy_ssl_header = os.environ.get("DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER")
-SECURE_PROXY_SSL_HEADER = None
-if enable_secure_proxy_ssl_header == "True":
+
+def _env_bool(name: str, default: bool) -> bool:
+    """Parse a boolean environment variable, defaulting to ``default`` when unset."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+SECURE_PROXY_SSL_HEADER: tuple[str, str] | None = None
+if _env_bool("DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-SECURE_SSL_REDIRECT = False
+# HTTPS / transport security. Defaults are safe for production (DEBUG=False).
+# When DEBUG is enabled the secure-cookie / HSTS / redirect knobs are
+# automatically disabled so local development over plain HTTP keeps working.
+SECURE_SSL_REDIRECT = _env_bool("DJANGO_SECURE_SSL_REDIRECT", default=not DEBUG)
+SESSION_COOKIE_SECURE = _env_bool("DJANGO_SESSION_COOKIE_SECURE", default=not DEBUG)
+CSRF_COOKIE_SECURE = _env_bool("DJANGO_CSRF_COOKIE_SECURE", default=not DEBUG)
+
+# HSTS: opt-in via env var so operators can ramp up the max-age safely.
+# Defaults to one year in production and 0 (disabled) in DEBUG.
+SECURE_HSTS_SECONDS = int(
+    os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000")
+)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = _env_bool(
+    "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", default=not DEBUG
+)
+SECURE_HSTS_PRELOAD = _env_bool("DJANGO_SECURE_HSTS_PRELOAD", default=False)
 
 # Application definition
 
@@ -78,7 +101,6 @@ INSTALLED_APPS = [
     "pharmacies",
     "theme",
     "tailwind",
-    "django_browser_reload",
     "django.contrib.sitemaps",
     "django_celery_beat",
     "django_celery_results",
@@ -96,8 +118,13 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django_browser_reload.middleware.BrowserReloadMiddleware",
 ]
+
+# django-browser-reload is a development-only helper. Loading its app and
+# middleware in production is unnecessary attack surface.
+if DEBUG:
+    INSTALLED_APPS.append("django_browser_reload")
+    MIDDLEWARE.append("django_browser_reload.middleware.BrowserReloadMiddleware")
 
 ROOT_URLCONF = "PharmacyOnDuty.urls"
 
