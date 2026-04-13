@@ -58,11 +58,6 @@ CSRF_TRUSTED_ORIGINS = [
     if origin
 ]
 
-enable_secure_proxy_ssl_header = os.environ.get("DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER")
-SECURE_PROXY_SSL_HEADER = None
-if enable_secure_proxy_ssl_header == "True":
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
 
 def _env_bool(name: str, default: bool) -> bool:
     """Parse a boolean environment variable, defaulting to ``default`` when unset."""
@@ -71,6 +66,10 @@ def _env_bool(name: str, default: bool) -> bool:
         return default
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
+
+SECURE_PROXY_SSL_HEADER: tuple[str, str] | None = None
+if _env_bool("DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER", default=False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # HTTPS / transport security. Defaults are safe for production (DEBUG=False).
 # When DEBUG is enabled the secure-cookie / HSTS / redirect knobs are
