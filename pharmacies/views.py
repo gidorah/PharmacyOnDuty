@@ -124,12 +124,11 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
 
     endpoint = "https://maps.googleapis.com/maps/api/js"
     # The "marker" library is required for AdvancedMarkerElement and the
-    # "routes" library is required for google.maps.routes.Route.computeRoutes
-    # (the supported replacement for the deprecated DirectionsService).
-    # The Routes JS library currently ships in the "beta" release channel.
+    # "routes" library provides DirectionsService / DirectionsRenderer via
+    # google.maps.importLibrary("routes"), which is the non-deprecated
+    # modular access pattern for those classes.
     params = {
         "key": settings.GOOGLE_MAPS_API_KEY,
-        "v": "beta",
         "libraries": "marker,routes,geometry",
         **dict(request.GET),
     }

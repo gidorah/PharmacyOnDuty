@@ -182,12 +182,10 @@ class TestOtherViews:
         assert response["Content-Type"] == "text/javascript"
 
         # The proxy must request the libraries needed by the modern Maps JS
-        # APIs: "marker" for AdvancedMarkerElement and "routes" for
-        # Route.computeRoutes. The Routes JS library currently lives in the
-        # "beta" release channel.
+        # APIs: "marker" for AdvancedMarkerElement, and "routes" for the
+        # modular DirectionsService / DirectionsRenderer imports.
         _, call_kwargs = mock_get.call_args
         params = call_kwargs["params"]
-        assert params["v"] == "beta"
         libraries = set(params["libraries"].split(","))
         assert {"marker", "routes", "geometry"} <= libraries
 
