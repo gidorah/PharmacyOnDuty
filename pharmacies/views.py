@@ -123,9 +123,14 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
         return HttpResponse("Forbidden", status=403)
 
     endpoint = "https://maps.googleapis.com/maps/api/js"
+    # The "marker" library is required for AdvancedMarkerElement and the
+    # "routes" library is required for google.maps.routes.Route.computeRoutes
+    # (the supported replacement for the deprecated DirectionsService).
+    # The Routes JS library currently ships in the "beta" release channel.
     params = {
         "key": settings.GOOGLE_MAPS_API_KEY,
-        "libraries": "geometry",
+        "v": "beta",
+        "libraries": "marker,routes,geometry",
         **dict(request.GET),
     }
 
@@ -138,4 +143,8 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
 
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
     """Render the main pharmacies page."""
-    return render(request, "pharmacies.html")
+    return render(
+        request,
+        "pharmacies.html",
+        {"google_maps_map_id": settings.GOOGLE_MAPS_MAP_ID},
+    )

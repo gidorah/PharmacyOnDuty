@@ -89,19 +89,35 @@
         <!-- Script Logic -->
         <script>
 		let map;
-		let directionsService;
-		let directionsRenderer;
+		// Lazily-resolved constructors from the Maps JS modular libraries.
+		let AdvancedMarkerElementCtor;
+		let RouteCls;
 		// Track whether the list is expanded or collapsed
 		let isExpanded = false;
 		let userLocation;
+		let markersArray = [];
+		let routePolylines = [];
 
-		function initMap(center = { lat: 40.7128, lng: -74.0060 }) {
-			map = new google.maps.Map(document.getElementById("map"), {
+		async function initMap(center = { lat: 40.7128, lng: -74.0060 }) {
+			// Load the modular libraries we need. "marker" provides
+			// AdvancedMarkerElement (replaces the deprecated google.maps.Marker)
+			// and "routes" provides Route.computeRoutes (replaces the
+			// deprecated DirectionsService / DirectionsRenderer).
+			const [{ Map }, { AdvancedMarkerElement }, { Route }] = await Promise.all([
+				google.maps.importLibrary("maps"),
+				google.maps.importLibrary("marker"),
+				google.maps.importLibrary("routes"),
+			]);
+			AdvancedMarkerElementCtor = AdvancedMarkerElement;
+			RouteCls = Route;
+
+			map = new Map(document.getElementById("map"), {
 				center: center,
 				zoom: 10,
+				// AdvancedMarkerElement requires a vector Map ID. The server
+				// injects either the configured ID or DEMO_MAP_ID as a fallback.
+				mapId: "{{ google_maps_map_id|escapejs }}",
 				disableDefaultUI: true,
-				// Optional: Disable zoom/pan gestures
-				// Optional: Disable remaining individual controls
 				zoomControl: false,
 				mapTypeControl: false,
 				scaleControl: false,
@@ -109,55 +125,60 @@
 				rotateControl: false,
 				fullscreenControl: false,
 			});
-			directionsService = new google.maps.DirectionsService();
-			directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true, map: map });
-			directionsRenderer.setMap(map);
 		}
 
-		let markersArray = [];
+		function buildMarkerContent(iconUrl, alt) {
+			const img = document.createElement("img");
+			img.src = iconUrl;
+			img.alt = alt;
+			img.width = 50;
+			img.height = 50;
+			img.style.transform = "translate(0, 25px)";
+			return img;
+		}
+
+		function clearMarkers() {
+			markersArray.forEach((marker) => { marker.map = null; });
+			markersArray = [];
+		}
 
 		function addMarkers(point) {
-			// Remove all existing markers
-			markersArray.forEach(marker => marker.setMap(null));
-			markersArray = [];
+			clearMarkers();
 
-			// Pharmacy marker setup
-			const pharmacyIcon = {
-				url: '/static/icons/pharmacy-pointer.svg',
-				scaledSize: new google.maps.Size(50, 50),
-				origin: new google.maps.Point(0, 0),
-				anchor: new google.maps.Point(25, 25),
-			};
-			const marker = new google.maps.Marker({
+			// Pharmacy marker (AdvancedMarkerElement with a custom <img>).
+			const pharmacyMarker = new AdvancedMarkerElementCtor({
 				position: point.position,
 				map: map,
 				title: point.title,
-				icon: pharmacyIcon,
+				content: buildMarkerContent(
+					"/static/icons/pharmacy-pointer.svg",
+					point.title,
+				),
 			});
-			markersArray.push(marker); // Add to tracking array
+			markersArray.push(pharmacyMarker);
 
-			// Info Window for pharmacy marker
+			// Info Window for pharmacy marker. AdvancedMarkerElement uses
+			// the new {anchor, map} open() signature.
 			const infoWindow = new google.maps.InfoWindow({
 				content: `<h3>${point.title}</h3><p>${point.address || ""}</p>`,
 			});
-			marker.addListener("click", () => {
-				infoWindow.open(map, marker);
+			pharmacyMarker.addListener("gmp-click", () => {
+				infoWindow.open({ anchor: pharmacyMarker, map: map });
 			});
 
-			// User location marker setup
-			const userLocationIcon = {
-				url: '/static/icons/user-pointer.svg',
-				scaledSize: new google.maps.Size(50, 50),
-				origin: new google.maps.Point(0, 0),
-				anchor: new google.maps.Point(25, 25),
-			};
-			const userLocationMarker = new google.maps.Marker({
-				position: userLocation,
-				map: map,
-				title: "Konumumu",
-				icon: userLocationIcon,
-			});
-			markersArray.push(userLocationMarker); // Add to tracking array
+			// User location marker.
+			if (userLocation) {
+				const userLocationMarker = new AdvancedMarkerElementCtor({
+					position: userLocation,
+					map: map,
+					title: "Konumumu",
+					content: buildMarkerContent(
+						"/static/icons/user-pointer.svg",
+						"Konumumu",
+					),
+				});
+				markersArray.push(userLocationMarker);
+			}
 		}
 
 		function updatePharmacyList(pharmacies) {
@@ -256,21 +277,41 @@
 			});
 		}
 
-		function showDirectionsToMarker(point, userLocation) {
-			if (userLocation && point) {
-				const request = {
-					origin: new google.maps.LatLng(userLocation.lat, userLocation.lng),
-					destination: new google.maps.LatLng(point.position.lat, point.position.lng),
-					travelMode: google.maps.TravelMode.DRIVING,
-				};
-				directionsService.route(request, (result, status) => {
-					if (status === google.maps.DirectionsStatus.OK) {
-						directionsRenderer.setDirections(result);
-					} else {
-						console.error("Directions request failed due to " + status);
-						alert("Unable to fetch directions!");
-					}
+		function clearRoutePolylines() {
+			routePolylines.forEach((polyline) => polyline.setMap(null));
+			routePolylines = [];
+		}
+
+		async function showDirectionsToMarker(point, userLocation) {
+			if (!userLocation || !point || !RouteCls) {
+				return;
+			}
+			try {
+				const { routes } = await RouteCls.computeRoutes({
+					origin: { lat: userLocation.lat, lng: userLocation.lng },
+					destination: {
+						lat: point.position.lat,
+						lng: point.position.lng,
+					},
+					travelMode: "DRIVING",
+					// Field mask: only request the polyline path. createPolylines()
+					// requires the "path" field to be present in the response.
+					fields: ["path"],
 				});
+
+				if (!routes || routes.length === 0) {
+					console.error("Routes API returned no routes.");
+					return;
+				}
+
+				clearRoutePolylines();
+				const polylines = routes[0].createPolylines();
+				polylines.forEach((polyline) => {
+					polyline.setMap(map);
+					routePolylines.push(polyline);
+				});
+			} catch (err) {
+				console.error("Routes computeRoutes failed:", err);
 			}
 		}
 
@@ -320,7 +361,7 @@
 				getUserLocation((loc) => resolve(loc));
 			});
 
-			Promise.all([window.mapsPromise, locationPromise]).then(([_, location]) => {
+			Promise.all([window.mapsPromise, locationPromise]).then(async ([_, location]) => {
 				const defaultLocation = { lat: 39.7767, lng: 30.5206 }; // Eskişehir default
 				const finalLocation = location || defaultLocation;
 
@@ -330,7 +371,7 @@
 					userLocation = finalLocation;
 				}
 
-				initMap(finalLocation);
+				await initMap(finalLocation);
 
 				fetchPharmacyPoints(finalLocation, "eskisehir", function (result) {
 					if (result) {

@@ -136,6 +136,10 @@ class TestOtherViews:
         assert response.status_code == 200
         assert "pharmacies.html" in [t.name for t in response.templates]
         assert settings.CSRF_COOKIE_NAME in response.cookies
+        # The view must inject the configured Google Maps Map ID so the
+        # AdvancedMarkerElement-backed map can boot in vector mode.
+        assert response.context["google_maps_map_id"] == settings.GOOGLE_MAPS_MAP_ID
+        assert settings.GOOGLE_MAPS_MAP_ID.encode() in response.content
 
     def test_get_pharmacy_points_requires_csrf(self) -> None:
         client = Client(enforce_csrf_checks=True)
@@ -176,6 +180,16 @@ class TestOtherViews:
         assert response.status_code == 200
         assert response.content == b"console.log('google maps');"
         assert response["Content-Type"] == "text/javascript"
+
+        # The proxy must request the libraries needed by the modern Maps JS
+        # APIs: "marker" for AdvancedMarkerElement and "routes" for
+        # Route.computeRoutes. The Routes JS library currently lives in the
+        # "beta" release channel.
+        _, call_kwargs = mock_get.call_args
+        params = call_kwargs["params"]
+        assert params["v"] == "beta"
+        libraries = set(params["libraries"].split(","))
+        assert {"marker", "routes", "geometry"} <= libraries
 
 
 class TestProxyAwareCsrf:
