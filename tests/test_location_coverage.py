@@ -70,46 +70,46 @@ class TestLocationCoverage:
             )
             duration = (time.time() - start_time) * 1000
 
-            assert (
-                duration < 500
-            ), f"Slow response for {scenario['description']}: {duration:.2f}ms"
+            assert duration < 500, (
+                f"Slow response for {scenario['description']}: {duration:.2f}ms"
+            )
 
             if scenario["expected_behavior"] == "should_return_pharmacy":
-                assert (
-                    response.status_code == 200
-                ), f"Failed for {scenario['description']} (Expected 200, got {response.status_code})"
+                assert response.status_code == 200, (
+                    f"Failed for {scenario['description']} (Expected 200, got {response.status_code})"
+                )
                 data = response.json()
-                assert (
-                    "points" in data
-                ), f"No points returned for {scenario['description']}"
+                assert "points" in data, (
+                    f"No points returned for {scenario['description']}"
+                )
                 points = data["points"]
-                assert (
-                    len(points) > 0
-                ), f"Empty points list for {scenario['description']}"
+                assert len(points) > 0, (
+                    f"Empty points list for {scenario['description']}"
+                )
 
                 prev_distance = -1
                 for point in points:
-                    assert (
-                        "travel_distance" in point
-                    ), f"Missing travel_distance in {point}"
-                    assert (
-                        "travel_duration" in point
-                    ), f"Missing travel_duration in {point}"
+                    assert "travel_distance" in point, (
+                        f"Missing travel_distance in {point}"
+                    )
+                    assert "travel_duration" in point, (
+                        f"Missing travel_duration in {point}"
+                    )
 
                     curr_distance = point["travel_distance"]
-                    assert (
-                        curr_distance >= prev_distance
-                    ), f"Points not sorted by distance for {scenario['description']}"
+                    assert curr_distance >= prev_distance, (
+                        f"Points not sorted by distance for {scenario['description']}"
+                    )
                     prev_distance = curr_distance
             else:
                 # For scenarios not marked as 'should_return_pharmacy', we expect a 400 Bad Request
                 # because get_city_name_from_location will raise ValueError for unknown/out-of-scope locations,
                 # or City.DoesNotExist will be raised.
-                assert (
-                    response.status_code == 400
-                ), f"Expected 400 for {scenario['description']} but got {response.status_code}"
+                assert response.status_code == 400, (
+                    f"Expected 400 for {scenario['description']} but got {response.status_code}"
+                )
 
                 data = response.json()
-                assert (
-                    "error" in data
-                ), f"Missing error message for {scenario['description']}"
+                assert "error" in data, (
+                    f"Missing error message for {scenario['description']}"
+                )
