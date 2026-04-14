@@ -91,25 +91,29 @@
 		let map;
 		// Lazily-resolved constructors from the Maps JS modular libraries.
 		let AdvancedMarkerElementCtor;
-		let RouteCls;
+		let directionsService;
+		let directionsRenderer;
 		// Track whether the list is expanded or collapsed
 		let isExpanded = false;
 		let userLocation;
 		let markersArray = [];
-		let routePolylines = [];
 
 		async function initMap(center = { lat: 40.7128, lng: -74.0060 }) {
-			// Load the modular libraries we need. "marker" provides
-			// AdvancedMarkerElement (replaces the deprecated google.maps.Marker)
-			// and "routes" provides Route.computeRoutes (replaces the
-			// deprecated DirectionsService / DirectionsRenderer).
-			const [{ Map }, { AdvancedMarkerElement }, { Route }] = await Promise.all([
+			// Load the modular libraries via importLibrary so we don't rely on
+			// the deprecated global google.maps.* namespace access pattern.
+			// "marker" provides AdvancedMarkerElement (the replacement for the
+			// deprecated google.maps.Marker); "routes" provides
+			// DirectionsService / DirectionsRenderer.
+			const [
+				{ Map },
+				{ AdvancedMarkerElement },
+				{ DirectionsService, DirectionsRenderer },
+			] = await Promise.all([
 				google.maps.importLibrary("maps"),
 				google.maps.importLibrary("marker"),
 				google.maps.importLibrary("routes"),
 			]);
 			AdvancedMarkerElementCtor = AdvancedMarkerElement;
-			RouteCls = Route;
 
 			map = new Map(document.getElementById("map"), {
 				center: center,
@@ -124,6 +128,12 @@
 				streetViewControl: false,
 				rotateControl: false,
 				fullscreenControl: false,
+			});
+
+			directionsService = new DirectionsService();
+			directionsRenderer = new DirectionsRenderer({
+				suppressMarkers: true,
+				map: map,
 			});
 		}
 
@@ -158,9 +168,16 @@
 			markersArray.push(pharmacyMarker);
 
 			// Info Window for pharmacy marker. AdvancedMarkerElement uses
-			// the new {anchor, map} open() signature.
+			// the new {anchor, map} open() signature. Build the content as
+			// a DOM node so pharmacy fields are never parsed as HTML.
+			const infoContent = document.createElement("div");
+			const infoTitle = document.createElement("h3");
+			infoTitle.textContent = point.title ?? "";
+			const infoAddress = document.createElement("p");
+			infoAddress.textContent = point.address ?? "";
+			infoContent.append(infoTitle, infoAddress);
 			const infoWindow = new google.maps.InfoWindow({
-				content: `<h3>${point.title}</h3><p>${point.address || ""}</p>`,
+				content: infoContent,
 			});
 			pharmacyMarker.addListener("gmp-click", () => {
 				infoWindow.open({ anchor: pharmacyMarker, map: map });
@@ -182,34 +199,54 @@
 		}
 
 		function updatePharmacyList(pharmacies) {
-			const pharmacyItems = $('#pharmacy-items');
-			pharmacyItems.empty(); // Clear existing list
+			const pharmacyItems = document.getElementById("pharmacy-items");
+			pharmacyItems.replaceChildren();
 
 			pharmacies.forEach((pharmacy) => {
-				const itemHtml = `
-					<div class="pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between" data-name="${pharmacy.title}">
-						<div class="md:flex-grow">
-						<p class="text-lg font-semibold mb-1">${pharmacy.title}</p>
-						<p class="text-sm text-gray-600">
-							${pharmacy.address} <br /> (${pharmacy.travel_distance} metre uzaklıkta)
-						</p>
-						</div>
-						<div class="mt-2 md:mt-0 flex items-center space-x-3">
-						<span class="inline-block text-sm font-medium px-6 py-2 rounded bg-secondary border-2 border-secondary text-white">
-							${pharmacy.status}
-						</span>
-						<button
-							onclick="showDirectionsToPharmacy(${JSON.stringify(pharmacy)
-						.replace(/"/g, '&quot;')})"
-							class="inline-block px-6 py-2 bg-primary-100 text-secondary
-								rounded border-2 border-secondary text-sm"
-							type="button">
-							Yol Tarifi
-						</button>
-						</div>
-					</div>
-					`;
-				pharmacyItems.append(itemHtml);
+				const item = document.createElement("div");
+				item.className =
+					"pharmacy-item bg-primary-100 shadow-sm rounded p-4 flex flex-col md:flex-row items-start md:items-center justify-between";
+				item.dataset.name = pharmacy.title ?? "";
+
+				const infoWrap = document.createElement("div");
+				infoWrap.className = "md:flex-grow";
+
+				const titleEl = document.createElement("p");
+				titleEl.className = "text-lg font-semibold mb-1";
+				titleEl.textContent = pharmacy.title ?? "";
+
+				const addressEl = document.createElement("p");
+				addressEl.className = "text-sm text-gray-600";
+				addressEl.append(
+					document.createTextNode(pharmacy.address ?? ""),
+					document.createElement("br"),
+					document.createTextNode(
+						` (${Number(pharmacy.travel_distance) || 0} metre uzaklıkta)`,
+					),
+				);
+
+				infoWrap.append(titleEl, addressEl);
+
+				const actionsWrap = document.createElement("div");
+				actionsWrap.className = "mt-2 md:mt-0 flex items-center space-x-3";
+
+				const statusEl = document.createElement("span");
+				statusEl.className =
+					"inline-block text-sm font-medium px-6 py-2 rounded bg-secondary border-2 border-secondary text-white";
+				statusEl.textContent = pharmacy.status ?? "";
+
+				const button = document.createElement("button");
+				button.type = "button";
+				button.className =
+					"inline-block px-6 py-2 bg-primary-100 text-secondary rounded border-2 border-secondary text-sm";
+				button.textContent = "Yol Tarifi";
+				button.addEventListener("click", () => {
+					showDirectionsToPharmacy(pharmacy);
+				});
+
+				actionsWrap.append(statusEl, button);
+				item.append(infoWrap, actionsWrap);
+				pharmacyItems.append(item);
 			});
 		}
 
@@ -277,41 +314,24 @@
 			});
 		}
 
-		function clearRoutePolylines() {
-			routePolylines.forEach((polyline) => polyline.setMap(null));
-			routePolylines = [];
-		}
-
 		async function showDirectionsToMarker(point, userLocation) {
-			if (!userLocation || !point || !RouteCls) {
+			if (!userLocation || !point || !directionsService || !directionsRenderer) {
 				return;
 			}
 			try {
-				const { routes } = await RouteCls.computeRoutes({
+				const result = await directionsService.route({
 					origin: { lat: userLocation.lat, lng: userLocation.lng },
 					destination: {
 						lat: point.position.lat,
 						lng: point.position.lng,
 					},
-					travelMode: "DRIVING",
-					// Field mask: only request the polyline path. createPolylines()
-					// requires the "path" field to be present in the response.
-					fields: ["path"],
+					travelMode: google.maps.TravelMode.DRIVING,
 				});
-
-				if (!routes || routes.length === 0) {
-					console.error("Routes API returned no routes.");
-					return;
-				}
-
-				clearRoutePolylines();
-				const polylines = routes[0].createPolylines();
-				polylines.forEach((polyline) => {
-					polyline.setMap(map);
-					routePolylines.push(polyline);
-				});
+				// DirectionsRenderer draws the polyline AND auto-fits the
+				// viewport to the route bounds by default.
+				directionsRenderer.setDirections(result);
 			} catch (err) {
-				console.error("Routes computeRoutes failed:", err);
+				console.error("Directions request failed:", err);
 			}
 		}
 

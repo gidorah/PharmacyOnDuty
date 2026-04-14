@@ -7,3 +7,8 @@ services:
     command: uv run --no-dev celery -A PharmacyOnDuty worker -l info --hostname=scraper@%%h
     environment:
       - DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
