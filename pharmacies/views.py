@@ -9,6 +9,7 @@ This module handles the HTTP requests for pharmacy data, including:
 
 from datetime import timedelta
 from json import JSONDecodeError, loads
+import traceback
 
 import requests
 from django.conf import settings
@@ -137,7 +138,9 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
         response = requests.get(endpoint, params=params, timeout=10)
         return HttpResponse(response.text, content_type="text/javascript")
     except requests.exceptions.RequestException as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        # Avoid returning str(e) as it can leak the Google Maps API key in the URL.
+        traceback.print_exc()
+        return JsonResponse({"error": "Failed to proxy request."}, status=500)
 
 
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
