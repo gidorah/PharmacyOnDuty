@@ -254,7 +254,7 @@ if DEBUG and REMOTE_DEBUGGING_PORT:
 
 # Celery settings
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = "django_celery_results.backends.database:DatabaseBackend"
+CELERY_RESULT_BACKEND = "pharmacies.backends:ResilientDatabaseBackend"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 # Celery beat settings
