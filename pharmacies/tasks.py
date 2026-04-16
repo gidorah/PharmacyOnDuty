@@ -10,7 +10,6 @@ from json import JSONDecodeError
 from typing import Any
 
 from celery import shared_task
-from celery.signals import task_failure
 from django.db import close_old_connections, transaction
 from django.db.utils import InterfaceError
 from django.utils import timezone
@@ -23,18 +22,6 @@ from pharmacies.utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-@task_failure.connect
-def on_task_failure_close_db(**kwargs: Any) -> None:
-    """Close stale DB connections before django_celery_results writes the failure record.
-
-    The task_failure signal fires in the worker process before the result
-    backend's on_failure callback runs.  Calling close_old_connections() here
-    ensures that django_celery_results gets a fresh connection instead of the
-    already-closed one that triggered ECZANEREDE-P / ECZANEREDE-Q.
-    """
-    close_old_connections()
 
 
 def _persist_scraped_data(city_data: list[dict[str, Any]], city_name: str) -> int:
