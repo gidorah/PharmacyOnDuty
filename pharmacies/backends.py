@@ -4,7 +4,7 @@ from typing import Any
 
 from django.db import close_old_connections
 from django_celery_results.backends.database import (
-    DatabaseBackend,  # type: ignore[import-untyped]
+    DatabaseBackend,
 )
 
 
@@ -28,6 +28,4 @@ class ResilientDatabaseBackend(DatabaseBackend):
         using: str | None = None,
     ) -> Any:
         close_old_connections()
-        return super()._store_result(  # type: ignore[no-any-return]
-            task_id, result, status, traceback, request, using
-        )
+        return super()._store_result(task_id, result, status, traceback, request, using)
