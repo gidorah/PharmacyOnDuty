@@ -44,9 +44,9 @@ def run_scraper(city_name: str) -> None:
     """
     try:
         close_old_connections()
-        print(f"Running scraper for city {city_name}")
+        logger.info("Running scraper for city %s", city_name)
         city_data = get_city_data(city_name=city_name)
-        print(f"Scraper for city {city_name} finished")
+        logger.info("Scraper for city %s finished", city_name)
         if not city_data:
             logger.warning(
                 "Scraper for city %s returned no data; skipping persistence update.",
@@ -66,11 +66,11 @@ def run_scraper(city_name: str) -> None:
             close_old_connections()
             rows_updated = _persist_scraped_data(city_data, city_name)
 
-        print(f"Scraper data for city {city_name} saved to DB")
+        logger.info("Scraper data for city %s saved to DB", city_name)
         if rows_updated:
-            print(f"Scraper config for city {city_name} updated")
+            logger.info("Scraper config for city %s updated", city_name)
         else:
-            print(f"No ScraperConfig found for city {city_name}")
+            logger.warning("No ScraperConfig found for city %s", city_name)
     except (JSONDecodeError, RequestException):
         logger.warning(
             "Skipping scraper for city %s due to upstream fetch failure.",

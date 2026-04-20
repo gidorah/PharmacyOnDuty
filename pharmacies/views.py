@@ -7,6 +7,7 @@ This module handles the HTTP requests for pharmacy data, including:
 - Proxying requests to the Google Maps API.
 """
 
+import logging
 from datetime import timedelta
 from json import JSONDecodeError, loads
 
@@ -24,6 +25,8 @@ from pharmacies.utils import (
     get_nearest_pharmacies_open,
     round_lat_lng,
 )
+
+logger = logging.getLogger(__name__)
 
 TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
@@ -74,7 +77,7 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
 
         query_time = TEST_TIME if settings.DEBUG else timezone.now()
         city_status = city.get_city_status(query_time)
-        print(f"City status: {city_status}")
+        logger.debug("City status: %s", city_status)
 
         if city_status == PharmacyStatus.OPEN:
             points = get_nearest_pharmacies_open(lat, lng, limit=SHOWN_PHARMACIES)
@@ -84,7 +87,7 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
             )
 
         response_data = {"points": points}
-        print(f"Pharmacy points: \n {response_data}")
+        logger.debug("Returning %d pharmacy points", len(points))
         return JsonResponse(response_data)
 
     except City.DoesNotExist:
@@ -92,9 +95,7 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
             {"error": "No city found for the provided location."}, status=400
         )
     except Exception:
-        import traceback
-
-        traceback.print_exc()
+        logger.exception("Unexpected error in get_pharmacy_points")
         return JsonResponse({"error": "An internal server error occurred."}, status=500)
 
 
