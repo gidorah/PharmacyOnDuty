@@ -236,3 +236,18 @@ class TestProxyAwareCsrf:
 
         assert response.status_code == 200
         assert response.json()["points"][0]["title"] == "Open Pharmacy"
+
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_exception(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        import requests
+
+        mock_get.side_effect = requests.exceptions.RequestException("Connection error")
+
+        url = reverse("pharmacies:google_maps_proxy")
+        with patch("pharmacies.views.is_allowed_referer", return_value=True):
+            response = client.get(url)
+
+        assert response.status_code == 500
+        assert response.json() == {"error": "Failed to connect to the Maps service."}
