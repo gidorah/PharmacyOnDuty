@@ -60,6 +60,10 @@ module = "django_celery_results.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "django_ratelimit.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "django.contrib.gis.*"
 ignore_errors = false
 

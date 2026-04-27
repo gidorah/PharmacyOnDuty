@@ -118,6 +118,7 @@ TAILWIND_APP_NAME = "theme"
 MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "django_ratelimit.middleware.RatelimitMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -261,3 +262,19 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Celery beat settings
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TIMEZONE = "Europe/Istanbul"
+
+# django-ratelimit settings
+# Use a dedicated Redis cache so counters are shared across all gunicorn workers.
+# DB 1 keeps rate-limit keys separate from the Celery broker on DB 0.
+CACHES = {
+    "ratelimit": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_CACHE_URL", "redis://localhost:6379/1"),
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    },
+}
+RATELIMIT_USE_CACHE = "ratelimit"
+# Read real client IP from the X-Forwarded-For header set by the nginx proxy.
+RATELIMIT_IP_META_KEY = "HTTP_X_FORWARDED_FOR"
+# Called by RatelimitMiddleware when a Ratelimited exception is raised.
+RATELIMIT_VIEW = "pharmacies.views.ratelimit_error"

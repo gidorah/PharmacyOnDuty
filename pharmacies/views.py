@@ -155,4 +155,8 @@ def ratelimit_error(
     request: HttpRequest, exception: Exception | None = None
 ) -> JsonResponse:
     """Return a JSON 429 response when the rate limit is exceeded."""
-    return JsonResponse({"error": "Too many requests. Please slow down."}, status=429)
+    response = JsonResponse(
+        {"error": "Too many requests. Please slow down."}, status=429
+    )
+    response["Retry-After"] = "60"
+    return response
