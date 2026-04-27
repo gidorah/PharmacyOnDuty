@@ -30,6 +30,8 @@ sitemaps_dict = {
     "static": StaticViewSitemap,
 }
 
+handler429 = "pharmacies.views.ratelimit_error"
+
 urlpatterns: list[Any] = [
     path("admin/", admin.site.urls),
     path("", include("pharmacies.urls")),

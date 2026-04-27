@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",
     "django_celery_beat",
     "django_celery_results",
+    "django_ratelimit",
 ]
 
 TAILWIND_APP_NAME = "theme"
