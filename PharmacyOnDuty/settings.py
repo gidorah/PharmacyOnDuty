@@ -277,7 +277,9 @@ CACHES = {
     },
 }
 RATELIMIT_USE_CACHE = "ratelimit"
-# Read real client IP from the X-Forwarded-For header set by the nginx proxy.
-RATELIMIT_IP_META_KEY = "HTTP_X_FORWARDED_FOR"
+# nginx sets X-Real-IP from $remote_addr (not client-controllable).
+# X-Forwarded-For uses $proxy_add_x_forwarded_for which appends to whatever
+# the client sends, making it spoofable. X-Real-IP is safe to use here.
+RATELIMIT_IP_META_KEY = "HTTP_X_REAL_IP"
 # Called by RatelimitMiddleware when a Ratelimited exception is raised.
 RATELIMIT_VIEW = "pharmacies.views.ratelimit_error"
