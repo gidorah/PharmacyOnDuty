@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",
     "django_celery_beat",
     "django_celery_results",
+    "django_ratelimit",
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -117,6 +118,7 @@ TAILWIND_APP_NAME = "theme"
 MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "django_ratelimit.middleware.RatelimitMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -260,3 +262,24 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # Celery beat settings
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TIMEZONE = "Europe/Istanbul"
+
+# django-ratelimit settings
+# Use a dedicated Redis cache so counters are shared across all gunicorn workers.
+# DB 1 keeps rate-limit keys separate from the Celery broker on DB 0.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    },
+    "ratelimit": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_CACHE_URL", "redis://localhost:6379/1"),
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    },
+}
+RATELIMIT_USE_CACHE = "ratelimit"
+# nginx sets X-Real-IP from $remote_addr (not client-controllable).
+# X-Forwarded-For uses $proxy_add_x_forwarded_for which appends to whatever
+# the client sends, making it spoofable. X-Real-IP is safe to use here.
+RATELIMIT_IP_META_KEY = "HTTP_X_REAL_IP"
+# Called by RatelimitMiddleware when a Ratelimited exception is raised.
+RATELIMIT_VIEW = "pharmacies.views.ratelimit_error"

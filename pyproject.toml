@@ -15,6 +15,7 @@ dependencies = [
     "django-browser-reload>=1.21.0",
     "django-celery-beat>=2.8.1",
     "django-celery-results>=2.6.0",
+    "django-ratelimit>=4.1.0",
     "django-redis>=6.0.0",
     "django-tailwind>=4.2.0",
     "flower>=2.0.1",
@@ -56,6 +57,10 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "django_celery_results.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "django_ratelimit.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

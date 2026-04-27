@@ -16,6 +16,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonR
 from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
+from django_ratelimit.decorators import ratelimit
 
 from pharmacies.models import City, PharmacyStatus
 from pharmacies.utils import (
@@ -29,6 +30,7 @@ TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
 
 
+@ratelimit(key="ip", rate="30/m", method="POST", block=True)
 def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
     """
     Handle POST requests to retrieve the nearest pharmacies based on user location.
@@ -147,3 +149,14 @@ def pharmacies_list(request: HttpRequest) -> HttpResponse:
         "pharmacies.html",
         {"google_maps_map_id": settings.GOOGLE_MAPS_MAP_ID},
     )
+
+
+def ratelimit_error(
+    request: HttpRequest, exception: Exception | None = None
+) -> JsonResponse:
+    """Return a JSON 429 response when the rate limit is exceeded."""
+    response = JsonResponse(
+        {"error": "Too many requests. Please slow down."}, status=429
+    )
+    response["Retry-After"] = "60"
+    return response
