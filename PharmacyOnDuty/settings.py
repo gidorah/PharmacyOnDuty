@@ -267,6 +267,9 @@ CELERY_TIMEZONE = "Europe/Istanbul"
 # Use a dedicated Redis cache so counters are shared across all gunicorn workers.
 # DB 1 keeps rate-limit keys separate from the Celery broker on DB 0.
 CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    },
     "ratelimit": {
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": os.environ.get("REDIS_CACHE_URL", "redis://localhost:6379/1"),
