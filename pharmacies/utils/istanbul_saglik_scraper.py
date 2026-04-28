@@ -190,7 +190,11 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
             coordinates = _get_coordinates_from_sehirharitasi_url(directions_url)
             if coordinates is None:
-                logger.warning("Unable to get coordinates for %s", pharmacy["name"])
+                logger.warning(
+                    "Unable to get coordinates for pharmacy %s in district %s",
+                    pharmacy["name"],
+                    district_name,
+                )
                 continue
 
             pharmacy["coordinates"] = coordinates
