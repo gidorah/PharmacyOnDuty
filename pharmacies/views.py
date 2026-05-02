@@ -7,6 +7,7 @@ This module handles the HTTP requests for pharmacy data, including:
 - Proxying requests to the Google Maps API.
 """
 
+import logging
 from datetime import timedelta
 from json import JSONDecodeError, loads
 
@@ -24,6 +25,8 @@ from pharmacies.utils import (
     get_nearest_pharmacies_open,
     round_lat_lng,
 )
+
+logger = logging.getLogger(__name__)
 
 TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
@@ -136,8 +139,11 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     try:
         response = requests.get(endpoint, params=params, timeout=10)
         return HttpResponse(response.text, content_type="text/javascript")
-    except requests.exceptions.RequestException as e:
-        return JsonResponse({"error": str(e)}, status=500)
+    except requests.exceptions.RequestException:
+        logger.exception("Failed to proxy request to Google Maps")
+        return JsonResponse(
+            {"error": "Failed to connect to the upstream service."}, status=500
+        )
 
 
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
