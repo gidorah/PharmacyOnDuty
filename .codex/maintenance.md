@@ -14,20 +14,21 @@
 - Sentry CLI: `sentry` must be installed and logged in. Use explicit org/project slugs; do not rely on auto-detection.
 - Context7: required for Dependabot release-note and API research; official maintainer docs/GitHub releases are fallback sources.
 - Runtime notes: use Docker Compose, `just`, and `uv` inside containers. Do not run host `python`, `pytest`, `pip`, or host virtualenv commands.
+- Automation Compose env files: `--env-file .env --env-file docker/dev/automation.env`
 - Codex automation memory: use `${CODEX_HOME:-/home/onur/.codex}/automations/<automation-id>/memory.md` for ephemeral task state only.
 - Required environment variables for scheduled runtime: `CODEX_HOME` optional. Sentry CLI stored login is acceptable; API-mode Sentry fallback may use `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`. No project secrets are stored in this spec.
 
 ## Validation Commands
 
-- Setup: `just dev-up`
-- Dependency sync: containers run `uv sync` on startup; for explicit repair use `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv sync`
-- Lint check: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run ruff check .`
-- Lint fix: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run ruff check --fix .`
-- Format: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run ruff format .`
-- Typecheck: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run mypy .`
-- Full tests: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run pytest -x`
-- Targeted tests: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv run pytest <path-or-nodeid> -x`
-- Dependency audit: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django sh -lc 'uv export --no-hashes --format requirements-txt | uvx pip-audit -r /dev/stdin'`
+- Setup: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . up -d db redis django`
+- Dependency sync: containers run `uv sync` on startup; for explicit repair use `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv sync`
+- Lint check: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv run ruff check .`
+- Lint fix: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv run ruff check --fix .`
+- Format: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv run ruff format .`
+- Typecheck: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv run mypy .`
+- Full tests: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv run pytest -x`
+- Targeted tests: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django uv run pytest <path-or-nodeid> -x`
+- Dependency audit: `docker-compose --env-file .env --env-file docker/dev/automation.env -f docker/dev/docker-compose.yml --project-directory . exec django sh -lc 'uv export --no-hashes --format requirements-txt | uvx pip-audit -r /dev/stdin'`
 - Smoke HTTP: run only the HTTP flows listed under `Production Smoke Tests`.
 - Smoke browser: run only the browser flows listed under `Production Smoke Tests`.
 
@@ -132,7 +133,7 @@
 
 - Mode: `browser`
 - URL: `https://eczanerede.com/`
-- Browser: `Playwright Chromium`
+- Browser: `System Chromium headless; Playwright Chromium may be used when already installed`
 - Expected status: `200`
 - Expected title contains: `Eczanerede`
 - Expected selectors: `#map`, `#pharmacy-list-container`, `#pharmacy-items`
@@ -144,8 +145,8 @@
 ### policy pages render
 
 - Mode: `browser`
-- URLs: `https://eczanerede.com/privacy-policy`, `https://eczanerede.com/terms-of-service`, `https://eczanerede.com/cookie-policy`
-- Browser: `Playwright Chromium`
+- URLs: `https://eczanerede.com/privacy-policy`, `https://eczanerede.com/terms/`, `https://eczanerede.com/cookie-policy`
+- Browser: `System Chromium headless; Playwright Chromium may be used when already installed`
 - Expected status: `200`
 - Expected title contains: `Eczanerede`
 - Timeout seconds: `30`
