@@ -11,11 +11,11 @@
 ## Required Tools
 
 - GitHub CLI: `gh` must be authenticated with read/write access to issues, PRs, labels, checks, and contents for `gidorah/PharmacyOnDuty`.
-- Sentry: required for Sentry observe and Sentry fix. Organization/project must be verified by bootstrap before those tasks are activated.
+- Sentry CLI: `sentry` must be installed and logged in. Use explicit org/project slugs; do not rely on auto-detection.
 - Context7: required for Dependabot release-note and API research; official maintainer docs/GitHub releases are fallback sources.
 - Runtime notes: use Docker Compose, `just`, and `uv` inside containers. Do not run host `python`, `pytest`, `pip`, or host virtualenv commands.
 - Codex automation memory: use `${CODEX_HOME:-/home/onur/.codex}/automations/<automation-id>/memory.md` for ephemeral task state only.
-- Required environment variables for scheduled runtime: `CODEX_HOME` optional; Sentry connector/API credentials must be available to Sentry tasks; API-mode Sentry tasks should receive `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`; no project secrets are stored in this spec.
+- Required environment variables for scheduled runtime: `CODEX_HOME` optional. Sentry CLI stored login is acceptable; API-mode Sentry fallback may use `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`. No project secrets are stored in this spec.
 
 ## Validation Commands
 
@@ -42,8 +42,11 @@
 
 ## Sentry
 
-- Organization: `TBD - bootstrap must verify through Sentry access`
-- Project: `TBD - bootstrap must verify through Sentry access`
+- CLI command: `sentry`
+- Organization: `onur-akyuz`
+- Projects: `eczanerede`
+- Project list command: `sentry project list onur-akyuz/ --json --fields slug,name,platform`
+- Issue list command: `sentry issue list onur-akyuz/<project> --query 'is:unresolved' --period 7d --sort freq --limit 20 --json --fields shortId,title,count,status,permalink,project`
 - Environment: `production`
 - Issue label: `sentry`
 - Skip labels: `wontfix`, `blocked`, `needs-design`, `needs-human`, `investigating`
