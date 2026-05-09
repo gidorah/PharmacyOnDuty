@@ -136,8 +136,12 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     try:
         response = requests.get(endpoint, params=params, timeout=10)
         return HttpResponse(response.text, content_type="text/javascript")
-    except requests.exceptions.RequestException as e:
-        return JsonResponse({"error": str(e)}, status=500)
+    except requests.exceptions.RequestException:
+        import traceback
+
+        # Log the exception server-side to prevent leaking sensitive parameters (like API keys)
+        traceback.print_exc()
+        return JsonResponse({"error": "Failed to proxy request."}, status=500)
 
 
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
