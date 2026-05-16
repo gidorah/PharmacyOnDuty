@@ -3,6 +3,7 @@ from datetime import UTC, datetime, time
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 from django.conf import settings
 from django.test import Client
 from django.test.utils import override_settings
@@ -236,3 +237,22 @@ class TestProxyAwareCsrf:
 
         assert response.status_code == 200
         assert response.json()["points"][0]["title"] == "Open Pharmacy"
+
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_failure(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_get.side_effect = requests.exceptions.RequestException("API down")
+        url = reverse("pharmacies:google_maps_proxy")
+
+        with patch("pharmacies.views.is_allowed_referer", return_value=True):
+            response = client.get(url)
+
+        assert response.status_code == 500
+        response_json = json.loads(response.content)
+        assert response_json["error"] == "Failed to proxy Google Maps request."
+        assert "API down" not in response_json["error"]
