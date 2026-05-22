@@ -108,6 +108,11 @@ def is_allowed_referer(request: HttpRequest) -> bool:
     return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
 
 
+_ALLOWED_PROXY_PARAMS: frozenset[str] = frozenset(
+    {"v", "language", "region", "callback", "loading"}
+)
+
+
 @cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     """
@@ -123,14 +128,18 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
         return HttpResponse("Forbidden", status=403)
 
     endpoint = "https://maps.googleapis.com/maps/api/js"
+    # Only forward explicitly allowed query parameters to prevent parameter
+    # pollution. Server-controlled keys are set last so they cannot be
+    # overridden by caller-supplied values (closes #93).
     # The "marker" library is required for AdvancedMarkerElement and the
     # "routes" library provides DirectionsService / DirectionsRenderer via
     # google.maps.importLibrary("routes"), which is the non-deprecated
     # modular access pattern for those classes.
-    params = {
+    user_params = {k: v for k, v in request.GET.items() if k in _ALLOWED_PROXY_PARAMS}
+    params: dict[str, object] = {
+        **user_params,
         "key": settings.GOOGLE_MAPS_API_KEY,
         "libraries": "marker,routes,geometry",
-        **dict(request.GET),
     }
 
     try:
