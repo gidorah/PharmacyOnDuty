@@ -293,9 +293,8 @@ class TestOtherViews:
         assert response.content == b"console.log('google maps');"
         assert response["Content-Type"] == "text/javascript"
 
-        # The proxy must request the libraries needed by the modern Maps JS
-        # APIs: "marker" for AdvancedMarkerElement, and "routes" for the
-        # modular DirectionsService / DirectionsRenderer imports.
+        # Proxy must load "marker" (AdvancedMarkerElement) and "routes"
+        # (Route.computeRoutes).
         _, call_kwargs = mock_get.call_args
         params = call_kwargs["params"]
         libraries = set(params["libraries"].split(","))
