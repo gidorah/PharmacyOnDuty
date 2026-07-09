@@ -93,8 +93,6 @@
 		let AdvancedMarkerElementCtor;
 		let directionsService;
 		let directionsRenderer;
-		// Track whether the list is expanded or collapsed
-		let isExpanded = false;
 		let userLocation;
 		let markersArray = [];
 
@@ -250,77 +248,80 @@
 			});
 		}
 
+		let swipeEventsAttached = false;
+
 		function attachHammerSwipeEvents() {
+			if (swipeEventsAttached) {
+				return;
+			}
+			swipeEventsAttached = true;
+
 			const containerElement = document.getElementById('pharmacy-list-container');
 			const handle = document.getElementById('handle');
 			const pharmacyListContainer = $('#pharmacy-list-container');
 
-			let isExpanded = false; // Track whether the list is expanded
+			let sheetExpanded = false;
 
-			// Function to toggle between expanded and collapsed states
 			function toggleBottomSheet() {
-				if (isExpanded) {
+				if (sheetExpanded) {
 					pharmacyListContainer.removeClass('expanded').addClass('collapsed');
 				} else {
 					pharmacyListContainer.removeClass('collapsed').addClass('expanded');
 				}
-				isExpanded = !isExpanded;
+				sheetExpanded = !sheetExpanded;
 			}
 
-			// Attach click event to handle and to the container for toggling
-			containerElement.addEventListener('click', toggleBottomSheet)
-			handle.addEventListener('click', toggleBottomSheet)
+			containerElement.addEventListener('click', toggleBottomSheet);
+			handle.addEventListener('click', toggleBottomSheet);
 
-
-			// Attach swipe gestures using Hammer.js
 			const hammertime = new Hammer(containerElement);
 			hammertime.get('swipe').set({ direction: Hammer.DIRECTION_VERTICAL });
 
 			hammertime.on('swipeup', function () {
-				if (!isExpanded) {
+				if (!sheetExpanded) {
 					pharmacyListContainer.removeClass('collapsed').addClass('expanded');
-					isExpanded = true;
+					sheetExpanded = true;
 				}
 			});
 
 			hammertime.on('swipedown', function () {
-				if (isExpanded) {
+				if (sheetExpanded) {
 					pharmacyListContainer.removeClass('expanded').addClass('collapsed');
-					isExpanded = false;
+					sheetExpanded = false;
 				}
 			});
 		}
 
 
-		function fetchPharmacyPoints(userLocation = null, city = "eskisehir", callback) {
+		function fetchPharmacyPoints(location, callback) {
 			$.ajax({
 				url: '/get_pharmacy_points',
 				method: 'POST',
 				contentType: 'application/json',
 				data: JSON.stringify({
-					"lat": userLocation ? userLocation.lat : '',
-					"lng": userLocation ? userLocation.lng : '',
+					"lat": location.lat,
+					"lng": location.lng,
 				}),
 				success: function (response) {
-					callback(response);
+					callback(null, response);
 				},
 				error: function (error) {
 					const message = error.responseJSON?.error || "An unknown server error occurred.";
 					console.error("Error fetching pharmacy points:", message);
-					// Avoid a blocking alert. Update UI to show error.
 					$('#selectedPharmacyName').text("Hata");
 					$('#selectedPharmacyStatus').text(message);
+					callback(message, null);
 				}
 			});
 		}
 
-		async function showDirectionsToMarker(point, userLocation) {
-			if (!userLocation || !point || !directionsService || !directionsRenderer) {
+		async function showDirectionsToMarker(point, origin) {
+			if (!origin || !point || !directionsService || !directionsRenderer) {
 				return;
 			}
 			try {
 				const result = await directionsService.route({
-					origin: { lat: userLocation.lat, lng: userLocation.lng },
+					origin: { lat: origin.lat, lng: origin.lng },
 					destination: {
 						lat: point.position.lat,
 						lng: point.position.lng,
@@ -336,38 +337,41 @@
 		}
 
 		function getUserLocation(callback) {
-			if (navigator.geolocation) {
-				navigator.geolocation.getCurrentPosition(
-					(position) => {
-						userLocation = {
-							lat: position.coords.latitude,
-							lng: position.coords.longitude,
-						};
-						callback(userLocation);
-					},
-					(error) => {
-						console.error("Error getting location:", error);
-						callback(null);
-					},
-					{
-						enableHighAccuracy: true,
-						timeout: 100000,
-						maximumAge: 30000,
-					}
-				);
-			} else {
+			if (!navigator.geolocation) {
 				console.error("Geolocation is not supported by this browser.");
 				callback(null);
+				return;
 			}
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					userLocation = {
+						lat: position.coords.latitude,
+						lng: position.coords.longitude,
+					};
+					callback(userLocation);
+				},
+				(error) => {
+					console.error("Error getting location:", error);
+					callback(null);
+				},
+				{
+					enableHighAccuracy: true,
+					// Keep this short so a hung/denied prompt cannot block
+					// pharmacy loading for minutes.
+					timeout: 5000,
+					maximumAge: 30000,
+				}
+			);
 		}
 
-		function showDirectionsToPharmacy(pharmacy) {
-			$(`#selectedPharmacyName`).text(pharmacy.title);
-			// 1) Draw directions on map
+		function showDirectionsToPharmacy(pharmacy, drawRoute = true) {
+			$('#selectedPharmacyName').text(pharmacy.title ?? "");
+			$('#selectedPharmacyStatus').text(pharmacy.status ?? "");
 			addMarkers(pharmacy);
-			showDirectionsToMarker(pharmacy, userLocation);
+			if (drawRoute) {
+				showDirectionsToMarker(pharmacy, userLocation);
+			}
 
-			// 2) Collapse the bottom sheet
 			const pharmacyListContainer = $('#pharmacy-list-container');
 			pharmacyListContainer.removeClass('expanded').addClass('collapsed');
 
@@ -375,41 +379,59 @@
 			scrollableArea.scrollTop(0);
 		}
 
-		// On page load
+		function renderPharmacyResults(points, { drawRoute = false } = {}) {
+			if (!Array.isArray(points) || points.length === 0) {
+				$('#selectedPharmacyName').text("Eczane bulunamadı");
+				$('#selectedPharmacyStatus').text("");
+				console.error("No pharmacy points found.");
+				return;
+			}
+			updatePharmacyList(points);
+			attachHammerSwipeEvents();
+			showDirectionsToPharmacy(points[0], drawRoute);
+		}
+
+		// On page load: do not wait for geolocation before fetching pharmacies.
+		// A slow/hung geo prompt previously left the UI stuck on
+		// "Açık Eczaneler Yükleniyor" for up to 100s, and the fallback path
+		// never updated the header even after pharmacies arrived.
 		$(document).ready(function () {
-			const locationPromise = new Promise((resolve) => {
-				getUserLocation((loc) => resolve(loc));
-			});
+			const defaultLocation = { lat: 39.7767, lng: 30.5206 }; // Eskişehir
+			userLocation = defaultLocation;
+			let latestRequestId = 0;
 
-			Promise.all([window.mapsPromise, locationPromise]).then(async ([_, location]) => {
-				const defaultLocation = { lat: 39.7767, lng: 30.5206 }; // Eskişehir default
-				const finalLocation = location || defaultLocation;
+			window.mapsPromise.then(async () => {
+				await initMap(defaultLocation);
 
-				// Update global variable if using default
-				if (!location) {
-					console.warn("Geolocation failed or blocked. Using default location (Eskişehir).");
-					userLocation = finalLocation;
-				}
-
-				await initMap(finalLocation);
-
-				fetchPharmacyPoints(finalLocation, "eskisehir", function (result) {
-					if (result) {
-						const points = result.points;
-						updatePharmacyList(points);
-						attachHammerSwipeEvents();
-
-						// If we have a real location, show directions.
-						// Otherwise just show markers to avoid confusing directions from city center.
-						if (location) {
-							showDirectionsToPharmacy(points[0]);
-						} else {
-							addMarkers(points[0]);
+				const loadForLocation = (location, drawRoute) => {
+					const requestId = ++latestRequestId;
+					fetchPharmacyPoints(location, (err, result) => {
+						if (err || requestId !== latestRequestId) {
+							return;
 						}
-					} else {
-						console.error("No pharmacy points found.");
+						renderPharmacyResults(result?.points, { drawRoute });
+					});
+				};
+
+				// Immediate fetch with city-center default so the list is never
+				// blocked on the geolocation prompt.
+				loadForLocation(defaultLocation, false);
+
+				getUserLocation((location) => {
+					if (!location) {
+						console.warn(
+							"Geolocation failed or blocked. Using default location (Eskişehir).",
+						);
+						return;
 					}
+					userLocation = location;
+					map.setCenter(location);
+					loadForLocation(location, true);
 				});
+			}).catch((err) => {
+				console.error("Failed to initialize map:", err);
+				$('#selectedPharmacyName').text("Hata");
+				$('#selectedPharmacyStatus').text("Harita yüklenemedi.");
 			});
 		});
         </script>
