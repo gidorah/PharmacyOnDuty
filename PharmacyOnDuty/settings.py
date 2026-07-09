@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import logging
 import os
 from pathlib import Path
 
@@ -18,6 +19,8 @@ from dotenv import load_dotenv
 from PharmacyOnDuty.database_config import get_database_settings
 
 load_dotenv(os.getenv("DOTENV_PATH"))
+
+logger = logging.getLogger(__name__)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +41,30 @@ GOOGLE_MAPS_MAP_ID = os.environ.get("GOOGLE_MAPS_MAP_ID", "DEMO_MAP_ID")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+
+
+def warn_production_maps_config(
+    *,
+    debug: bool,
+    api_key: str | None,
+    map_id: str,
+) -> None:
+    """Log misconfigured Google Maps settings when running outside DEBUG."""
+    if debug:
+        return
+    if not api_key:
+        logger.error("GOOGLE_MAPS_API_KEY is missing or empty in production.")
+    if map_id == "DEMO_MAP_ID":
+        logger.warning(
+            "GOOGLE_MAPS_MAP_ID is DEMO_MAP_ID; set a real Map ID for production."
+        )
+
+
+warn_production_maps_config(
+    debug=DEBUG,
+    api_key=GOOGLE_MAPS_API_KEY,
+    map_id=GOOGLE_MAPS_MAP_ID,
+)
 
 ALLOWED_HOSTS = [
     host for host in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(" ") if host

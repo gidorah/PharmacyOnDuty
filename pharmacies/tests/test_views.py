@@ -1,4 +1,5 @@
 import json
+from collections.abc import Iterator
 from datetime import UTC, datetime, time
 from unittest.mock import MagicMock, patch
 
@@ -10,6 +11,13 @@ from django.test.utils import override_settings
 from django.urls import reverse
 
 from pharmacies.models import City, PharmacyStatus, WorkingSchedule
+
+
+@pytest.fixture(autouse=True)
+def _disable_ssl_redirect() -> Iterator[None]:
+    """View tests hit the test client over HTTP; disable HTTPS redirects."""
+    with override_settings(SECURE_SSL_REDIRECT=False):
+        yield
 
 
 class TestGetPharmacyPointsNoDb:
@@ -128,6 +136,109 @@ class TestGetPharmacyPoints:
         )
         assert response.status_code == 400
         assert response.json()["error"] == "No city found for the provided location."
+
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_get_pharmacy_points_unknown_city_value_error_returns_400(
+        self, mock_get_city: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = ValueError("Unknown city: Somewhere")
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "No city found for the provided location."
+
+    @patch("pharmacies.views.get_city_name_from_location")
+    @patch("pharmacies.views.get_nearest_pharmacies_on_duty")
+    def test_get_pharmacy_points_no_duty_pharmacies_returns_400(
+        self,
+        mock_fetch_duty: MagicMock,
+        mock_get_city: MagicMock,
+        client: Client,
+        setup_city: City,
+    ) -> None:
+        mock_get_city.return_value = "eskisehir"
+        mock_fetch_duty.side_effect = ValueError(
+            "No pharmacies are on duty at this time."
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = datetime(2025, 12, 16, 20, 0, tzinfo=UTC)
+            response = client.post(
+                url,
+                data=json.dumps({"lat": 39.7, "lng": 30.5}),
+                content_type="application/json",
+            )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "No pharmacies are on duty at this time."
+
+    @patch("pharmacies.views.City.objects.get")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_get_pharmacy_points_city_status_failure_returns_400(
+        self,
+        mock_get_city: MagicMock,
+        mock_get_city_record: MagicMock,
+        client: Client,
+    ) -> None:
+        mock_get_city.return_value = "eskisehir"
+        mock_city = MagicMock()
+        mock_city.get_city_status.side_effect = ValueError(
+            "Unable to retrieve city status."
+        )
+        mock_get_city_record.return_value = mock_city
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "Unable to retrieve city status."
+
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_get_pharmacy_points_geocoding_failure_returns_502(
+        self, mock_get_city: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = ValueError(
+            "Unable to retrieve city name: status is not OK"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 502
+        assert response.json()["error"] == "Location lookup temporarily unavailable."
+
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_get_pharmacy_points_request_exception_returns_502(
+        self, mock_get_city: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = requests.RequestException("upstream down")
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 502
+        body = response.json()
+        assert body["error"] == "Location lookup temporarily unavailable."
+        assert "upstream down" not in body["error"]
 
 
 class TestOtherViews:
