@@ -92,7 +92,25 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
         return JsonResponse(
             {"error": "No city found for the provided location."}, status=400
         )
-    except (ValueError, requests.RequestException):
+    except ValueError as exc:
+        # Domain / client-facing ValueErrors from city lookup and duty search.
+        # Upstream geocoding / Distance Matrix failures also raise ValueError and
+        # are mapped to 502 below.
+        message = str(exc)
+        if message.startswith("Unknown city"):
+            return JsonResponse(
+                {"error": "No city found for the provided location."}, status=400
+            )
+        if message == "No pharmacies are on duty at this time.":
+            return JsonResponse({"error": message}, status=400)
+        if message == "Unable to retrieve city status.":
+            return JsonResponse({"error": message}, status=400)
+        logger.exception("Upstream location/pharmacy lookup failed.")
+        return JsonResponse(
+            {"error": "Location lookup temporarily unavailable."},
+            status=502,
+        )
+    except requests.RequestException:
         logger.exception("Upstream location/pharmacy lookup failed.")
         return JsonResponse(
             {"error": "Location lookup temporarily unavailable."},
