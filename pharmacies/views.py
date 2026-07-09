@@ -77,7 +77,7 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
 
         query_time = TEST_TIME if settings.DEBUG else timezone.now()
         city_status = city.get_city_status(query_time)
-        print(f"City status: {city_status}")
+        logger.info("City status for %s: %s", city_name, city_status)
 
         if city_status == PharmacyStatus.OPEN:
             points = get_nearest_pharmacies_open(lat, lng, limit=SHOWN_PHARMACIES)
@@ -86,18 +86,20 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
                 lat, lng, city=city_name, time=query_time, limit=SHOWN_PHARMACIES
             )
 
-        response_data = {"points": points}
-        print(f"Pharmacy points: \n {response_data}")
-        return JsonResponse(response_data)
+        return JsonResponse({"points": points})
 
     except City.DoesNotExist:
         return JsonResponse(
             {"error": "No city found for the provided location."}, status=400
         )
+    except (ValueError, requests.RequestException):
+        logger.exception("Upstream location/pharmacy lookup failed.")
+        return JsonResponse(
+            {"error": "Location lookup temporarily unavailable."},
+            status=502,
+        )
     except Exception:
-        import traceback
-
-        traceback.print_exc()
+        logger.exception("Unexpected error in get_pharmacy_points.")
         return JsonResponse({"error": "An internal server error occurred."}, status=500)
 
 

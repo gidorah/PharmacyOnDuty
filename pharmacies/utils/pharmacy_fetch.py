@@ -2,17 +2,12 @@
 Module for fetching pharmacy data from external APIs (Google Places).
 """
 
-import os
 from functools import lru_cache
 from typing import Any, cast
 
 import requests
-from dotenv import load_dotenv
+from django.conf import settings
 from requests.exceptions import HTTPError
-
-# Load environment variables once at startup
-load_dotenv()
-API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY")
 
 
 @lru_cache(maxsize=1024)
@@ -27,7 +22,7 @@ def _fetch_pharmacy_data(lat: float, lng: float, keyword: str) -> list[dict[str,
         "location": f"{lat},{lng}",
         "rankby": "distance",
         "keyword": keyword,
-        "key": API_KEY,
+        "key": settings.GOOGLE_MAPS_API_KEY,
     }
 
     response = requests.get(url, params=params, timeout=10)
