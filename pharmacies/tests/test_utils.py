@@ -37,6 +37,21 @@ def test_get_map_points_from_fetched_data() -> None:
     assert points[0]["position"] == {"lat": 39.7, "lng": 30.5}
 
 
+def test_get_map_points_from_fetched_data_without_vicinity() -> None:
+    data = [
+        {
+            "geometry": {"location": {"lat": 39.7, "lng": 30.5}},
+            "name": "Test Pharmacy",
+        }
+    ]
+
+    points = get_map_points_from_fetched_data(data)
+
+    assert len(points) == 1
+    assert points[0]["description"] == ""
+    assert points[0]["address"] == ""
+
+
 def test_get_map_points_from_pharmacies() -> None:
     class MockPharmacy:
         def __init__(self) -> None:
@@ -277,7 +292,6 @@ class TestUtilsDB:
             {
                 "name": "Open Eczane",
                 "geometry": {"location": {"lat": 39.7, "lng": 30.5}},
-                "vicinity": "Some address",
             }
         ]
 
@@ -295,3 +309,6 @@ class TestUtilsDB:
 
             assert len(results) == 1
             assert results[0]["title"] == "Open Eczane"
+            assert results[0]["address"] == ""
+            assert results[0]["description"] == ""
+            assert results[0]["travel_distance"] == 100

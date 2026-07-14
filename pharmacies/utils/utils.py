@@ -106,15 +106,16 @@ def get_map_points_from_fetched_data(data: list[Any]) -> list[dict[str, Any]]:
     points = []
 
     for pharmacy in data:
+        address = pharmacy.get("vicinity", "")
         point = {
             "position": {
                 "lat": pharmacy["geometry"]["location"]["lat"],
                 "lng": pharmacy["geometry"]["location"]["lng"],
             },
             "title": pharmacy["name"],
-            "description": pharmacy["vicinity"],
+            "description": address,
             "status": "Açık",
-            "address": pharmacy["vicinity"],
+            "address": address,
             "distance": "-",
         }
         points.append(point)
