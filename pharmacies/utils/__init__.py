@@ -4,6 +4,8 @@ from pharmacies.utils.istanbul_saglik_scraper import get_istanbul_data
 from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 from pharmacies.utils.utils import (
     ScrapedDataStatus,
+    UnknownCityError,
+    UpstreamGeocodingError,
     add_scraped_data_to_db,
     check_scraped_data_age,
     get_city_data,
@@ -20,6 +22,8 @@ __all__ = [
     "get_istanbul_data",
     "fetch_nearest_pharmacies",
     "ScrapedDataStatus",
+    "UnknownCityError",
+    "UpstreamGeocodingError",
     "add_scraped_data_to_db",
     "check_scraped_data_age",
     "get_city_data",
