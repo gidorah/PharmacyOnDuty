@@ -60,20 +60,12 @@ jobs:
         with:
           persist-credentials: false
 
-      # The timeouts and retries stop a stalled mirror from hanging the job;
-      # one download stalled for over ten minutes during the first runs.
-      - name: Install GDAL for GeoDjango
-        timeout-minutes: 6
-        run: |
-          apt_opts="-q -o Acquire::Retries=5 -o Acquire::http::Timeout=20"
-          sudo apt-get $apt_opts update
-          sudo apt-get $apt_opts install -y --no-install-recommends gdal-bin
-
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Install dependencies
+        id: deps
         run: uv sync
 
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -81,40 +73,50 @@ jobs:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
 
-      # Each check runs as its own step, and later steps run after a failure,
-      # so one run reports every failing check.
+      # Each check runs as its own step. A failing check does not stop the
+      # later ones, so one run reports every failing check. A failed setup
+      # step skips the checks that depend on it.
       #
       # ruff runs from uv.lock (0.16.1), the version CLAUDE.md tells agents to
       # use. The ruff hook in .pre-commit-config.yaml pins 0.8.2, which wants
       # to reformat files that 0.16.1 accepts, so the gate cannot match both.
       - name: ruff check
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         run: uv run ruff check --output-format=github .
 
       - name: ruff format
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         run: uv run ruff format --check --diff .
+
+      - name: djlint format
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: uv run pre-commit run djlint-reformat-django --all-files --show-diff-on-failure
+
+      - name: djlint lint
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        run: uv run pre-commit run djlint-django --all-files
+
+      # mypy (through the django-stubs plugin) and makemigrations load
+      # GeoDjango, which needs GDAL. The checks above run without it.
+      - name: Install GDAL for GeoDjango
+        id: gdal
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        run: .github/scripts/install_gdal.sh
 
       # The same command and file list as the mypy hook in
       # .pre-commit-config.yaml, in one process. `pre-commit run mypy
       # --all-files` splits the files across parallel mypy processes that
       # share .mypy_cache, and one of them crashed with an INTERNAL ERROR.
       - name: mypy
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' && steps.gdal.outcome == 'success' }}
         run: |
           git ls-files -z '*.py' \
             | grep -zvE 'docs/|node_modules/|migrations/|.git/|.tox/|dist/|build/' \
             | xargs -0 uv run mypy
 
-      - name: djlint format
-        if: ${{ !cancelled() }}
-        run: uv run pre-commit run djlint-reformat-django --all-files --show-diff-on-failure
-
-      - name: djlint lint
-        if: ${{ !cancelled() }}
-        run: uv run pre-commit run djlint-django --all-files
-
       - name: Missing migrations
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' && steps.gdal.outcome == 'success' }}
         run: uv run python manage.py makemigrations --check --dry-run
 
   tests:
@@ -158,14 +160,9 @@ jobs:
         with:
           persist-credentials: false
 
-      # The timeouts and retries stop a stalled mirror from hanging the job;
-      # one download stalled for over ten minutes during the first runs.
       - name: Install GDAL for GeoDjango
-        timeout-minutes: 6
-        run: |
-          apt_opts="-q -o Acquire::Retries=5 -o Acquire::http::Timeout=20"
-          sudo apt-get $apt_opts update
-          sudo apt-get $apt_opts install -y --no-install-recommends gdal-bin
+        timeout-minutes: 10
+        run: .github/scripts/install_gdal.sh
 
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
