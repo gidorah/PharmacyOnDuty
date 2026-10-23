@@ -1,8 +1,9 @@
 # Factory gate: the deterministic checks that decide whether a change is done.
 #
-# Layer 1 runs the static checks from .pre-commit-config.yaml. mypy and djlint
-# run through pre-commit itself, so the gate and the local hooks use the same
-# commands and versions; ruff runs from uv.lock (see the ruff steps). Layer 2 runs pytest against real PostGIS and Redis containers, with
+# Layer 1 runs the static checks from .pre-commit-config.yaml with the same
+# commands and versions: djlint through pre-commit itself, mypy and the
+# migrations check with the hook's own commands. ruff runs from uv.lock (see
+# the ruff steps). Layer 2 runs pytest against real PostGIS and Redis containers, with
 # Celery tasks run inline and outbound network blocked. Layer 3, the scraper
 # tests, runs inside layer 2. The test-removal job fails a change that deletes
 # or skips tests. The final `gate` job is the single result to read.
@@ -87,9 +88,16 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run ruff format --check --diff .
 
+      # The same command and file list as the mypy hook in
+      # .pre-commit-config.yaml, in one process. `pre-commit run mypy
+      # --all-files` splits the files across parallel mypy processes that
+      # share .mypy_cache, and one of them crashed with an INTERNAL ERROR.
       - name: mypy
         if: ${{ !cancelled() }}
-        run: uv run pre-commit run mypy --all-files
+        run: |
+          git ls-files -z '*.py' \
+            | grep -zvE 'docs/|node_modules/|migrations/|.git/|.tox/|dist/|build/' \
+            | xargs -0 uv run mypy
 
       - name: djlint format
         if: ${{ !cancelled() }}
@@ -133,6 +141,10 @@ jobs:
       DB_USER: postgres
       DB_PASSWORD: password
       CELERY_BROKER_URL: redis://localhost:6379/0
+      # Settings stay production-like (DEBUG off, hashed static files), except
+      # for the HTTPS redirect: the test client speaks plain HTTP, and in
+      # production the TLS proxy does the redirect.
+      DJANGO_SECURE_SSL_REDIRECT: "False"
       # Loads .github/scripts/factory_gate_pytest.py with `-p` below.
       PYTHONPATH: .github/scripts
     steps:
@@ -153,8 +165,14 @@ jobs:
       - name: Check PostGIS and Redis are reachable
         run: uv run python -m scripts.wait_for_services
 
-      # factory_gate_pytest blocks outbound network and runs Celery tasks
-      # inline. See the plugin's docstring.
+      # With DEBUG off, templates need the static-files manifest, as in
+      # production, where the deploy runs collectstatic.
+      - name: collectstatic
+        run: uv run python manage.py collectstatic --noinput
+
+      # factory_gate_pytest blocks outbound network, runs Celery tasks inline,
+      # and marks the tests in .github/factory-gate-known-failures.txt as
+      # strict xfail. See the plugin's docstring.
       - name: pytest
         run: >-
           uv run pytest -p factory_gate_pytest -ra

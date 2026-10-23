@@ -1,7 +1,7 @@
 """Pytest plugin that the factory gate loads with ``-p factory_gate_pytest``.
 
-It changes two things for the gate's test run only. Local ``pytest`` runs are
-unaffected.
+It changes three things for the gate's test run only. Local ``pytest`` runs
+are unaffected.
 
 1. Tests get no outbound network. Python code may connect only to loopback
    addresses, where the PostGIS and Redis service containers listen. Any other
@@ -10,6 +10,11 @@ unaffected.
    under test catches the error.
 2. Celery runs tasks inline. ``task.delay()`` executes in the test process and
    raises the task's errors there, so no worker is needed.
+3. Tests listed in ``.github/factory-gate-known-failures.txt`` get a strict
+   xfail marker. They fail on main today; the gate reports them without going
+   red, and goes red when one starts passing, so the list only shrinks. A
+   listed test that no longer exists also fails the run. The test-removal
+   check fails any change that adds a line to the list.
 
 The guard covers Python sockets. C libraries that open their own sockets, such
 as libpq inside psycopg2, bypass it; the gate points them only at localhost.
@@ -20,12 +25,14 @@ from __future__ import annotations
 import ipaddress
 import socket
 from collections.abc import Generator
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 LOOPBACK_NAMES = frozenset({"localhost", "localhost.localdomain", "ip6-localhost"})
 INET_FAMILIES = (socket.AF_INET, socket.AF_INET6)
+KNOWN_FAILURES_FILE = Path(__file__).parent.parent / "factory-gate-known-failures.txt"
 
 
 class NetworkBlockedError(RuntimeError):
@@ -81,9 +88,52 @@ def _guarded_getaddrinfo(host: Any, port: Any, *args: Any, **kwargs: Any) -> Any
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    socket.socket.connect = _guarded_connect  # type: ignore[method-assign]
-    socket.socket.connect_ex = _guarded_connect_ex  # type: ignore[method-assign]
-    socket.getaddrinfo = _guarded_getaddrinfo
+    # setattr, because the stubs type these on the C base class `_socket.socket`.
+    setattr(socket.socket, "connect", _guarded_connect)
+    setattr(socket.socket, "connect_ex", _guarded_connect_ex)
+    setattr(socket, "getaddrinfo", _guarded_getaddrinfo)
+
+
+def read_known_failures(path: Path = KNOWN_FAILURES_FILE) -> dict[str, str]:
+    """Return each listed node ID with its reason.
+
+    Each line is ``<node id> | <reason>``. Blank lines and lines starting with
+    ``#`` are ignored.
+    """
+    known: dict[str, str] = {}
+    if not path.exists():
+        return known
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        node_id, _, reason = line.partition("|")
+        known[node_id.strip()] = reason.strip() or "listed as a known failure"
+    return known
+
+
+def pytest_collection_modifyitems(
+    session: pytest.Session, config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    known = read_known_failures()
+    for item in items:
+        if item.nodeid in known:
+            reason = f"Known failure on main: {known[item.nodeid]}"
+            item.add_marker(pytest.mark.xfail(reason=reason, strict=True))
+    missing = sorted(set(known) - {item.nodeid for item in items})
+    if missing and _runs_whole_suite(config):
+        raise pytest.UsageError(
+            f"{KNOWN_FAILURES_FILE.name} lists tests that were not collected. "
+            "Remove them from the list: " + ", ".join(missing)
+        )
+
+
+def _runs_whole_suite(config: pytest.Config) -> bool:
+    # A run limited to some files or a -k filter cannot see every listed test.
+    return (
+        not config.getoption("keyword")
+        and config.args_source == pytest.Config.ArgsSource.INVOCATION_DIR
+    )
 
 
 def pytest_sessionstart(session: pytest.Session) -> None:

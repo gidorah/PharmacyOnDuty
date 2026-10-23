@@ -11,6 +11,8 @@ when the change does any of the following:
 4. Changes what pytest collects: the ``[tool.pytest.ini_options]`` table in
    ``pyproject.toml``, a new pytest config file, or new collection hooks such as
    ``collect_ignore`` in a ``conftest.py``.
+5. Adds a test to ``.github/factory-gate-known-failures.txt``, which the gate
+   runs as an expected failure. The change that creates the file is exempt.
 
 Usage:
     python .github/scripts/check_test_removal.py --base <ref> [--head <ref>]
@@ -70,6 +72,9 @@ COLLECTION_HOOK_NAMES = frozenset(
 # pytest reads these before pyproject.toml, so adding one can replace the
 # project's pytest settings.
 PYTEST_CONFIG_FILES = ("pytest.ini", ".pytest.ini", "tox.ini", "setup.cfg")
+
+# The gate runs tests listed here as expected failures.
+KNOWN_FAILURES_FILE = ".github/factory-gate-known-failures.txt"
 
 
 @dataclass
@@ -271,6 +276,17 @@ def renamed_paths(base: str, head: str) -> dict[str, str]:
     return renames
 
 
+def known_failures(commit: str, files: set[str]) -> set[str]:
+    if KNOWN_FAILURES_FILE not in files:
+        return set()
+    node_ids: set[str] = set()
+    for line in read_file(commit, KNOWN_FAILURES_FILE).splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            node_ids.add(line.partition("|")[0].strip())
+    return node_ids
+
+
 def pytest_table(commit: str, files: set[str]) -> object:
     if "pyproject.toml" not in files:
         return None
@@ -347,6 +363,20 @@ def compare(base: str, head: str) -> list[Finding]:
                     "instead of pyproject.toml.",
                 )
             )
+
+    # The change that creates the list is the one exception: it records the
+    # failures found when the gate was added, and Onur reviews it as tier C.
+    base_known = known_failures(base, base_files)
+    if KNOWN_FAILURES_FILE not in base_files:
+        base_known = known_failures(head, head_files)
+    for node_id in sorted(known_failures(head, head_files) - base_known):
+        findings.append(
+            Finding(
+                KNOWN_FAILURES_FILE,
+                1,
+                f"Test added to the known-failures list: {node_id}.",
+            )
+        )
 
     if pytest_table(base, base_files) != pytest_table(head, head_files):
         findings.append(
