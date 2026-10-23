@@ -1,0 +1,261 @@
+# Factory review station: Opus reports findings on a pull request.
+#
+# Adapted from Sandcastle v0.12.0 (.github/workflows/agent-review.yml). There,
+# the reviewer commits fixes itself. Here it only reports (decision 9,
+# sub-decision 2): this workflow has no push step, and the findings go to the
+# fix station (factory-fix.yml).
+#
+# Started by Onur's `agent:review` label on a pull request, or by the pipeline
+# with `gh workflow run factory-review.yml -f pr=<n>` after a green gate.
+#
+# Review rounds (decision 9, sub-decision 4):
+# - Round 1 reads the whole change. Findings go to the fix job; no findings
+#   go to the tier job.
+# - Round 2 reads only the commits since round 1 and checks that each round 1
+#   finding was fixed or properly declined. It ends in the tier job, or in
+#   `agent:stuck` when findings of a blocking kind are still open.
+# The round count comes from markers in the pipeline's own comments. Onur's
+# label resets it.
+#
+# `pull_request_target` runs this file as it is on main, never a version from
+# the pull request. The prepare job accepts only pull requests from this
+# repository's branches by the pipeline, Onur or Dependabot.
+
+name: factory-review
+
+on:
+  pull_request_target:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent:review')
+    && format('factory-pr-{0}', github.event.pull_request.number || inputs.pr)
+    || format('factory-skip-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+env:
+  PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  prepare:
+    name: Check the pull request
+    if: >-
+      (github.event_name == 'pull_request_target'
+        && github.event.label.name == 'agent:review'
+        && github.event.sender.login == 'gidorah')
+      || (github.event_name == 'workflow_dispatch'
+        && (github.actor == 'gidorah' || github.actor == 'github-actions[bot]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      round: ${{ steps.check.outputs.round }}
+      head_sha: ${{ steps.check.outputs.head_sha }}
+      pipeline_sha: ${{ steps.pipeline.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - id: pipeline
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Check the pull request and count the rounds
+        id: check
+        working-directory: .sandcastle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_BY_OWNER: ${{ github.event_name == 'pull_request_target' }}
+        run: |
+          flag=""
+          if [ "$STARTED_BY_OWNER" = true ]; then flag="--started-by-owner"; fi
+          node_modules/.bin/tsx steps/prepare-review.ts --pr "$PR_NUMBER" \
+            --out "$RUNNER_TEMP/handoff" --risk-map ../factory/risk-map.yml $flag
+
+      - name: Hand over to the agent job
+        if: steps.check.outputs.proceed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+          retention-days: 7
+
+  agent:
+    name: Review (Opus)
+    needs: prepare
+    if: needs.prepare.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the pipeline scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.pipeline_sha }}
+          path: pipeline
+          persist-credentials: false
+
+      - name: Check out the pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          path: work
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install Sandcastle and the pinned Claude Code CLI
+        working-directory: pipeline/.sandcastle
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/@anthropic-ai/claude-code/install.cjs
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+
+      - name: Run the review agent
+        working-directory: pipeline/.sandcastle
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          WORK_DIR: ${{ github.workspace }}/work
+          HANDOFF_DIR: ${{ runner.temp }}/handoff
+          OUTPUT_DIR: ${{ runner.temp }}/agent-out
+        run: tsx agent-workflows/review/review.ts
+
+      - name: Keep Claude's debug logs on the runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/agent-out/claude-debug"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: agent-out
+          path: |
+            ${{ runner.temp }}/agent-out
+            !${{ runner.temp }}/agent-out/claude-debug
+          retention-days: 7
+          if-no-files-found: ignore
+
+  publish:
+    name: Post the findings and hand over
+    needs: [prepare, agent]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      # gh workflow run for the fix or tier station.
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.pipeline_sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: agent-out
+          path: ${{ runner.temp }}/agent-out
+
+      - name: Show the instruction files the agent loaded
+        run: cat "$RUNNER_TEMP/agent-out/instruction-files.txt" || echo "(not recorded)"
+
+      - name: Post the findings and hand over
+        working-directory: .sandcastle
+        run: >-
+          node_modules/.bin/tsx steps/publish-review.ts --pr "$PR_NUMBER"
+          --handoff "$RUNNER_TEMP/handoff" --output "$RUNNER_TEMP/agent-out/review.json"
+
+  finish:
+    name: Update labels
+    needs: [prepare, agent, publish]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.pipeline_sha }}
+          persist-credentials: false
+          sparse-checkout: .sandcastle
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Fetch the agent's failure reason
+        if: needs.agent.result == 'failure'
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: agent-out
+          path: ${{ runner.temp }}/agent-out
+
+      - name: Mark the pull request blocked
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        working-directory: .sandcastle
+        env:
+          JOB: "review (agent job: ${{ needs.agent.result }}, publish job: ${{ needs.publish.result }})"
+        run: >-
+          node_modules/.bin/tsx steps/mark-blocked.ts
+          --number "$PR_NUMBER" --job "$JOB" --retry-label agent:review
+          --reason-file "$RUNNER_TEMP/agent-out/failure_reason.txt"
+
+      - name: Remove agent:in-progress
+        if: needs.publish.result != 'success'
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/agent:in-progress" > /dev/null 2>&1 || true

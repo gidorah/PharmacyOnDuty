@@ -1,0 +1,368 @@
+# Factory fix station: Sonnet fixes a pull request.
+#
+# Adapted from Sandcastle v0.12.0 (.github/workflows/agent-implement-pr.yml).
+# A fix starts for one of three reasons:
+#
+# - `ci`: the gate is red after one rerun. Started by the pipeline with
+#   `gh workflow run factory-fix.yml -f pr=<n> -f reason=ci`. Two tries per CI
+#   failure; the try count comes from markers in the pipeline's own comments.
+# - `review`: round 1 of the review found something. The fixer fixes the
+#   findings it accepts, removes unrequested work, and gives a reason for each
+#   finding it declines. Findings in the risk map's high-risk categories, and
+#   unrequested work, cannot be declined.
+# - `onur`: Onur added `agent:implement` to the pull request. His comments
+#   are the task, and the try counts start again.
+#
+# After the fix, the publish job pushes, posts the answers, and runs the gate
+# again (factory-gate.yml through gh workflow run), which hands the pull
+# request to the review or to another fix try.
+#
+# Same safeguards as factory-build.yml: the agent job's token can only read,
+# its checkouts keep no credentials, its step gets no GitHub token, and its
+# commits leave the job as a git bundle that a plain job checks and pushes.
+
+name: factory-fix
+
+on:
+  pull_request_target:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+      reason:
+        description: Why the fix runs
+        type: choice
+        options: [ci, review]
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent:implement')
+    && format('factory-pr-{0}', github.event.pull_request.number || inputs.pr)
+    || format('factory-skip-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+env:
+  PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  prepare:
+    name: Check the pull request and count the tries
+    if: >-
+      (github.event_name == 'pull_request_target'
+        && github.event.label.name == 'agent:implement'
+        && github.event.sender.login == 'gidorah')
+      || (github.event_name == 'workflow_dispatch'
+        && (github.actor == 'gidorah' || github.actor == 'github-actions[bot]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      # To read the gate's failed job logs.
+      actions: read
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      reason: ${{ steps.check.outputs.reason }}
+      head_sha: ${{ steps.check.outputs.head_sha }}
+      head_ref: ${{ steps.check.outputs.head_ref }}
+      pipeline_sha: ${{ steps.pipeline.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - id: pipeline
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Check the pull request and count the tries
+        id: check
+        working-directory: .sandcastle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STARTED_BY_OWNER: ${{ github.event_name == 'pull_request_target' }}
+          REASON: ${{ inputs.reason || 'onur' }}
+        run: |
+          flag=""
+          if [ "$STARTED_BY_OWNER" = true ]; then flag="--started-by-owner"; fi
+          node_modules/.bin/tsx steps/prepare-fix.ts --pr "$PR_NUMBER" --reason "$REASON" \
+            --out "$RUNNER_TEMP/handoff" --risk-map ../factory/risk-map.yml $flag
+
+      - name: Hand over to the agent job
+        if: steps.check.outputs.proceed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+          retention-days: 7
+
+  agent:
+    name: Fix (Sonnet)
+    needs: prepare
+    if: needs.prepare.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      db:
+        image: postgis/postgis:15-3.5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: gis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DJANGO_SECRET_KEY: factory-agent-placeholder-not-a-secret
+      GOOGLE_MAPS_API_KEY: factory-agent-placeholder-not-a-key
+      DJANGO_DEBUG: "False"
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      UV_LOCKED: "1"
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: gis
+      DB_USER: postgres
+      DB_PASSWORD: password
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+    steps:
+      - name: Check out the pipeline scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.pipeline_sha }}
+          path: pipeline
+          persist-credentials: false
+
+      - name: Check out the pull request
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.head_sha }}
+          path: work
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install Sandcastle and the pinned Claude Code CLI
+        working-directory: pipeline/.sandcastle
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/@anthropic-ai/claude-code/install.cjs
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Install GDAL for GeoDjango
+        timeout-minutes: 10
+        run: pipeline/.github/scripts/install_gdal.sh
+
+      # No cache: this job runs agent code, and a cache it saved would be
+      # restored by later jobs.
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+
+      - name: Install the project
+        working-directory: work
+        run: |
+          uv sync
+          uv run python manage.py collectstatic --noinput
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+
+      - name: Run the fix agent
+        working-directory: pipeline/.sandcastle
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          WORK_DIR: ${{ github.workspace }}/work
+          HANDOFF_DIR: ${{ runner.temp }}/handoff
+          OUTPUT_DIR: ${{ runner.temp }}/agent-out
+        run: tsx agent-workflows/fix/fix.ts
+
+      # Everything below runs after the agent, on a runner it could have
+      # changed. These steps only package files; the publish job checks them.
+      - name: Package the commits
+        if: success()
+        run: |
+          if [ "$(git -C work rev-list --count "$HEAD_SHA..HEAD")" -gt 0 ]; then
+            git -C work bundle create "$RUNNER_TEMP/agent-out/work.bundle" "$HEAD_SHA..HEAD"
+          fi
+
+      - name: Keep Claude's debug logs on the runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/agent-out/claude-debug"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: agent-out
+          path: |
+            ${{ runner.temp }}/agent-out
+            !${{ runner.temp }}/agent-out/claude-debug
+          retention-days: 7
+          if-no-files-found: ignore
+
+  publish:
+    name: Push, post the answers, run the gate
+    needs: [prepare, agent]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_SHA: ${{ needs.prepare.outputs.head_sha }}
+      HEAD_REF: ${{ needs.prepare.outputs.head_ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.pipeline_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: agent-out
+          path: ${{ runner.temp }}/agent-out
+
+      - name: Show the instruction files the agent loaded
+        run: cat "$RUNNER_TEMP/agent-out/instruction-files.txt" || echo "(not recorded)"
+
+      # The new commits must sit on top of the head the fix started from and
+      # leave the workflows alone. The push fails if the branch moved since.
+      - name: Check and push the agent's commits
+        id: push
+        run: |
+          bundle="$RUNNER_TEMP/agent-out/work.bundle"
+          if [ ! -f "$bundle" ]; then
+            echo "The fix made no commits."
+            echo "after=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git bundle verify "$bundle"
+          git fetch --no-tags "$bundle" "+HEAD:refs/factory/agent-head"
+          head=$(git rev-parse refs/factory/agent-head)
+          git merge-base --is-ancestor "$HEAD_SHA" "$head"
+          if git diff --name-only "$HEAD_SHA" "$head" -- .github/workflows | grep -q .; then
+            echo "::error::The agent changed workflow files, which the pipeline does not push."
+            git diff --stat "$HEAD_SHA" "$head" -- .github/workflows
+            exit 1
+          fi
+          git log --oneline "$HEAD_SHA..$head"
+          gh auth setup-git
+          git push --force-with-lease="refs/heads/$HEAD_REF:$HEAD_SHA" \
+            "https://github.com/$GH_REPO.git" "$head:refs/heads/$HEAD_REF"
+          echo "after=$head" >> "$GITHUB_OUTPUT"
+
+      - name: Post the answers
+        working-directory: .sandcastle
+        env:
+          AFTER: ${{ steps.push.outputs.after }}
+        run: >-
+          node_modules/.bin/tsx steps/publish-fix.ts --pr "$PR_NUMBER"
+          --handoff "$RUNNER_TEMP/handoff" --output "$RUNNER_TEMP/agent-out/fix.json"
+          --before "$HEAD_SHA" --after "$AFTER"
+
+      - name: Run the gate and hand over
+        working-directory: .sandcastle
+        env:
+          AFTER: ${{ steps.push.outputs.after }}
+        run: >-
+          node_modules/.bin/tsx steps/gate-route.ts
+          --pr "$PR_NUMBER" --branch "$HEAD_REF" --sha "$AFTER"
+
+  finish:
+    name: Update labels
+    needs: [prepare, agent, publish]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.pipeline_sha }}
+          persist-credentials: false
+          sparse-checkout: .sandcastle
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Fetch the agent's failure reason
+        if: needs.agent.result == 'failure'
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: agent-out
+          path: ${{ runner.temp }}/agent-out
+
+      - name: Mark the pull request blocked
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        working-directory: .sandcastle
+        env:
+          JOB: "fix (agent job: ${{ needs.agent.result }}, publish job: ${{ needs.publish.result }})"
+        run: >-
+          node_modules/.bin/tsx steps/mark-blocked.ts
+          --number "$PR_NUMBER" --job "$JOB" --retry-label agent:implement
+          --reason-file "$RUNNER_TEMP/agent-out/failure_reason.txt"
+
+      - name: Remove agent:in-progress
+        if: needs.publish.result != 'success'
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/agent:in-progress" > /dev/null 2>&1 || true

@@ -178,3 +178,36 @@ export const summarize = (run: WorkflowRun, jobs: readonly Job[]): GateResult =>
       .map((j) => j.name),
   };
 };
+
+/**
+ * The latest gate run on a commit, from any event (push, pull request or
+ * dispatch). `pending` when that run has not finished.
+ */
+export const latestGateOnCommit = (
+  github: GitHub,
+  sha: string,
+): { readonly pending: true; readonly run: WorkflowRun } | ({ readonly pending: false } & GateResult) | null => {
+  const runs = github
+    .api<{ workflow_runs: WorkflowRun[] }>(
+      `repos/${github.repo}/actions/workflows/${GATE_WORKFLOW}/runs?head_sha=${sha}&per_page=50`,
+    )
+    .workflow_runs.sort((a, b) => a.id - b.id);
+  const latest = runs.at(-1);
+  if (!latest) return null;
+  if (latest.status !== "completed") return { pending: true, run: latest };
+  const jobs = github.api<{ jobs: Job[] }>(
+    `repos/${github.repo}/actions/runs/${latest.id}/attempts/${latest.run_attempt}/jobs?per_page=100`,
+  ).jobs;
+  return { pending: false, ...summarize(latest, jobs) };
+};
+
+/** The log lines of the failed jobs in a run, cut to the last `maxChars`. */
+export const failedLogs = (github: GitHub, runId: number, maxChars = 60_000): string => {
+  let log: string;
+  try {
+    log = github.gh(["run", "view", String(runId), "--repo", github.repo, "--log-failed"]);
+  } catch (error) {
+    return `(Could not read the logs: ${String(error).slice(0, 300)})`;
+  }
+  return log.length > maxChars ? `[... cut to the last ${maxChars} characters ...]\n${log.slice(-maxChars)}` : log;
+};

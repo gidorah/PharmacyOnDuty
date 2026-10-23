@@ -32,6 +32,21 @@ Each workflow splits into jobs, and a job boundary is a fresh runner:
    with `gh workflow run`, waits for its `gate` job, and starts the next
    station the same way (decision S0-7).
 
+## Loop limits
+
+Decision 9, sub-decision 4. The counts come from hidden markers at the start
+of the pipeline's own comments (`steps/markers.ts`), so they survive restarts.
+
+- A red gate: the failed jobs rerun once. If the gate is still red, the fix
+  job gets two tries for that failure.
+- Review: round 1 reads the whole change and its findings go to the fix job.
+  Round 2 reads only the new commits and checks each finding was fixed or
+  properly declined.
+- When a limit runs out, the pull request gets `agent:stuck` and a comment
+  with what failed, what the worker tried, and its best guess at the cause.
+  Onur's `agent:implement` or `agent:review` label on the pull request starts
+  it again and resets the counts.
+
 ## Running the tests
 
 ```bash

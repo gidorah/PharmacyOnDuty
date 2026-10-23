@@ -131,8 +131,10 @@ describe("decideAfterGate", () => {
     assert.equal(decideAfterGate(outcome, 2, 2).action, "stuck");
   });
 
-  it("marks a red gate stuck when the pipeline has no fix job", () => {
-    const outcome = { first: red, final: red, rerun: true };
-    assert.equal(decideAfterGate(outcome, 0).action, "stuck");
+  it("waits for Onur when only the test-removal check failed", () => {
+    const removal = { ...red, failedJobs: ["Test-removal check"] };
+    const next = decideAfterGate({ first: removal, final: removal, rerun: true }, 0);
+    assert.equal(next.action, "stuck");
+    assert.match(next.action === "stuck" ? next.why : "", /allow-test-removal/);
   });
 });

@@ -6,9 +6,14 @@
 
 import type { GateOutcome } from "./gate.ts";
 
-// The fix job is added in the next pull request of the pipeline; until then a
-// red gate goes straight to `agent:stuck`.
-export const MAX_CI_FIX_TRIES = 0;
+/** Fix tries per CI failure. */
+export const MAX_CI_FIX_TRIES = 2;
+
+/** Review rounds per pull request. The second checks only the fixes. */
+export const MAX_REVIEW_ROUNDS = 2;
+
+/** The gate job that fails a change which removes or skips tests. */
+export const TEST_REMOVAL_JOB = "Test-removal check";
 
 export type NextStep =
   | { readonly action: "review" }
@@ -21,15 +26,21 @@ export const decideAfterGate = (
   maxCiFixTries = MAX_CI_FIX_TRIES,
 ): NextStep => {
   if (outcome.final.green) return { action: "review" };
+  const failed = outcome.final.failedJobs;
+  if (failed.length === 1 && failed[0] === TEST_REMOVAL_JOB) {
+    // Only Onur can approve removing a test (S0-4). A fix try would restore
+    // a test he may want gone, so wait for him instead.
+    return {
+      action: "stuck",
+      why: `Only the test-removal check failed: the change removes or skips tests. If that is intended, add \`allow-test-removal\`; if not, say so in a comment and add \`agent:implement\` to start a fix.`,
+    };
+  }
   if (ciFixTriesUsed < maxCiFixTries) {
     return { action: "fix", attempt: ciFixTriesUsed + 1 };
   }
   return {
     action: "stuck",
-    why:
-      maxCiFixTries === 0
-        ? "The gate is red after one rerun, and the pipeline has no fix job yet."
-        : `The gate is still red after ${ciFixTriesUsed} fix tries, the limit for one CI failure.`,
+    why: `The gate is still red after ${ciFixTriesUsed} fix tries, the limit for one CI failure.`,
   };
 };
 

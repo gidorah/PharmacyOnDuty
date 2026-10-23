@@ -7,14 +7,15 @@ import { parseArgs } from "node:util";
 import { Gate } from "./gate.ts";
 import {
   addLabels,
-  comment,
   dispatchWorkflow,
   githubFromEnv,
+  listComments,
   removeLabels,
-  runUrl,
   setOutputs,
 } from "./github.ts";
+import { ciFixTries, readMarkers, sinceReset } from "./markers.ts";
 import { decideAfterGate, describeGate } from "./route.ts";
+import { markStuck } from "./stuck.ts";
 
 const { values } = parseArgs({
   options: {
@@ -34,37 +35,30 @@ const github = githubFromEnv();
 const outcome = await new Gate(github).check(branch, sha);
 console.log(describeGate(outcome));
 
-const next = decideAfterGate(outcome, 0);
+const tries = ciFixTries(sinceReset(readMarkers(listComments(github, pr))));
+const next = decideAfterGate(outcome, tries.length);
 setOutputs({ next: next.action, gate: outcome.final.green ? "green" : "red" });
 
+// Labels added with the built-in token start no workflow (S0-7), so labels
+// only record the state and each dispatch starts the next job.
 switch (next.action) {
   case "review":
     removeLabels(github, pr, ["agent:in-progress"]);
     addLabels(github, pr, ["agent:review"]);
-    // A label added with the built-in token starts no workflow (S0-7), so the
-    // label only records the state and the dispatch starts the job.
     dispatchWorkflow(github, "factory-review.yml", { pr: String(pr) });
     console.log(`Gate green on ${sha}; review requested.`);
     break;
   case "fix":
-    throw new Error("The fix job is not part of this pipeline version.");
+    removeLabels(github, pr, ["agent:in-progress"]);
+    dispatchWorkflow(github, "factory-fix.yml", { pr: String(pr), reason: "ci" });
+    console.log(`Gate red on ${sha}; CI fix try ${next.attempt} requested.`);
+    break;
   case "stuck":
-    removeLabels(github, pr, ["agent:in-progress", "agent:review"]);
-    addLabels(github, pr, ["agent:stuck"]);
-    comment(
-      github,
-      pr,
-      [
-        "**Stuck: the gate is red.**",
-        "",
-        next.why,
-        "",
-        describeGate(outcome),
-        `- Pipeline run: ${runUrl()}`,
-        "",
-        "To unblock it, push a fix or change the work order, then add the label again.",
-      ].join("\n"),
-    );
+    markStuck(github, pr, {
+      headline: "the gate is red.",
+      failed: `${next.why}\n\n${describeGate(outcome)}`,
+      tries,
+    });
     console.log("Gate red; marked stuck.");
     break;
 }
