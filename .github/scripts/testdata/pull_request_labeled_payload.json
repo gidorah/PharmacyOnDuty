@@ -1,0 +1,23 @@
+{
+  "action": "labeled",
+  "number": 187,
+  "label": {
+    "name": "allow-test-removal",
+    "color": "b60205"
+  },
+  "pull_request": {
+    "number": 187,
+    "head": {
+      "ref": "claude/factory-gate-5aa3d1",
+      "sha": "5c03eec9cffa8a3a76efab872c15b8c6440bfc9f"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "7d312c7c44eb81f91bc37bcf2fc72da777e902e5"
+    }
+  },
+  "sender": {
+    "login": "gidorah",
+    "type": "User"
+  }
+}
