@@ -9,3 +9,5 @@
 
 pharmacies/tests/test_tasks.py::test_run_scraper_handles_istanbul_request_failures_through_dispatcher | Reaches the database through an unmocked close_old_connections() without a django_db mark. Fails when an earlier test left a connection open.
 pharmacies/tests/test_tasks.py::test_run_scraper_retries_real_persistence_helper_path | Reaches the database through an unmocked close_old_connections() without a django_db mark. Fails when an earlier test left a connection open.
+tests/test_location_coverage.py::TestLocationCoverage::test_smoke_scenarios | Since 7d62080 (#183), get_pharmacy_points returns 502 when the Distance Matrix call fails. The "Eskisehir - Anadolu University" scenario has no distancematrix snapshot, so the stub answers REQUEST_DENIED, and the test expects 400. While listed, the other scenarios in this test are not checked either.
+tests/test_performance.py::TestPerformance::test_spatial_query_performance_under_load | Calls the real Google Maps Geocoding and Distance Matrix APIs, because it does not use the mock_google_maps fixture. The gate blocks the network; locally it needs internet and a real API key.

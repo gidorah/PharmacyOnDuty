@@ -60,8 +60,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # The timeouts and retries stop a stalled mirror from hanging the job;
+      # one download stalled for over ten minutes during the first runs.
       - name: Install GDAL for GeoDjango
-        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends gdal-bin
+        timeout-minutes: 6
+        run: |
+          apt_opts="-q -o Acquire::Retries=5 -o Acquire::http::Timeout=20"
+          sudo apt-get $apt_opts update
+          sudo apt-get $apt_opts install -y --no-install-recommends gdal-bin
 
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
@@ -152,8 +158,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # The timeouts and retries stop a stalled mirror from hanging the job;
+      # one download stalled for over ten minutes during the first runs.
       - name: Install GDAL for GeoDjango
-        run: sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends gdal-bin
+        timeout-minutes: 6
+        run: |
+          apt_opts="-q -o Acquire::Retries=5 -o Acquire::http::Timeout=20"
+          sudo apt-get $apt_opts update
+          sudo apt-get $apt_opts install -y --no-install-recommends gdal-bin
 
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
