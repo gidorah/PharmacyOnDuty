@@ -26,3 +26,16 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+
+  # The label pipeline's Sandcastle and Claude Code CLI pins (decision 11).
+  # .sandcastle/ is tier C in factory/risk-map.yml, so these updates are too.
+  - package-ecosystem: "npm"
+    directory: "/.sandcastle"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"

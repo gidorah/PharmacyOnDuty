@@ -1,0 +1,5 @@
+node_modules/
+# Sandcastle writes these when it runs locally.
+logs/
+worktrees/
+.env

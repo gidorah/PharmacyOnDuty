@@ -1,0 +1,62 @@
+# Tests for the label pipeline itself: the TypeScript in .sandcastle/ and the
+# factory workflows. No Claude runs here, and it needs no secrets.
+#
+# This is not part of the factory gate's `gate` result. Changes to these paths
+# are tier C, so Onur reads them and this run's result himself.
+
+name: factory-pipeline-tests
+
+on:
+  pull_request:
+    paths:
+      - ".sandcastle/**"
+      - ".github/workflows/**"
+      - "factory/**"
+  push:
+    branches: [main]
+    paths:
+      - ".sandcastle/**"
+      - ".github/workflows/**"
+      - "factory/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factory-pipeline-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Pipeline scripts and workflows
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Type check
+        working-directory: .sandcastle
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: .sandcastle
+        run: npm test
+
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+
+      - name: actionlint
+        run: |
+          shellcheck=$(uvx --from shellcheck-py==0.11.0.1 python -c 'import shutil; print(shutil.which("shellcheck"))')
+          uvx --from actionlint-py==1.7.12.25 actionlint -shellcheck "$shellcheck" .github/workflows/*.yml

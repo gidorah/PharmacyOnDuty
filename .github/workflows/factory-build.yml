@@ -1,0 +1,379 @@
+# Factory build station: Sonnet builds an approved work order.
+#
+# Adapted from Sandcastle v0.12.0 (.github/workflows/agent-implement.yml). The
+# differences come from decision 9 and stage 0 (S0-4, S0-7):
+#
+# - Only Onur starts it: his `agent:implement` label on an issue, or a
+#   workflow_dispatch by him or by the pipeline.
+# - The agent holds no GitHub write credential. It runs in its own job, whose
+#   token can only read, with `persist-credentials: false` and no GH_TOKEN.
+#   Its commits leave that job as a git bundle. A separate plain job, with no
+#   Claude, checks the bundle, pushes the branch and opens the pull request.
+#   A job boundary is a fresh runner, so nothing the agent did to its runner
+#   reaches the job that holds the write token.
+# - The agent reads only the work order body and Onur's comments, and the job
+#   refuses to run if anyone else edited the body or title after Onur's label.
+# - Hand-offs use the built-in token only (S0-7). Pushes and pull requests made
+#   with it start no workflow, so the publish job starts the gate itself with
+#   `gh workflow run factory-gate.yml --ref <branch> -f base=main`, waits for the
+#   `gate` job, and then starts the next station the same way.
+#
+# Scripts and prompts run from the commit the build starts from, in a checkout
+# the agent does not work in (`pipeline/`); the agent works in `work/`.
+
+name: factory-build
+
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: Work order issue number
+        required: true
+
+permissions: {}
+
+# One job per item (decision 10). Events that are not a build request get a
+# group of their own, so an unrelated label cannot replace a queued build.
+concurrency:
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || github.event.label.name == 'agent:implement')
+    && format('factory-issue-{0}', github.event.issue.number || inputs.issue)
+    || format('factory-skip-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+env:
+  ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue }}
+  GH_REPO: ${{ github.repository }}
+
+jobs:
+  prepare:
+    name: Check the work order
+    if: >-
+      (github.event_name == 'issues'
+        && github.event.label.name == 'agent:implement'
+        && github.event.sender.login == 'gidorah'
+        && !github.event.issue.pull_request)
+      || (github.event_name == 'workflow_dispatch'
+        && (github.actor == 'gidorah' || github.actor == 'github-actions[bot]'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    outputs:
+      proceed: ${{ steps.check.outputs.proceed }}
+      branch: ${{ steps.check.outputs.branch }}
+      title: ${{ steps.check.outputs.title }}
+      base_sha: ${{ steps.base.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Check approval and edits, move labels
+        id: check
+        working-directory: .sandcastle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          node_modules/.bin/tsx steps/prepare-build.ts
+          --issue "$ISSUE_NUMBER" --out "$RUNNER_TEMP/handoff/work-order.md"
+
+      - name: Hand the work order to the agent job
+        if: steps.check.outputs.proceed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+          retention-days: 7
+
+  agent:
+    name: Build (Sonnet)
+    needs: prepare
+    if: needs.prepare.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    # Read only. The agent step gets no token at all; this one is for the
+    # checkouts and is public data anyway.
+    permissions:
+      contents: read
+    # The same services and settings as the gate's test job, so the agent can
+    # run the gate's checks before it commits.
+    services:
+      db:
+        image: postgis/postgis:15-3.5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: gis
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      DJANGO_SECRET_KEY: factory-agent-placeholder-not-a-secret
+      GOOGLE_MAPS_API_KEY: factory-agent-placeholder-not-a-key
+      DJANGO_DEBUG: "False"
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      UV_LOCKED: "1"
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: gis
+      DB_USER: postgres
+      DB_PASSWORD: password
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+    steps:
+      - name: Check out the pipeline scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          path: pipeline
+          persist-credentials: false
+
+      - name: Check out the code the agent works on
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          path: work
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      # Only Claude Code's own installer runs: it copies the native binary for
+      # this platform into place. Other install scripts stay off.
+      - name: Install Sandcastle and the pinned Claude Code CLI
+        working-directory: pipeline/.sandcastle
+        run: |
+          npm ci --ignore-scripts
+          node node_modules/@anthropic-ai/claude-code/install.cjs
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Install GDAL for GeoDjango
+        timeout-minutes: 10
+        run: pipeline/.github/scripts/install_gdal.sh
+
+      # No cache: this job runs agent code, and a cache it saved would be
+      # restored by later jobs.
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+
+      - name: Install the project
+        working-directory: work
+        run: |
+          uv sync
+          uv run python manage.py collectstatic --noinput
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: handoff
+          path: ${{ runner.temp }}/handoff
+
+      - name: Run the build agent
+        working-directory: pipeline/.sandcastle
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ISSUE_TITLE: ${{ needs.prepare.outputs.title }}
+          BRANCH: ${{ needs.prepare.outputs.branch }}
+          WORK_DIR: ${{ github.workspace }}/work
+          WORK_ORDER_FILE: ${{ runner.temp }}/handoff/work-order.md
+          OUTPUT_DIR: ${{ runner.temp }}/agent-out
+        run: tsx agent-workflows/build/build.ts
+
+      # Everything below runs after the agent, on a runner it could have
+      # changed. These steps only package files; the publish job checks them.
+      - name: Package the commits
+        if: success()
+        run: git -C work bundle create "$RUNNER_TEMP/agent-out/work.bundle" "$BASE_SHA..HEAD"
+
+      - name: Keep Claude's debug logs on the runner
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/agent-out/claude-debug"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: agent-out
+          # Claude's debug logs stay on the runner. Artifacts of a public
+          # repository are public.
+          path: |
+            ${{ runner.temp }}/agent-out
+            !${{ runner.temp }}/agent-out/claude-debug
+          retention-days: 7
+          if-no-files-found: ignore
+
+  publish:
+    name: Push, open the pull request, run the gate
+    needs: [prepare, agent]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      # gh workflow run (the gate and the next station) and gate reruns.
+      actions: write
+    outputs:
+      pr: ${{ steps.pr.outputs.pr }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BRANCH: ${{ needs.prepare.outputs.branch }}
+      BASE_SHA: ${{ needs.prepare.outputs.base_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: agent-out
+          path: ${{ runner.temp }}/agent-out
+
+      - name: Show the instruction files the agent loaded
+        run: cat "$RUNNER_TEMP/agent-out/instruction-files.txt" || echo "(not recorded)"
+
+      # The bundle is the agent's output, so check it before pushing: it must
+      # build on the commit the job started from, add at least one commit, and
+      # leave the workflows alone (the built-in token cannot push workflow
+      # changes anyway; this says so plainly instead).
+      - name: Check the agent's commits
+        id: commits
+        run: |
+          bundle="$RUNNER_TEMP/agent-out/work.bundle"
+          git bundle verify "$bundle"
+          git fetch --no-tags "$bundle" "+HEAD:refs/factory/agent-head"
+          head=$(git rev-parse refs/factory/agent-head)
+          git merge-base --is-ancestor "$BASE_SHA" "$head"
+          count=$(git rev-list --count "$BASE_SHA..$head")
+          if [ "$count" -eq 0 ]; then
+            echo "::error::The bundle has no new commits."
+            exit 1
+          fi
+          if git diff --name-only "$BASE_SHA" "$head" -- .github/workflows | grep -q .; then
+            echo "::error::The agent changed workflow files, which the pipeline does not push."
+            git diff --stat "$BASE_SHA" "$head" -- .github/workflows
+            exit 1
+          fi
+          git log --oneline "$BASE_SHA..$head"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+
+      - name: Push the branch
+        env:
+          HEAD_SHA: ${{ steps.commits.outputs.head }}
+        run: |
+          gh auth setup-git
+          git push --force "https://github.com/$GH_REPO.git" "$HEAD_SHA:refs/heads/$BRANCH"
+
+      - name: Open the draft pull request
+        id: pr
+        working-directory: .sandcastle
+        env:
+          HEAD_SHA: ${{ steps.commits.outputs.head }}
+        run: >-
+          node_modules/.bin/tsx steps/open-pr.ts
+          --issue "$ISSUE_NUMBER" --branch "$BRANCH"
+          --base-sha "$BASE_SHA" --head-sha "$HEAD_SHA"
+          --instructions-file "$RUNNER_TEMP/agent-out/instruction-files.txt"
+
+      - name: Run the gate and hand over
+        working-directory: .sandcastle
+        env:
+          HEAD_SHA: ${{ steps.commits.outputs.head }}
+          PR: ${{ steps.pr.outputs.pr }}
+        run: >-
+          node_modules/.bin/tsx steps/gate-route.ts
+          --pr "$PR" --branch "$BRANCH" --sha "$HEAD_SHA"
+
+  finish:
+    name: Update labels
+    needs: [prepare, agent, publish]
+    if: always() && needs.prepare.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          persist-credentials: false
+          sparse-checkout: .sandcastle
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Fetch the agent's failure reason
+        if: needs.agent.result == 'failure'
+        continue-on-error: true
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: agent-out
+          path: ${{ runner.temp }}/agent-out
+
+      - name: Mark the work order blocked
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        working-directory: .sandcastle
+        env:
+          JOB: "build (agent job: ${{ needs.agent.result }}, publish job: ${{ needs.publish.result }})"
+        run: >-
+          node_modules/.bin/tsx steps/mark-blocked.ts
+          --number "$ISSUE_NUMBER" --job "$JOB" --retry-label agent:implement
+          --reason-file "$RUNNER_TEMP/agent-out/failure_reason.txt"
+
+      - name: Remove agent:in-progress
+        working-directory: .sandcastle
+        env:
+          PR: ${{ needs.publish.outputs.pr }}
+          PUBLISH: ${{ needs.publish.result }}
+        run: |
+          gh api -X DELETE "repos/$GH_REPO/issues/$ISSUE_NUMBER/labels/agent:in-progress" > /dev/null 2>&1 || true
+          if [ -n "$PR" ] && [ "$PUBLISH" != "success" ]; then
+            gh api -X DELETE "repos/$GH_REPO/issues/$PR/labels/agent:in-progress" > /dev/null 2>&1 || true
+          fi

@@ -125,7 +125,6 @@ areas:
       - tests/conftest.py
       - tests/test_factory_files.py
       - factory/
-    planned_paths:
       - .sandcastle/
 
   - name: Agent instructions
