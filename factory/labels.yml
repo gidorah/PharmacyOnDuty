@@ -1,7 +1,8 @@
 # Factory labels for gidorah/PharmacyOnDuty.
 #
-# Status: draft. Onur decides the final list. Nothing in this file has been
-# applied to GitHub yet.
+# Status: decided 2026-10-23 (S0-1 in the software-factory repository,
+# pilot/stage-0.md). Not applied to GitHub yet; that is a separate step Onur
+# approves after this file merges.
 #
 # The `labels` list is the full set the repository should have. Each entry has:
 #   name, color, description  The label as GitHub shows it. The description
@@ -18,7 +19,8 @@
 #   starts                    The job the label starts, or "nothing".
 #   from_name                 Only on renames: the label's current name.
 #
-# The `delete` list holds current labels this draft proposes to remove.
+# The `delete` list holds current labels to remove. Deleting a label on GitHub
+# also takes it off every issue that has it.
 #
 # name, color, description and from_name follow the format of
 # crazy-max/ghaction-github-labeler, so a later sync job could apply this file.
@@ -115,16 +117,16 @@ labels:
     added_by: "tier job"
     starts: nothing
 
-  # Pending decision 3 in the pull request that added this file: how a
-  # deliberate test removal passes the CI gate. Remove this entry if Onur
-  # picks an option without a label.
+  # Decision S0-4: lets the gate's test-removal check pass. The gate accepts
+  # it only when the event that added it shows Onur's account (gidorah), and
+  # a plain step removes it when new commits arrive (factory-label-reset.yml).
   - name: "allow-test-removal"
     color: "e99695"
-    description: "Onur allows the test removals in the current commit. The gate drops it on each push"
+    description: "Onur allows the test removals in the commits he saw. Removed when new commits arrive"
     applies_to: pr
     state: "6 Checks"
     added_by: onur
-    starts: "a rerun of the CI gate"
+    starts: "a gate run that accepts the removals"
 
   # Intake sources. The feeds from the intake decision add these.
   - name: "sentry"

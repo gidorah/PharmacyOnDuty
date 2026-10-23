@@ -2,7 +2,8 @@
 #
 # Onur writes and prunes these rules. The tier job reads only `rules` with
 # `status: active`. Entries under `proposals` are candidates for Onur to
-# accept, change or drop; nothing reads them.
+# accept, change or drop, and `declined` records the ones he turned down.
+# Nothing reads either list.
 #
 # A pull request is tier A only when an active rule matches it and every
 # other check of the tier rule allows it: no path in factory/risk-map.yml
@@ -16,16 +17,25 @@ rules:
   - id: dependabot-version-only
     status: active
     tier: A
+    decided: "2026-10-23 (S0-6, option 3)"
     summary: >-
       Dependabot pull requests for the uv ecosystem that change only version
-      numbers of existing dependencies, for patch updates.
+      numbers, and are patch updates of any dependency or minor updates of
+      development dependencies. Major updates, and minor updates of runtime
+      dependencies, stay tier C through the risk map.
     match:
       author: "dependabot[bot]"
       ecosystem: uv
-      # Read from Dependabot's metadata (dependabot/fetch-metadata). In a
-      # grouped pull request, every updated dependency must be a patch.
-      update_types:
-        - "version-update:semver-patch"
+      # Every dependency the pull request updates must fit one of these
+      # cases. Dependabot's metadata (dependabot/fetch-metadata) gives the
+      # update type per dependency, also in grouped pull requests.
+      allowed_updates:
+        - update_type: "version-update:semver-patch"
+          dependencies: any
+        - update_type: "version-update:semver-minor"
+          # The tier job reads this list from pyproject.toml on the base
+          # commit, not from Dependabot's dependency-type field.
+          dependencies: "[dependency-groups].dev in pyproject.toml"
       # The pull request changes these files and no others.
       files_only:
         - pyproject.toml
@@ -48,27 +58,6 @@ rules:
         dependencies.
 
 proposals:
-  - id: dependabot-minor-dev
-    from: decision 3 (dependency bumps)
-    summary: >-
-      Extend dependabot-version-only to minor updates of development
-      dependencies (the [dependency-groups] dev list: ruff, mypy, pytest and
-      the type stubs). They don't run in production; CI covers them.
-    open_question: >-
-      The spring Codex automation also allowed minor updates of these
-      packages. Should the rule follow it?
-
-  - id: dependabot-exclusions
-    from: the spring Codex automation (.codex/maintenance.md, removed in this pull request)
-    summary: >-
-      Never apply tier A to updates of these runtime packages, even patches:
-      django, celery, django-celery-beat, django-celery-results, redis,
-      django-redis, psycopg2-binary, sentry-sdk, requests, urllib3,
-      gunicorn, whitenoise, django-tailwind, beautifulsoup4, python-dotenv.
-    open_question: >-
-      Patch releases of these packages are often security fixes. Excluding
-      them keeps a person in the loop but slows those fixes down.
-
   - id: lint-fixes
     from: decision 3 (lint fixes)
     summary: >-
@@ -85,8 +74,8 @@ proposals:
       Pull requests that change only readme.md or other Markdown files
       outside the risk map's paths.
     open_question: >-
-      CLAUDE.md and the AGENTS.md files are Markdown, but they instruct the
-      agents. They should stay out of this rule, or move into the risk map.
+      The AGENTS.md files are Markdown but tier C in the risk map, so this
+      rule could never cover them. Is readme.md alone worth a rule?
 
   - id: small-refactors
     from: decision 3 (small refactors in code with strong tests)
@@ -97,3 +86,13 @@ proposals:
       No deterministic step can tell that a change is behaviour-neutral, so
       the rule would rest on the agent's own claim. Leave this out until the
       pilot shows a check that can decide it.
+
+declined:
+  - id: dependabot-exclusions
+    decided: "2026-10-23 (S0-6)"
+    summary: >-
+      Never apply tier A to updates of core runtime packages such as Django
+      and Celery, even patches, as the spring Codex automation did.
+    why: >-
+      Onur chose option 3, which excludes no runtime package from patch
+      updates.

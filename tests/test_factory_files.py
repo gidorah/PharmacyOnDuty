@@ -20,9 +20,11 @@ STANDING_RULES = ROOT / "factory" / "standing-rules.yml"
 LABELS = ROOT / "factory" / "labels.yml"
 ISSUE_TEMPLATES = ROOT / ".github" / "ISSUE_TEMPLATE"
 
-# Generated or local directories, not repository content.
+# Generated or local directories, not repository content. `.claude` holds local
+# Claude Code state, including worktrees that copy the whole repository.
 SKIPPED_DIRS = {
     ".git",
+    ".claude",
     ".venv",
     "node_modules",
     "__pycache__",
@@ -69,6 +71,7 @@ def _matches(pattern: str, files: list[str]) -> bool:
 RISK_AREAS: list[dict[str, Any]] = _load(RISK_MAP)["areas"]
 RISK_PATHS = [p for area in RISK_AREAS for p in area["paths"]]
 PLANNED_PATHS = [p for area in RISK_AREAS for p in area.get("planned_paths", [])]
+OPTIONAL_PATHS = [p for area in RISK_AREAS for p in area.get("optional_paths", [])]
 
 
 @pytest.fixture(scope="module")
@@ -87,6 +90,9 @@ def test_risk_map_shape() -> None:
         assert area["why"], area["name"]
         assert area["paths"], f"{area['name']} lists no paths"
         assert area.get("when", "any_change") in AREA_CONDITIONS, area["name"]
+    all_patterns = RISK_PATHS + PLANNED_PATHS + OPTIONAL_PATHS
+    assert all(isinstance(p, str) and p for p in all_patterns)
+    assert len(all_patterns) == len(set(all_patterns)), "patterns must be unique"
     findings = risk_map["reviewer_findings"]
     assert findings["raise_to"] == "C"
     assert findings["categories"]
@@ -123,10 +129,12 @@ def test_waivers_name_active_standing_rules() -> None:
 def test_standing_rules_shape() -> None:
     standing = _load(STANDING_RULES)
     assert standing["version"] == 1
-    ids = [r["id"] for r in standing["rules"]] + [
-        p["id"] for p in standing.get("proposals", [])
+    ids = [
+        entry["id"]
+        for key in ("rules", "proposals", "declined")
+        for entry in standing.get(key) or []
     ]
-    assert len(ids) == len(set(ids)), "rule and proposal ids must be unique"
+    assert len(ids) == len(set(ids)), "rule, proposal and declined ids must be unique"
     for rule in standing["rules"]:
         assert rule["status"] in {"active", "paused"}, rule["id"]
         assert rule["tier"] == "A", "standing rules exist only to reach tier A"

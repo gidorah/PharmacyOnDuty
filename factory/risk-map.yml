@@ -7,13 +7,17 @@
 #
 # Path patterns use gitignore syntax, matched with the `pathspec` library
 # (style "gitignore") against paths relative to the repository root. A pattern
-# ending in "/" covers the directory and everything under it.
+# ending in "/" covers the directory and everything under it. A pattern with
+# no "/" except at the end, such as `AGENTS.md`, matches at any depth.
 #
-# tests/test_factory_files.py checks that every pattern in `paths` matches at
-# least one file, so a renamed or deleted file can't drop out of the map
-# without failing CI. `planned_paths` are tier C as well, but do not exist
-# yet; the test fails once one of them exists, as a reminder to move it to
-# `paths`.
+# Each area lists its patterns under up to three keys. The tier job treats
+# them all the same way; only tests/test_factory_files.py tells them apart.
+#   paths           Must match at least one file, so a renamed or deleted
+#                   file can't drop out of the map without failing CI.
+#   planned_paths   Must match nothing yet. The test fails once one exists,
+#                   as a reminder to move it to `paths`.
+#   optional_paths  May match nothing, now or later. For files that should
+#                   stay tier C if anyone ever adds them.
 
 version: 1
 default_tier: B
@@ -110,15 +114,34 @@ areas:
 
   - name: The factory itself
     tier: C
-    why: Changing these could weaken the checks that judge agent work.
+    why: >-
+      Changing these could weaken the checks that judge agent work.
+      .djlintrc configures a gate check, as the ruff and mypy settings in
+      pyproject.toml do.
     paths:
       - .github/
       - .pre-commit-config.yaml
+      - .djlintrc
       - tests/conftest.py
       - tests/test_factory_files.py
       - factory/
     planned_paths:
       - .sandcastle/
+
+  - name: Agent instructions
+    tier: C
+    why: >-
+      These files set the rules every later agent follows, so editing them is
+      like editing the gate (decision S0-3).
+    paths:
+      # Any depth: the root file and the ones in docker/, pharmacies/ and
+      # theme/, plus any AGENTS.md added later.
+      - AGENTS.md
+    optional_paths:
+      # Decision S0-5a: the repository has no CLAUDE.md, and Claude Code reads
+      # AGENTS.md directly. If a CLAUDE.md appears anywhere, for example as
+      # the S0-5a fallback, it is tier C from the start.
+      - CLAUDE.md
 
 # Check 4 of the tier rule. A reviewer finding in any of these categories
 # raises the change to tier C, and the worker cannot dismiss it.
