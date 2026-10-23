@@ -1,0 +1,295 @@
+# Factory labels for gidorah/PharmacyOnDuty.
+#
+# Status: decided 2026-10-23 (S0-1 in the software-factory repository,
+# pilot/stage-0.md). Not applied to GitHub yet; that is a separate step Onur
+# approves after this file merges.
+#
+# The `labels` list is the full set the repository should have. Each entry has:
+#   name, color, description  The label as GitHub shows it. The description
+#                             stays under GitHub's 100-character limit.
+#   applies_to                Where the label goes: issue, pr, or both.
+#   state                     The work-item state it marks, using the step
+#                             names from "Life of a work item" in the
+#                             software-factory design. "none" means the label
+#                             only classifies and starts nothing.
+#   added_by                  Who may add it. A job that starts on a label
+#                             added by "onur" must check that Onur added it,
+#                             because anyone can open issues on this public
+#                             repository.
+#   starts                    The job the label starts, or "nothing".
+#   from_name                 Only on renames: the label's current name.
+#
+# The `delete` list holds current labels to remove. Deleting a label on GitHub
+# also takes it off every issue that has it.
+#
+# name, color, description and from_name follow the format of
+# crazy-max/ghaction-github-labeler, so a later sync job could apply this file.
+# Whether that action ignores the extra keys has not been checked.
+
+labels:
+  # Pipeline states. The first six names come from Sandcastle v0.12.0.
+  - name: "agent:explore"
+    color: "c5def5"
+    description: "Draft a work order from this issue now, without waiting for the daily intake run"
+    applies_to: issue
+    state: "1 Signal, with a draft requested"
+    added_by: onur
+    starts: "intake job (Sandcastle's explore workflow, read-only agent)"
+
+  - name: "agent:drafted"
+    color: "fbca04"
+    description: "Work order drafted and waiting for Onur's approval"
+    applies_to: issue
+    state: "2 Drafted"
+    added_by: "pipeline (the intake job's apply step)"
+    starts: nothing
+
+  - name: "agent:implement"
+    color: "0e8a16"
+    description: "Approved. On an issue it starts the build; on a pull request it starts a fix run"
+    applies_to: both
+    state: "3 Approved, then 5 In progress (no queue, decision 9)"
+    added_by: "onur on issues; onur or the review step on pull requests"
+    starts: "build job on issues, fix job on pull requests (Sandcastle's implement and implement-pr)"
+
+  - name: "agent:in-progress"
+    color: "1d76db"
+    description: "A factory job is running on this item"
+    applies_to: both
+    state: "5 In progress, or a review or fix job running"
+    added_by: pipeline
+    starts: nothing
+
+  - name: "agent:review"
+    color: "5319e7"
+    description: "Waiting for the Opus reviewer, which reports findings only"
+    applies_to: pr
+    state: "7 Review"
+    added_by: "pipeline after a build or fix; onur to ask for another review"
+    starts: "review job"
+
+  - name: "agent:update-branch"
+    color: "bfdadc"
+    description: "Bring this pull request up to date with main and resolve conflicts"
+    applies_to: pr
+    state: "no change; the item keeps its current state"
+    added_by: onur
+    starts: "update-branch job"
+
+  - name: "agent:blocked"
+    color: "b60205"
+    description: "A job refused to start or failed to run. The comment says why"
+    applies_to: both
+    state: "waiting for Onur (a precondition or the runner failed, not the work)"
+    added_by: pipeline
+    starts: nothing
+
+  # Added by the factory design.
+  - name: "agent:stuck"
+    color: "d93f0b"
+    description: "Fix tries or review rounds ran out. The comment says what failed and why"
+    applies_to: both
+    state: "Stuck (decision 9, sub-decision 4)"
+    added_by: pipeline
+    starts: nothing
+
+  - name: "tier:A"
+    color: "c2e0c6"
+    description: "Tier A: a standing rule matched. The merge step merges it when checks pass"
+    applies_to: pr
+    state: "8 Routed by tier"
+    added_by: "tier job"
+    starts: "tier A merge step"
+
+  - name: "tier:B"
+    color: "fef2c0"
+    description: "Tier B: Onur reads the summary comment and presses Merge"
+    applies_to: pr
+    state: "8 Routed by tier"
+    added_by: "tier job"
+    starts: nothing
+
+  - name: "tier:C"
+    color: "f9d0c4"
+    description: "Tier C: Onur reviews the full diff and presses Merge"
+    applies_to: pr
+    state: "8 Routed by tier"
+    added_by: "tier job"
+    starts: nothing
+
+  # Decision S0-4: lets the gate's test-removal check pass. The gate accepts
+  # it only when the event that added it shows Onur's account (gidorah), and
+  # a plain step removes it when new commits arrive (factory-label-reset.yml).
+  - name: "allow-test-removal"
+    color: "e99695"
+    description: "Onur allows the test removals in the commits he saw. Removed when new commits arrive"
+    applies_to: pr
+    state: "6 Checks"
+    added_by: onur
+    starts: "a gate run that accepts the removals"
+
+  # Intake sources. The feeds from the intake decision add these.
+  - name: "sentry"
+    color: "362d59"
+    description: "Filed from a Sentry error"
+    applies_to: issue
+    state: "1 Signal"
+    added_by: "Sentry feed or onur"
+    starts: nothing
+
+  - name: "smoke-test"
+    color: "1d76db"
+    description: "Filed by the production smoke test"
+    applies_to: issue
+    state: "1 Signal"
+    added_by: "smoke-test feed"
+    starts: nothing
+
+  - name: "scraper-canary"
+    color: "006b75"
+    description: "Filed by the scraper canary when a city has no on-duty data for today"
+    applies_to: issue
+    state: "1 Signal"
+    added_by: "scraper canary"
+    starts: nothing
+
+  # Classification labels kept from the current set.
+  - name: "bug"
+    color: "d73a4a"
+    description: "Something isn't working"
+    applies_to: issue
+    state: none
+    added_by: anyone
+    starts: nothing
+
+  - name: "enhancement"
+    color: "a2eeef"
+    description: "New feature or request"
+    applies_to: issue
+    state: none
+    added_by: anyone
+    starts: nothing
+
+  - name: "documentation"
+    color: "0075ca"
+    description: "Improvements or additions to documentation"
+    applies_to: both
+    state: none
+    added_by: anyone
+    starts: nothing
+
+  - name: "duplicate"
+    color: "cfd3d7"
+    description: "This issue or pull request already exists"
+    applies_to: both
+    state: none
+    added_by: "onur or the intake job's apply step"
+    starts: nothing
+
+  - name: "wontfix"
+    color: "ffffff"
+    description: "This will not be worked on"
+    applies_to: both
+    state: none
+    added_by: onur
+    starts: nothing
+
+  - name: "security"
+    color: "ee0701"
+    description: "Security finding"
+    applies_to: both
+    state: none
+    added_by: "onur or a feed"
+    starts: nothing
+
+  - name: "sev-low"
+    color: "fef2c0"
+    description: "Low severity security finding"
+    applies_to: issue
+    state: none
+    added_by: "onur or a feed"
+    starts: nothing
+
+  - name: "sev-med"
+    color: "fbca04"
+    description: "Medium severity security finding"
+    applies_to: issue
+    state: none
+    added_by: "onur or a feed"
+    starts: nothing
+
+  - name: "sev-high"
+    color: "d93f0b"
+    description: "High severity security finding"
+    applies_to: issue
+    state: none
+    added_by: "onur or a feed"
+    starts: nothing
+
+  - name: "sev-critical"
+    color: "b60205"
+    description: "Critical severity security finding"
+    applies_to: issue
+    state: none
+    added_by: "onur or a feed"
+    starts: nothing
+
+  # Dependabot adds these to its own pull requests. Deleting them would only
+  # make Dependabot create them again.
+  - name: "dependencies"
+    color: "0366d6"
+    description: "Pull requests that update a dependency file"
+    applies_to: pr
+    state: none
+    added_by: dependabot
+    starts: nothing
+
+  - name: "python:uv"
+    color: "2b67c6"
+    description: "Pull requests that update python:uv code"
+    applies_to: pr
+    state: none
+    added_by: dependabot
+    starts: nothing
+
+  - name: "javascript"
+    color: "168700"
+    description: "Pull requests that update javascript code"
+    applies_to: pr
+    state: none
+    added_by: dependabot
+    starts: nothing
+
+delete:
+  - name: "needs-human"
+    reason: >-
+      The spring automation used it to keep its fixer away from an issue.
+      Factory jobs start only on a label Onur adds, so the guard is no longer
+      needed. agent:stuck and agent:blocked cover "needs Onur". Two open
+      issues use it (#112, #142); the stage 1 issue cleanup handles them.
+  - name: "investigating"
+    reason: "Skip label for the spring automation. Not used on any issue or pull request."
+  - name: "blocked"
+    reason: "Skip label for the spring automation. Unused, and easy to confuse with agent:blocked."
+  - name: "needs-design"
+    reason: >-
+      Skip label for the spring automation. Unused. A work order that needs a
+      design decision stays in agent:drafted until Onur decides.
+  - name: "maintenance"
+    reason: "Escalation label for the spring automation. Unused."
+  - name: "automation"
+    reason: "Escalation label for the spring automation. Unused."
+  - name: "dependabot"
+    reason: "Unused. Dependabot labels its pull requests with dependencies and an ecosystem label."
+  - name: "production"
+    reason: "Used once by the spring smoke test (one closed issue). smoke-test covers that source."
+  - name: "python"
+    reason: "Dependabot's label from the old pip ecosystem (8 closed pull requests). The uv ecosystem uses python:uv."
+  - name: "good first issue"
+    reason: "GitHub default. Unused."
+  - name: "help wanted"
+    reason: "GitHub default. Unused."
+  - name: "invalid"
+    reason: "GitHub default. Unused. wontfix and duplicate cover closing reasons."
+  - name: "question"
+    reason: "GitHub default. Unused."

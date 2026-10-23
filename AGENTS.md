@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file holds the project instructions for coding agents working in this repository. This file and the `AGENTS.md` files in subfolders are the only agent instructions. The repository has no `CLAUDE.md`.
 
 ## Project
 
@@ -23,10 +23,8 @@ just shell           # Django shell
 just seed            # Run seed_cities management command
 just test            # Runs `manage.py test` inside container
 
-# Single test via pytest (preferred for dev):
-just manage "test pharmacies.tests.test_views.TestNearest::test_happy_path"
-# or inside `just dev-django`:
-uv run pytest pharmacies/tests/test_views.py::TestNearest::test_happy_path -x
+# Single test via pytest (preferred for dev), inside `just dev-django`:
+uv run pytest pharmacies/tests/test_views.py::TestGetPharmacyPointsNoDb::test_get_pharmacy_points_not_post -x
 ```
 
 Lint/format/type-check (run inside container or via `uv run`):
@@ -62,20 +60,19 @@ Pytest is configured via `pyproject.toml` with `DJANGO_SETTINGS_MODULE=PharmacyO
 
 **Observability**: Sentry auto-initializes if `SENTRY_DSN` is set. Flower is exposed at `localhost:5555` in dev. `debugpy` auto-attaches if its port env var is set.
 
-**Deployment**: Coolify/PaaS via `Procfile` + `Aptfile` (GDAL/Proj system deps) + `scripts/on_deploy.sh`.
+**Deployment**: Coolify/PaaS via `Procfile` + `Aptfile` (GDAL/Proj system deps) + `scripts/on_deploy.sh`. The web stack (Django, database, Redis) runs on a Hetzner VPS. The Celery workers run on a Raspberry Pi 4 at home, to get around geoblocking on the chamber sites the scrapers fetch.
 
 ## Conventions & gates
 
 - **`uv` only.** No `pip`, no manual venvs. `uv sync` / `uv run` / `uv add`.
 - **Strict mypy** (`python_version = 3.13`, `strict = true`) — don't weaken it; fix types properly.
 - **Ruff** is the sole linter/formatter (`E4/E7/F/I/UP`, line length 88, double quotes). Never suppress a lint error to make it go away — if you can't resolve it, ask.
-- **Commits**: use the `committing-changes` skill. Direct `git commit` is prohibited by global policy.
+- **Commits**: gitmoji plus a conventional prefix, for example `🐛 fix: <summary>` or `✨ feat(scope): <summary>`.
 - **Bulk DB ops**: `bulk_create(ignore_conflicts=True)` / `bulk_update`. Ingest performance is enforced by tests in `pharmacies/tests/test_scraper_performance.py`.
 - **Time**: `timezone.now()`, never `datetime.now()`.
 - **Scraper tests** mock `requests.get`; don't hit the network.
 
 ## Companion docs
 
-- `AGENTS.md` (root) and `pharmacies/AGENTS.md`, `docker/AGENTS.md` — per-area knowledge bases; read the relevant one before non-trivial edits in that area.
-- `GEMINI.md` — mostly overlaps with this file; kept for the Gemini review workflows in `.github/`.
+- `docker/AGENTS.md`, `pharmacies/AGENTS.md`, `theme/AGENTS.md` — notes for one area each, without repeating this file. Claude Code loads a subfolder's `AGENTS.md` itself when it opens a file in that folder. Other tools may need to read it before editing there.
 - `readme.md` — long-form product/feature doc.
