@@ -13,15 +13,19 @@
 #
 #   gh workflow run factory-gate.yml --ref <branch> -f base=main
 #
-# Removing a test on purpose: the test-removal job has no override. Onur merges
-# the pull request with that job red; nothing else is affected, because there
-# is no branch protection. A proposed override is described in the pull
-# request that added this file.
+# Removing a test on purpose: Onur adds the `allow-test-removal` label after
+# the last commit. Only the run that adding the label starts accepts removals,
+# and only for the head commit in that event. Every other run ignores the
+# label: new commits, other label changes, and `workflow_dispatch` runs. See
+# .github/scripts/override_label.py. factory-label-reset.yml removes the label
+# when new commits arrive.
 
 name: factory-gate
 
 on:
   pull_request:
+    # The default types, plus label changes for the allow-test-removal label.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   push:
     branches: [main]
   workflow_dispatch:
@@ -199,11 +203,23 @@ jobs:
     name: Test-removal check
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    permissions:
+      contents: read
+      # To read the pull request's label events for the approval check.
+      issues: read
+      pull-requests: read
     steps:
+      # On pull_request events, check the head commit from the event payload.
+      # For a `labeled` run that is the commit Onur saw when he added the
+      # label, even if the branch moved since.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Unit tests for the gate scripts
+        run: python3 -I -m unittest discover -s .github/scripts -p "test_*.py" -v
 
       - name: Pick the base commit
         id: base
@@ -228,11 +244,37 @@ jobs:
           }
           echo "ref=$base" >> "$GITHUB_OUTPUT"
 
+      - name: Check for Onur's approval label
+        id: approval
+        if: ${{ steps.base.outputs.ref != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          LABEL: ${{ github.event.label.name }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          events="$RUNNER_TEMP/issue-events.json"
+          echo "[]" > "$events"
+          if [ "$EVENT" = pull_request ] && [ "$ACTION" = labeled ] && [ "$LABEL" = allow-test-removal ]; then
+            gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/issues/$PR/events" > "$events"
+          fi
+          python3 -I .github/scripts/override_label.py \
+            --event-name "$EVENT" --event-path "$GITHUB_EVENT_PATH" \
+            --issue-events "$events" --head "$(git rev-parse HEAD)"
+
       - name: Compare tests with the base
         if: ${{ steps.base.outputs.ref != '' }}
         env:
           BASE: ${{ steps.base.outputs.ref }}
-        run: python3 -I .github/scripts/check_test_removal.py --base "$BASE"
+          APPROVED: ${{ steps.approval.outputs.allowed }}
+          REASON: ${{ steps.approval.outputs.reason }}
+        run: |
+          if [ "$APPROVED" = true ]; then
+            python3 -I .github/scripts/check_test_removal.py --base "$BASE" --approved "$REASON"
+          else
+            python3 -I .github/scripts/check_test_removal.py --base "$BASE"
+          fi
 
   gate:
     name: gate

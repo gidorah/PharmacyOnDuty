@@ -20,6 +20,9 @@ Usage:
 The script compares the head with the merge base of the two refs, so changes
 that landed on the base branch after the head branched off are not counted.
 It exits with 1 when it finds a problem, and with 2 when git fails.
+
+With ``--approved REASON`` it reports the same findings as accepted and exits
+with 0. The gate passes it only when override_label.py found Onur's approval.
 """
 
 from __future__ import annotations
@@ -423,7 +426,9 @@ def compare_scans(path: str, base: FileScan, head: FileScan) -> list[Finding]:
     return findings
 
 
-def write_summary(findings: list[Finding], base: str, head: str) -> None:
+def write_summary(
+    findings: list[Finding], base: str, head: str, approval: str | None
+) -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if not summary_path:
         return
@@ -433,8 +438,12 @@ def write_summary(findings: list[Finding], base: str, head: str) -> None:
         f"Compared `{head[:12]}` with merge base `{base[:12]}`.",
         "",
     ]
+    if findings and approval:
+        lines += [f"**Accepted removals.** {approval}", ""]
+    elif findings:
+        lines += [f"**Failed.** {approval_hint()}", ""]
     if findings:
-        lines.append("| File | Line | Problem |")
+        lines.append("| File | Line | Change |")
         lines.append("|---|---|---|")
         for finding in findings:
             message = finding.message.replace("|", "\\|")
@@ -445,27 +454,43 @@ def write_summary(findings: list[Finding], base: str, head: str) -> None:
         summary.write("\n".join(lines) + "\n")
 
 
+def approval_hint() -> str:
+    return (
+        "To accept these changes, Onur (gidorah) adds the allow-test-removal "
+        "label to the pull request after the last commit. New commits need the "
+        "label added again."
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Fail a change that removes or skips tests."
     )
     parser.add_argument("--base", required=True, help="Base branch or commit.")
     parser.add_argument("--head", default="HEAD", help="Head commit.")
+    parser.add_argument(
+        "--approved",
+        metavar="REASON",
+        help="Accept the findings, citing this approval from override_label.py.",
+    )
     args = parser.parse_args()
 
     head = git("rev-parse", args.head).strip()
     base = git("merge-base", args.base, head).strip()
     findings = compare(base, head)
+    level = "notice" if args.approved else "error"
 
     for finding in findings:
-        print(f"::error file={finding.path},line={finding.line}::{finding.message}")
-    write_summary(findings, base, head)
+        print(f"::{level} file={finding.path},line={finding.line}::{finding.message}")
+    write_summary(findings, base, head, args.approved)
 
+    if findings and args.approved:
+        print(f"\n{len(findings)} change(s) accepted: {args.approved}")
+        return 0
     if findings:
         print(
             f"\n{len(findings)} problem(s) found. This check fails any change "
-            "that removes or skips tests. See .github/workflows/factory-gate.yml "
-            "for how a deliberate removal gets approved."
+            f"that removes or skips tests. {approval_hint()}"
         )
         return 1
     print(f"No tests removed or skipped between {base[:12]} and {head[:12]}.")
