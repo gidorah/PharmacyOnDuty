@@ -32,6 +32,13 @@ Each workflow splits into jobs, and a job boundary is a fresh runner:
    with `gh workflow run`, waits for its `gate` job, and starts the next
    station the same way (decision S0-7).
 
+## Tier and merge
+
+`factory-tier.yml` (plain code) applies the five-check tier rule from
+`factory-design.md` with `steps/tier.ts`, reading `factory/risk-map.yml` and
+`factory/standing-rules.yml` from main. `factory-merge.yml` (plain code)
+merges tier A only; Onur merges tier B and C himself.
+
 ## Loop limits
 
 Decision 9, sub-decision 4. The counts come from hidden markers at the start

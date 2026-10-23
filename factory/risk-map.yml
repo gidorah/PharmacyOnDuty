@@ -142,6 +142,17 @@ areas:
       # the S0-5a fallback, it is tier C from the start.
       - CLAUDE.md
 
+# Check 3 of the tier rule. A change above either limit is at least tier B,
+# so it can never be tier A. Counted over the whole diff against main: lines
+# added plus lines deleted (git diff --numstat), and files changed.
+#
+# PROPOSED values, for Onur to confirm. Single Dependabot uv updates in this
+# repository changed 2 files and 10 to 56 lines (checked 2026-10-23); grouped
+# updates of a few packages stay well under 200 lines.
+size_limit:
+  max_changed_lines: 200
+  max_files: 5
+
 # Check 4 of the tier rule. A reviewer finding in any of these categories
 # raises the change to tier C, and the worker cannot dismiss it.
 reviewer_findings:

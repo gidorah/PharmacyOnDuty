@@ -1,0 +1,103 @@
+# Factory tier job: plain code, no Claude.
+#
+# Applies the five-check tier rule from factory-design.md to a pull request,
+# reading factory/risk-map.yml and factory/standing-rules.yml from main. Each
+# check can only raise the tier. It labels the pull request `tier:A`, `tier:B`
+# or `tier:C`, marks it ready for review, and posts a comment. For B and C the
+# comment is the summary Onur reads: what changed, the evidence from the
+# checks, and why the change got its tier. For A it starts the merge step
+# (factory-merge.yml) with the commit it checked.
+#
+# Started by:
+# - the review job, with `gh workflow run factory-tier.yml -f pr=<n>`;
+# - Dependabot opening or updating a pull request. Those skip the build and
+#   review stations (factory-design.md, step 1) and come here directly, so the
+#   tier A standing rule can apply without Onur doing anything. Only Dependabot
+#   itself can be the actor and author of that event, and this job runs no
+#   Claude and executes nothing from the pull request: it reads the diff as
+#   data, and the rule files and scripts come from main.
+#
+# Dependabot's metadata comes from dependabot/fetch-metadata, which needs the
+# pull request event. A dispatched run on a Dependabot pull request has no
+# metadata, so the standing rule cannot match and the tier is at least B.
+
+name: factory-tier
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: >-
+    ${{ (github.event_name == 'workflow_dispatch' || github.actor == 'dependabot[bot]')
+    && format('factory-pr-{0}', github.event.pull_request.number || inputs.pr)
+    || format('factory-skip-{0}', github.run_id) }}
+  cancel-in-progress: false
+
+jobs:
+  tier:
+    name: Decide the tier
+    if: >-
+      (github.event_name == 'workflow_dispatch'
+        && (github.actor == 'gidorah' || github.actor == 'github-actions[bot]'))
+      || (github.event_name == 'pull_request_target'
+        && github.actor == 'dependabot[bot]'
+        && github.event.pull_request.user.login == 'dependabot[bot]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      # Read gate runs, and gh workflow run for the merge step.
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read Dependabot's metadata
+        id: metadata
+        if: github.event_name == 'pull_request_target'
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
+
+      - name: Save the metadata
+        env:
+          UPDATES: ${{ steps.metadata.outputs.updated-dependencies-json }}
+        run: printf '%s' "$UPDATES" > "$RUNNER_TEMP/dependabot-updates.json"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Install the pipeline scripts
+        working-directory: .sandcastle
+        run: npm ci --ignore-scripts
+
+      - name: Decide the tier
+        working-directory: .sandcastle
+        env:
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+        run: >-
+          node_modules/.bin/tsx steps/tier-job.ts --pr "$PR_NUMBER" --repo-root ..
+          --dependabot-updates "$RUNNER_TEMP/dependabot-updates.json"
+          --dependabot-ecosystem "$ECOSYSTEM"
+
+      - name: Remove agent:in-progress
+        if: failure()
+        run: gh api -X DELETE "repos/$GH_REPO/issues/$PR_NUMBER/labels/agent:in-progress" > /dev/null 2>&1 || true
