@@ -1,0 +1,135 @@
+# Risk map for PharmacyOnDuty: check 1 of the tier rule.
+#
+# Source: decision 12 of the software-factory design (the high-risk list).
+# The tier job reads this file. A change that touches any path below is
+# tier C. Everything else starts at `default_tier`. Each check of the tier
+# rule can only raise the tier, never lower it.
+#
+# Path patterns use gitignore syntax, matched with the `pathspec` library
+# (style "gitignore") against paths relative to the repository root. A pattern
+# ending in "/" covers the directory and everything under it.
+#
+# tests/test_factory_files.py checks that every pattern in `paths` matches at
+# least one file, so a renamed or deleted file can't drop out of the map
+# without failing CI. `planned_paths` are tier C as well, but do not exist
+# yet; the test fails once one of them exists, as a reminder to move it to
+# `paths`.
+
+version: 1
+default_tier: B
+
+areas:
+  - name: Database
+    tier: C
+    why: >-
+      Migrations can lose data. models.py also creates the Celery schedules
+      in code (PeriodicTask).
+    paths:
+      - pharmacies/migrations/
+      - pharmacies/models.py
+
+  - name: Settings and secrets
+    tier: C
+    why: Security headers, allowed hosts, the Sentry setup and the broker connection.
+    paths:
+      - PharmacyOnDuty/settings.py
+      - PharmacyOnDuty/database_config.py
+      - PharmacyOnDuty/celery.py
+      - .env.example
+
+  - name: Background jobs
+    tier: C
+    why: Retries and concurrency.
+    paths:
+      - pharmacies/tasks.py
+
+  - name: Deploy and infrastructure
+    tier: C
+    why: They change what runs in production.
+    paths:
+      - docker/
+      - scripts/entrypoint.sh
+      - scripts/on_deploy.sh
+      - scripts/wait_for_services.py
+      - Procfile
+      - nginx.conf
+      - remotedev_nginx.conf.template
+      - Aptfile
+
+  - name: Admin and routes
+    tier: C
+    why: >-
+      The admin is the only login, and the URL list decides what is public.
+      pharmacies/urls.py is not in decision 12's table; it is added here
+      because the project's URL list includes it, so it decides what is
+      public too.
+    paths:
+      - pharmacies/admin.py
+      - PharmacyOnDuty/urls.py
+      - pharmacies/urls.py
+
+  - name: Public endpoints and billing
+    tier: C
+    why: >-
+      All three views take untrusted input. google_maps_proxy spends Google
+      Maps money, and get_pharmacy_points handles user locations.
+    paths:
+      - pharmacies/views.py
+
+  - name: Test truth
+    tier: C
+    why: >-
+      Changing what counts as correct would let an agent pass by redefining
+      the answer.
+    paths:
+      - tests/fixtures/
+
+  - name: Scraper expected results
+    tier: C
+    # The scraper tests keep their saved HTML and expected results inline.
+    # Adding a new test to these files stays at the default tier, as decision
+    # 12 makes new tests tier B. Changing or deleting any existing line is
+    # tier C. The tier job counts deleted lines per file (git diff --numstat);
+    # a changed line shows up as one deleted and one added line.
+    when: existing_lines_changed
+    why: >-
+      Scraper code is tier B, but the saved pages and expected results decide
+      what a correct scrape is.
+    paths:
+      - pharmacies/tests/test_*_scraper.py
+
+  - name: Dependencies and tool settings
+    tier: C
+    why: >-
+      Tool settings for ruff, mypy and pytest share pyproject.toml with the
+      dependencies.
+    waived_by_standing_rule: dependabot-version-only
+    paths:
+      - pyproject.toml
+      - uv.lock
+
+  - name: The factory itself
+    tier: C
+    why: Changing these could weaken the checks that judge agent work.
+    paths:
+      - .github/
+      - .pre-commit-config.yaml
+      - tests/conftest.py
+      - tests/test_factory_files.py
+      - factory/
+    planned_paths:
+      - .sandcastle/
+
+# Check 4 of the tier rule. A reviewer finding in any of these categories
+# raises the change to tier C, and the worker cannot dismiss it.
+reviewer_findings:
+  raise_to: C
+  categories:
+    - security
+    - privacy
+    - auth
+    - billing
+    - data-retention
+    - migrations
+    - idempotency
+    - concurrency

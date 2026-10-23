@@ -1,0 +1,3 @@
+# Blank issues stay allowed: Onur's rough issues are an intake source, and
+# the daily intake run turns them into work orders.
+blank_issues_enabled: true
