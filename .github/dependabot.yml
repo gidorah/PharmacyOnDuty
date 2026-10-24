@@ -14,15 +14,3 @@ updates:
     allow:
       - dependency-type: "all"
     versioning-strategy: "auto"
-
-  # Keep the SHA-pinned actions in .github/workflows/ current
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: "chore"
-      include: "scope"
