@@ -16,7 +16,7 @@ Django-Tailwind frontend. Manages Tailwind CSS compilation, static assets, and c
 
 ## CONVENTIONS
 - **Utility-First**: Use Tailwind classes directly in HTML.
-- **Build Flow**: `uv run python manage.py tailwind build` from the root, inside the dev container, runs `npm run build` in `static_src`. The pre-commit hook runs the same command.
+- **Build Flow**: `just tailwind` from root triggers `npm run build` in `static_src`.
 - **Customization**: Extend `theme` in `tailwind.config.js` for project-specific design tokens.
 - **Organization**: Group icons and logos in `static/icons/`.
 
