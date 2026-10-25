@@ -284,6 +284,27 @@ CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/
 CELERY_RESULT_BACKEND = "django_celery_results.backends.database:DatabaseBackend"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+# Cache settings: "default" stays Django's in-process LocMemCache; "ratelimit"
+# lives in Redis so request counters are shared across workers and processes.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    },
+    "ratelimit": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("RATELIMIT_CACHE_URL", CELERY_BROKER_URL),
+        "KEY_PREFIX": "ratelimit",
+    },
+}
+
+# Rate limit settings
+PHARMACY_POINTS_RATE_LIMIT = os.environ.get("PHARMACY_POINTS_RATE_LIMIT", "30/m")
+# 0 = key on REMOTE_ADDR (headers can't be spoofed); N>0 = trust the
+# Nth-from-right X-Forwarded-For entry, for N reverse proxies in front of Django.
+RATELIMIT_TRUSTED_PROXY_COUNT = int(
+    os.environ.get("RATELIMIT_TRUSTED_PROXY_COUNT", "0")
+)
+
 # Celery beat settings
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_TIMEZONE = "Europe/Istanbul"

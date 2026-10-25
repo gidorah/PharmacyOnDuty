@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.views.decorators.cache import cache_page
 
 from pharmacies.models import City, PharmacyStatus
+from pharmacies.ratelimit import is_rate_limited
 from pharmacies.utils import (
     get_city_name_from_location,
     get_nearest_pharmacies_on_duty,
@@ -49,6 +50,11 @@ def get_pharmacy_points(
     """
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
+
+    if is_rate_limited(request, "pharmacy_points", settings.PHARMACY_POINTS_RATE_LIMIT):
+        return JsonResponse(
+            {"error": "Too many requests. Please try again later."}, status=429
+        )
 
     try:
         data = loads(request.body)
