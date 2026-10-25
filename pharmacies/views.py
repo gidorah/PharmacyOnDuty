@@ -157,13 +157,13 @@ def is_allowed_referer(request: HttpRequest) -> bool:
     return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
 
 
-@cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     """
     Proxy request to Google Maps API to hide the API key.
 
     This view validates the referrer before forwarding the request to Google Maps,
-    allowing the frontend to load maps without exposing credentials.
+    allowing the frontend to load maps without exposing credentials. The check
+    runs before the cache, so only allowed requests are served from or fill it.
     """
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
@@ -171,6 +171,12 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     if not is_allowed_referer(request):
         return HttpResponse("Forbidden", status=403)
 
+    return _cached_google_maps_proxy(request)
+
+
+@cache_page(60 * 60)  # cache for 1 hour
+def _cached_google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
+    """Fetch the Google Maps JS API with the server-side key (cached per URL)."""
     endpoint = "https://maps.googleapis.com/maps/api/js"
     # "marker" → AdvancedMarkerElement; "routes" → Route.computeRoutes.
     params = {
