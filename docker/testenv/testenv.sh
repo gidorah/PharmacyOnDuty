@@ -33,6 +33,12 @@ else
   die "neither 'docker compose' nor 'docker-compose' found"
 fi
 
+# Coolify's root build helper leaves root-owned files in ~/.docker/buildx, and
+# compose build then fails with "permission denied". The testenv keeps its own
+# buildx state instead and never touches ~/.docker/buildx.
+export BUILDX_CONFIG="$STATE_HOME/buildx"
+mkdir -p "$BUILDX_CONFIG"
+
 run_name() {
   [[ -f "$NAME_FILE" ]] || die "no run in $ROOT; run 'prepare <run-name>' first"
   cat "$NAME_FILE"
