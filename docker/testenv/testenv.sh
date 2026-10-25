@@ -66,6 +66,8 @@ PY
   fi
 }
 
+unset_env() { sed -i "/^$1=/d" "$ROOT/.env"; }
+
 main_checkout() { git worktree list --porcelain | awk 'NR==1 {print $2}'; }
 
 # The worktree gets its own .env. Source: $TESTENV_ENV_FILE, else the main
@@ -89,6 +91,9 @@ write_env() {
   [[ -n "$secret_key" && "$secret_key" != change-me* ]] || secret_key=$(openssl rand -hex 32)
 
   set_env SENTRY_DSN ""
+  # Tests reload settings with this unset; a value in .env would come back.
+  unset_env DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER
+  [[ -n "$(env_value GOOGLE_MAPS_API_KEY)" ]] || set_env GOOGLE_MAPS_API_KEY testenv-dummy-key
   set_env DJANGO_SECRET_KEY "$secret_key"
   set_env DJANGO_ALLOWED_HOSTS "localhost 127.0.0.1 django"
   set_env DJANGO_SECURE_SSL_REDIRECT False
@@ -135,19 +140,26 @@ cmd_start() {
   compose up -d "${SERVICES[@]}" >&2
   log "waiting for validate (up to ${START_TIMEOUT}s)"
   until cmd_validate >/dev/null 2>&1; do
+    if [[ -n "$(compose ps -a --status exited --services django worker flower 2>/dev/null)" ]]; then
+      cmd_validate || true
+      die "an app container exited; logs: testenv.sh logs"
+    fi
     if (( $(date +%s) - t0 > START_TIMEOUT )); then
       cmd_validate || true
       die "stack did not validate within ${START_TIMEOUT}s; logs: testenv.sh logs"
     fi
     sleep 5
   done
+  # Tests render templates with the manifest storage, so static must be collected.
+  compose exec -T django uv run python manage.py collectstatic --noinput >/dev/null
   log "started $name in $(( $(date +%s) - t0 ))s"
   echo "django http://$(compose port django 8000)"
   echo "flower http://$(compose port flower 5555)"
 }
 
-redis_ping() { compose exec -T redis redis-cli --no-auth-warning -a "$1" ping | grep -q PONG; }
-beat_started() { compose logs beat | grep -q 'beat: Starting'; }
+# grep without -q: with pipefail, an early exit would fail the pipe on SIGPIPE.
+redis_ping() { compose exec -T redis redis-cli --no-auth-warning -a "$1" ping | grep PONG >/dev/null; }
+beat_started() { compose logs beat | grep 'beat: Starting' >/dev/null; }
 
 # One line per check; exits non-zero if any check fails.
 cmd_validate() {
@@ -295,7 +307,10 @@ cmd_measure() {
   echo "- peak memory during check: ${peak:-?} MiB" >>"$out"
   { echo; echo '```'; cmd_stats; echo '```'; } >>"$out"
   grep -E '^(PASS|FAIL)' "$(state_dir "$name")/measure-check.txt" | sed 's/^/    /' >>"$out" || true
-  grep -E 'passed|failed|error' "$(state_dir "$name")/measure-check.txt" | tail -n1 | sed 's/^/- pytest: /' >>"$out" || true
+  local pytest_log
+  pytest_log="$(sed -n 's/^logs: //p' "$(state_dir "$name")/measure-check.txt")/pytest.log"
+  grep -E '^FAILED|^ERROR' "$pytest_log" | sed 's/^/    /' >>"$out" || true
+  tail -n1 "$pytest_log" | sed 's/^/- pytest: /' >>"$out" || true
   { echo; echo "Disk:"; echo '```'
     docker images --filter "label=com.docker.compose.project=$name" --format '{{.Repository}} {{.Size}}'
     docker system df -v --format '{{range .Volumes}}{{.Name}} {{.Size}}{{"\n"}}{{end}}' 2>/dev/null |

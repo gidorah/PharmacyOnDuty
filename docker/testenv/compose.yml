@@ -1,6 +1,9 @@
 # Overlay on docker/dev/docker-compose.yml for testenv.sh runs.
 # Shares one uv cache across runs so each container's `uv sync` is quick.
 x-uv-cache: &uv-cache
+  # SELinux hosts (Fedora): let the container read the bind-mounted worktree.
+  security_opt:
+    - label=disable
   volumes:
     - uv-cache:/home/python/.cache/uv
   environment:
@@ -9,7 +12,10 @@ x-uv-cache: &uv-cache
 services:
   django: *uv-cache
   worker: *uv-cache
-  beat: *uv-cache
+  beat:
+    <<: *uv-cache
+    # beat can start before django has migrated django_celery_beat; retry.
+    restart: on-failure
   flower: *uv-cache
 
 volumes:

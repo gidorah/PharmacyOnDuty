@@ -21,7 +21,8 @@ and `measure` (cold and warm start, peak memory, disk, check time).
 
 - **`.env`.** `prepare` copies `$TESTENV_ENV_FILE`, else the main checkout's
   `.env`, else `.env.example`, then forces test values: no `SENTRY_DSN`, no
-  HTTPS redirect, the stack's own DB and Redis settings.
+  HTTPS redirect, no proxy SSL header, a dummy Maps key when there is none
+  (tests mock Google), and the stack's own DB and Redis settings.
 - **validate** checks every service is running, Postgres and Redis answer,
   `manage.py check` and `migrate --check` pass, Django serves `/robots.txt`,
   the worker answers a Celery ping, beat has started and Flower is healthy.
@@ -33,3 +34,8 @@ and `measure` (cold and warm start, peak memory, disk, check time).
   Compose project. `reset --all` removes every `pod-*` stack; the shared dev
   stack is never touched.
 - A shared `pod-testenv-uv-cache` volume keeps each container's `uv sync` fast.
+- On SELinux hosts (monolith runs Fedora) the overlay turns off labelling for
+  the app containers so they can read the bind-mounted worktree; beat restarts
+  on failure because it can start before django has migrated.
+- `start` runs `collectstatic`, since the tests render templates through the
+  manifest storage.
