@@ -56,3 +56,4 @@ osrm/
 
 # GitHub App credentials
 gha-creds-*.json
+.testenv

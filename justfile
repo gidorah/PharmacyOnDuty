@@ -123,3 +123,7 @@ logs service:
 # Full development setup
 dev-setup: dev-up migrate
     @echo "Development environment setup complete"
+
+# Per-worktree test stack for agent runs (see docker/testenv/README.md)
+testenv *args:
+    docker/testenv/testenv.sh {{args}}
