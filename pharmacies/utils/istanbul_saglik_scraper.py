@@ -5,6 +5,7 @@ Fetches duty pharmacy data for all districts in Istanbul.
 """
 
 import csv
+import logging
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -16,6 +17,8 @@ from django.utils import timezone
 
 BASE_URL = "https://nobetcieczane.istanbulsaglik.gov.tr:88/"
 API_ENDPOINT = f"{BASE_URL}Home/GetEczaneler"
+
+logger = logging.getLogger(__name__)
 
 
 DISTRICTS: list[str] = [
@@ -124,8 +127,16 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
     for district_name in DISTRICTS:
         payload = {"ilce": district_name}
-        response = requests.post(API_ENDPOINT, params=payload, timeout=10)
-        response.raise_for_status()
+        try:
+            response = requests.post(API_ENDPOINT, params=payload, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.warning(
+                "Failed to fetch Istanbul pharmacies for district %s: %s",
+                district_name,
+                e,
+            )
+            continue
 
         html_content = response.text
         soup = BeautifulSoup(html_content, "html.parser")
@@ -179,7 +190,7 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
             coordinates = _get_coordinates_from_sehirharitasi_url(directions_url)
             if coordinates is None:
-                print(f"Warning: Unable to get coordinates for {pharmacy['name']}")
+                logger.warning("Unable to get coordinates for %s", pharmacy["name"])
                 continue
 
             pharmacy["coordinates"] = coordinates
