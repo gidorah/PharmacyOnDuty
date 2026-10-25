@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)
 TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
 
+# Client query params forwarded to the Google Maps JS API. "key" and "libraries"
+# are always set server-side and must never come from the client.
+ALLOWED_PROXY_PARAMS = frozenset({"loading", "callback", "v", "language", "region"})
+
 
 def get_pharmacy_points(
     request: HttpRequest,
@@ -164,9 +168,9 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     endpoint = "https://maps.googleapis.com/maps/api/js"
     # "marker" → AdvancedMarkerElement; "routes" → Route.computeRoutes.
     params = {
+        **{k: request.GET[k] for k in ALLOWED_PROXY_PARAMS if k in request.GET},
         "key": settings.GOOGLE_MAPS_API_KEY,
         "libraries": "marker,routes,geometry",
-        **dict(request.GET),
     }
 
     try:
