@@ -21,8 +21,7 @@ and `measure` (cold and warm start, peak memory, disk, check time).
 
 - **`.env`.** `prepare` copies `$TESTENV_ENV_FILE`, else the main checkout's
   `.env`, else `.env.example`, then forces test values: no `SENTRY_DSN`, no
-  HTTPS redirect, no proxy SSL header, a dummy Maps key when there is none
-  (tests mock Google), and the stack's own DB and Redis settings.
+  HTTPS redirect, no proxy SSL header, a dummy Maps key when there is none, and the stack's own DB and Redis settings.
 - **validate** checks every service is running, Postgres and Redis answer,
   `manage.py check` and `migrate --check` pass, Django serves `/robots.txt`,
   the worker answers a Celery ping, beat has started and Flower is healthy.

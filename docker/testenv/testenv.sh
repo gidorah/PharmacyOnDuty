@@ -309,7 +309,7 @@ cmd_measure() {
   grep -E '^(PASS|FAIL)' "$(state_dir "$name")/measure-check.txt" | sed 's/^/    /' >>"$out" || true
   local pytest_log
   pytest_log="$(sed -n 's/^logs: //p' "$(state_dir "$name")/measure-check.txt")/pytest.log"
-  grep -E '^FAILED|^ERROR' "$pytest_log" | sed 's/^/    /' >>"$out" || true
+  grep -E '^(FAILED|ERROR) [^ ]+::' "$pytest_log" | sort -u | sed 's/^/    /' >>"$out" || true
   tail -n1 "$pytest_log" | sed 's/^/- pytest: /' >>"$out" || true
   { echo; echo "Disk:"; echo '```'
     docker images --filter "label=com.docker.compose.project=$name" --format '{{.Repository}} {{.Size}}'
