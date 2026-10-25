@@ -17,6 +17,10 @@ services:
     # beat can start before django has migrated django_celery_beat; retry.
     restart: on-failure
   flower: *uv-cache
+  redis:
+    environment:
+      # redis-cli reads this, so `testenv.sh exec redis redis-cli ping` works.
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
 
 volumes:
   uv-cache:
