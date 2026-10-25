@@ -3,12 +3,13 @@
 # Compose project per worktree. Run from inside the worktree.
 #
 #   testenv.sh prepare <run-name>   copy .env in, build images
-#   testenv.sh start                bring the stack up and wait for validate
+#   testenv.sh start                bring the stack up, wait for validate, seed cities
 #   testenv.sh validate             check the stack itself; must pass first
 #   testenv.sh check                validate, then ruff, format, mypy, pytest
 #   testenv.sh reset [name|--all]   save logs, down -v, remove leftovers
 #
 # Also: exec <service> <cmd...>, logs, ps, stats, measure.
+# Redis CLI: testenv.sh exec redis redis-cli <cmd> (REDISCLI_AUTH is set).
 set -euo pipefail
 
 PREFIX=pod-
@@ -96,6 +97,14 @@ write_env() {
   [[ -n "$(env_value GOOGLE_MAPS_API_KEY)" ]] || set_env GOOGLE_MAPS_API_KEY testenv-dummy-key
   set_env DJANGO_SECRET_KEY "$secret_key"
   set_env DJANGO_ALLOWED_HOSTS "localhost 127.0.0.1 django"
+  # The Maps proxy matches the Referer by prefix, so "http://127.0.0.1:" covers
+  # the stack URL whatever port Docker picks. Production domains stay.
+  local referers ref
+  referers=$(env_value ALLOWED_REFERERS)
+  for ref in http://localhost:8000 http://127.0.0.1:; do
+    [[ " $referers " == *" $ref "* ]] || referers="${referers:+$referers }$ref"
+  done
+  set_env ALLOWED_REFERERS "$referers"
   set_env DJANGO_SECURE_SSL_REDIRECT False
   set_env DJANGO_SESSION_COOKIE_SECURE False
   set_env DJANGO_CSRF_COOKIE_SECURE False
@@ -152,19 +161,20 @@ cmd_start() {
   done
   # Tests render templates with the manifest storage, so static must be collected.
   compose exec -T django uv run python manage.py collectstatic --noinput >/dev/null
+  # A fresh database has no City rows, which the app needs. Safe to rerun.
+  compose exec -T django uv run python manage.py seed_cities >/dev/null
   log "started $name in $(( $(date +%s) - t0 ))s"
   echo "django http://$(compose port django 8000)"
   echo "flower http://$(compose port flower 5555)"
 }
 
 # grep without -q: with pipefail, an early exit would fail the pipe on SIGPIPE.
-redis_ping() { compose exec -T redis redis-cli --no-auth-warning -a "$1" ping | grep PONG >/dev/null; }
+redis_ping() { compose exec -T redis redis-cli ping | grep PONG >/dev/null; }
 beat_started() { compose logs beat | grep 'beat: Starting' >/dev/null; }
 
 # One line per check; exits non-zero if any check fails.
 cmd_validate() {
-  local failed=0 running redis_password
-  redis_password=$(env_value REDIS_PASSWORD)
+  local failed=0 running
   check() {
     local label=$1; shift
     if "$@" >/dev/null 2>&1; then echo "PASS $label"; else echo "FAIL $label"; failed=1; fi
@@ -174,7 +184,7 @@ cmd_validate() {
     check "$s running" grep -qx "$s" <<<"$running"
   done
   check "db accepts connections" compose exec -T db pg_isready -U postgres
-  check "redis answers ping" redis_ping "$redis_password"
+  check "redis answers ping" redis_ping
   check "django system check" compose exec -T django uv run python manage.py check
   check "migrations applied" compose exec -T django uv run python manage.py migrate --check
   check "django serves /robots.txt" compose exec -T django curl -fsS http://localhost:8000/robots.txt
@@ -183,6 +193,10 @@ cmd_validate() {
   check "flower healthcheck" compose exec -T flower curl -fsS http://localhost:5555/healthcheck
   return $failed
 }
+
+# Every failed or errored test in a pytest log, one per line. One space after
+# the word: captured log lines ("ERROR    django...") pad with more.
+pytest_failures() { grep -E '^(FAILED|ERROR) [^ ]' "$1" | sort -u || true; }
 
 # Runs every step to the end; output goes to the run's log folder.
 cmd_check() {
@@ -205,7 +219,8 @@ cmd_check() {
   step format uv run ruff format --check .
   step mypy uv run mypy .
   step pytest uv run pytest -p no:cacheprovider
-  tail -n 3 "$dir/pytest.log"
+  pytest_failures "$dir/pytest.log"
+  tail -n 1 "$dir/pytest.log"
   echo "logs: $dir"
   return $failed
 }
@@ -309,7 +324,7 @@ cmd_measure() {
   grep -E '^(PASS|FAIL)' "$(state_dir "$name")/measure-check.txt" | sed 's/^/    /' >>"$out" || true
   local pytest_log
   pytest_log="$(sed -n 's/^logs: //p' "$(state_dir "$name")/measure-check.txt")/pytest.log"
-  grep -E '^(FAILED|ERROR) [^ ]+::' "$pytest_log" | sort -u | sed 's/^/    /' >>"$out" || true
+  pytest_failures "$pytest_log" | sed 's/^/    /' >>"$out"
   tail -n1 "$pytest_log" | sed 's/^/- pytest: /' >>"$out" || true
   { echo; echo "Disk:"; echo '```'
     docker images --filter "label=com.docker.compose.project=$name" --format '{{.Repository}} {{.Size}}'
@@ -327,7 +342,7 @@ cmd_measure() {
 }
 
 verb=${1:-}
-[[ -n "$verb" ]] || { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+[[ -n "$verb" ]] || { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 shift
 case "$verb" in
   prepare|start|validate|check|exec|logs|reset|ps|stats|measure) "cmd_$verb" "$@" ;;
