@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
+This file provides guidance to coding agents (Codex, Claude Code, etc.) when working with code in this repository.
 
 ## Project
 
@@ -69,7 +69,6 @@ Pytest is configured via `pyproject.toml` with `DJANGO_SETTINGS_MODULE=PharmacyO
 - **`uv` only.** No `pip`, no manual venvs. `uv sync` / `uv run` / `uv add`.
 - **Strict mypy** (`python_version = 3.13`, `strict = true`) — don't weaken it; fix types properly.
 - **Ruff** is the sole linter/formatter (`E4/E7/F/I/UP`, line length 88, double quotes). Never suppress a lint error to make it go away — if you can't resolve it, ask.
-- **Commits**: use the `committing-changes` skill. Direct `git commit` is prohibited by global policy.
 - **Bulk DB ops**: `bulk_create(ignore_conflicts=True)` / `bulk_update`. Ingest performance is enforced by tests in `pharmacies/tests/test_scraper_performance.py`.
 - **Time**: `timezone.now()`, never `datetime.now()`.
 - **Scraper tests** mock `requests.get`; don't hit the network.
