@@ -31,6 +31,9 @@ and `measure` (cold and warm start, peak memory, disk, check time).
   to the run's log folder. Its summary names every failed test.
 - **Logs and state** live outside the worktree, in
   `~/.local/state/pod-testenv/<name>/`, so they survive the worktree's removal.
+- **Buildx state** lives in `~/.local/state/pod-testenv/buildx/` (the script
+  sets `BUILDX_CONFIG`), not `~/.docker/buildx`. On monolith, Coolify deploys
+  leave root-owned files in `~/.docker/buildx` that break `compose build`.
 - **reset** never refuses. It removes everything labelled with the run's
   Compose project. `reset --all` removes every `pod-*` stack; the shared dev
   stack is never touched.
