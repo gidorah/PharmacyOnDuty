@@ -476,6 +476,53 @@ class TestOtherViews:
         libraries = set(params["libraries"].split(","))
         assert {"marker", "routes", "geometry"} <= libraries
 
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_ignores_client_key_and_unknown_params(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        with patch("pharmacies.views.is_allowed_referer", return_value=True):
+            response = client.get(
+                url,
+                {"key": "X", "libraries": "places", "foo": "bar", "callback": "cb"},
+            )
+
+        assert response.status_code == 200
+        params = mock_get.call_args.kwargs["params"]
+        assert params["key"] == settings.GOOGLE_MAPS_API_KEY
+        assert params["libraries"] == "marker,routes,geometry"
+        assert params["callback"] == "cb"
+        assert "foo" not in params
+
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_forwards_template_params(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        with patch("pharmacies.views.is_allowed_referer", return_value=True):
+            response = client.get(url, {"loading": "async", "callback": "mapsCallback"})
+
+        assert response.status_code == 200
+        params = mock_get.call_args.kwargs["params"]
+        assert params["loading"] == "async"
+        assert params["callback"] == "mapsCallback"
+
 
 class TestProxyAwareCsrf:
     @override_settings(
