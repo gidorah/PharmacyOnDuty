@@ -523,6 +523,76 @@ class TestOtherViews:
         assert params["loading"] == "async"
         assert params["callback"] == "mapsCallback"
 
+    @override_settings(ALLOWED_REFERERS=["http://allowed.example/"])
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_cached_response_not_served_to_bad_referer(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        allowed = client.get(url, HTTP_REFERER="http://allowed.example/map")
+        no_referer = client.get(url)
+        bad_referer = client.get(url, HTTP_REFERER="http://evil.example/")
+
+        assert allowed.status_code == 200
+        assert no_referer.status_code == 403
+        assert bad_referer.status_code == 403
+
+    @override_settings(ALLOWED_REFERERS=["http://allowed.example/"])
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_caches_allowed_requests(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        first = client.get(url, HTTP_REFERER="http://allowed.example/map")
+        second = client.get(url, HTTP_REFERER="http://allowed.example/map")
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert second.content == b"console.log('google maps');"
+        assert mock_get.call_count == 1
+
+    @override_settings(ALLOWED_REFERERS=["http://allowed.example/"])
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_disallowed_request_does_not_fill_cache(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        denied = client.get(url, HTTP_REFERER="http://evil.example/")
+        assert denied.status_code == 403
+        assert mock_get.call_count == 0
+
+        allowed = client.get(url, HTTP_REFERER="http://allowed.example/map")
+        assert allowed.status_code == 200
+        assert allowed.content == b"console.log('google maps');"
+        assert mock_get.call_count == 1
+
+        denied_again = client.get(url)
+        assert denied_again.status_code == 403
+
 
 class TestProxyAwareCsrf:
     @override_settings(
