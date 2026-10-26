@@ -47,12 +47,14 @@ def test_run_scraper_skips_persistence_on_upstream_request_error(
 
 
 @patch("pharmacies.tasks.logger")
+@patch("pharmacies.tasks.close_old_connections")
 @patch("pharmacies.tasks._persist_scraped_data")
 @patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
 @patch("pharmacies.utils.istanbul_saglik_scraper.DISTRICTS", ["Adalar"])
 def test_run_scraper_handles_istanbul_request_failures_through_dispatcher(
     mock_post: MagicMock,
     mock_persist: MagicMock,
+    mock_close_old_connections: MagicMock,
     mock_logger: MagicMock,
 ) -> None:
     mock_post.side_effect = RequestException("down")
@@ -105,9 +107,11 @@ def test_run_scraper_retries_after_stale_db_connection(
 @patch("pharmacies.tasks.transaction.atomic")
 @patch("pharmacies.tasks.ScraperConfig.objects.filter")
 @patch("pharmacies.tasks.add_scraped_data_to_db")
+@patch("pharmacies.tasks.close_old_connections")
 @patch("pharmacies.tasks.logger")
 def test_run_scraper_retries_real_persistence_helper_path(
     mock_logger: MagicMock,
+    mock_close_old_connections: MagicMock,
     mock_add_scraped_data_to_db: MagicMock,
     mock_filter: MagicMock,
     mock_atomic: MagicMock,

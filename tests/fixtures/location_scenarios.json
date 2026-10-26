@@ -177,7 +177,7 @@
   {
     "category": "in_scope",
     "description": "Eskisehir - Anadolu University",
-    "expected_behavior": "error_or_warning",
+    "expected_behavior": "should_return_pharmacy",
     "latitude": 39.7906,
     "longitude": 30.5028
   },
