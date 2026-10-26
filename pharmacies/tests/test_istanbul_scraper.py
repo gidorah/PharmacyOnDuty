@@ -3,7 +3,12 @@ from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-from requests.exceptions import ConnectionError, HTTPError, Timeout
+from requests.exceptions import (
+    ConnectionError,
+    HTTPError,
+    RequestException,
+    Timeout,
+)
 
 from pharmacies.utils.istanbul_saglik_scraper import (
     _get_coordinates_from_sehirharitasi_url,
@@ -133,7 +138,7 @@ def test_get_istanbul_data_skips_failing_district(
     "pharmacies.utils.istanbul_saglik_scraper.DISTRICTS",
     ["Adalar", "Ataşehir", "Beykoz"],
 )
-def test_get_istanbul_data_all_districts_fail_returns_empty(
+def test_get_istanbul_data_all_districts_fail_raises(
     mock_post: MagicMock, caplog: pytest.LogCaptureFixture
 ) -> None:
     mock_post.side_effect = [
@@ -142,12 +147,14 @@ def test_get_istanbul_data_all_districts_fail_returns_empty(
         _http_error_response(),
     ]
 
-    with caplog.at_level(
-        logging.WARNING, logger="pharmacies.utils.istanbul_saglik_scraper"
+    with (
+        caplog.at_level(
+            logging.WARNING, logger="pharmacies.utils.istanbul_saglik_scraper"
+        ),
+        pytest.raises(RequestException),
     ):
-        data = get_istanbul_data()
+        get_istanbul_data()
 
-    assert data == []
     assert mock_post.call_count == 3
     warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
     assert len(warnings) == 3
@@ -155,6 +162,25 @@ def test_get_istanbul_data_all_districts_fail_returns_empty(
         ["Adalar", "Ataşehir", "Beykoz"], warnings, strict=True
     ):
         assert district in message
+
+
+@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
+@patch(
+    "pharmacies.utils.istanbul_saglik_scraper.DISTRICTS",
+    ["Adalar", "Ataşehir", "Beykoz"],
+)
+def test_get_istanbul_data_all_districts_empty_returns_empty(
+    mock_post: MagicMock,
+) -> None:
+    empty_response = MagicMock()
+    empty_response.raise_for_status.return_value = None
+    empty_response.text = "<html><body>No pharmacies</body></html>"
+    mock_post.return_value = empty_response
+
+    data = get_istanbul_data()
+
+    assert data == []
+    assert mock_post.call_count == 3
 
 
 @patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
