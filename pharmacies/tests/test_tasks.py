@@ -1,7 +1,9 @@
 from contextlib import nullcontext
 from json import JSONDecodeError
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.db.utils import InterfaceError
 from requests.exceptions import RequestException
 
@@ -149,3 +151,53 @@ def test_run_scraper_retries_real_persistence_helper_path(
     mock_filter.assert_called_once_with(city__name="istanbul")
     mock_filter.return_value.update.assert_called_once()
     mock_logger.warning.assert_called_once()
+
+
+@patch("pharmacies.tasks.close_old_connections")
+@patch("pharmacies.tasks._persist_scraped_data")
+@patch("pharmacies.tasks.get_city_data")
+def test_run_scraper_logs_progress_instead_of_printing(
+    mock_get_city_data: MagicMock,
+    mock_persist: MagicMock,
+    mock_close_old_connections: MagicMock,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    mock_get_city_data.return_value = [{"name": "Example"}]
+    mock_persist.return_value = 1
+
+    with TestCase().assertLogs("pharmacies.tasks", "INFO") as logs:
+        run_scraper("ankara")
+
+    assert [record.getMessage() for record in logs.records] == [
+        "Running scraper for city ankara",
+        "Scraper for city ankara finished",
+        "Scraper data for city ankara saved to DB",
+        "Scraper config for city ankara updated",
+    ]
+    for record in logs.records:
+        assert record.levelname == "INFO"
+        assert record.args == ("ankara",)
+        assert "%s" in str(record.msg)
+    assert capsys.readouterr().out == ""
+
+
+@patch("pharmacies.tasks.close_old_connections")
+@patch("pharmacies.tasks._persist_scraped_data")
+@patch("pharmacies.tasks.get_city_data")
+def test_run_scraper_logs_missing_scraper_config(
+    mock_get_city_data: MagicMock,
+    mock_persist: MagicMock,
+    mock_close_old_connections: MagicMock,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    mock_get_city_data.return_value = [{"name": "Example"}]
+    mock_persist.return_value = 0
+
+    with TestCase().assertLogs("pharmacies.tasks", "INFO") as logs:
+        run_scraper("eskisehir")
+
+    last = logs.records[-1]
+    assert last.getMessage() == "No ScraperConfig found for city eskisehir"
+    assert last.levelname == "INFO"
+    assert last.args == ("eskisehir",)
+    assert capsys.readouterr().out == ""
