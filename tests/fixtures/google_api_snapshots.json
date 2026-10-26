@@ -25225,6 +25225,80 @@
     ],
     "status": "OK"
   },
+  "distancematrix:39.7906,30.5028": {
+    "destination_addresses": [
+      "Ye\u015filtepe, Kamp\u00fcs Yolu No:1, 26210 Tepeba\u015f\u0131/Eski\u015fehir, T\u00fcrkiye",
+      "Ho\u015fnudiye, \u00dcniversite Cd. No:20, 26130 Tepeba\u015f\u0131/Eski\u015fehir, T\u00fcrkiye",
+      "Arifiye, Adalar Sk. No:5, 26010 Odunpazar\u0131/Eski\u015fehir, T\u00fcrkiye",
+      "Vi\u015fnelik, Atat\u00fcrk Blv. No:10, 26020 Odunpazar\u0131/Eski\u015fehir, T\u00fcrkiye",
+      "Sazova, K\u00fctahya Yolu No:100, 26150 Tepeba\u015f\u0131/Eski\u015fehir, T\u00fcrkiye"
+    ],
+    "origin_addresses": [
+      "Ye\u015filtepe, Anadolu \u00dcnv., 26210 Tepeba\u015f\u0131/Eski\u015fehir, T\u00fcrkiye"
+    ],
+    "rows": [
+      {
+        "elements": [
+          {
+            "distance": {
+              "text": "372 m",
+              "value": 372
+            },
+            "duration": {
+              "text": "2 mins",
+              "value": 101
+            },
+            "status": "OK"
+          },
+          {
+            "distance": {
+              "text": "1.4 km",
+              "value": 1413
+            },
+            "duration": {
+              "text": "4 mins",
+              "value": 257
+            },
+            "status": "OK"
+          },
+          {
+            "distance": {
+              "text": "3.2 km",
+              "value": 3189
+            },
+            "duration": {
+              "text": "9 mins",
+              "value": 523
+            },
+            "status": "OK"
+          },
+          {
+            "distance": {
+              "text": "4.5 km",
+              "value": 4491
+            },
+            "duration": {
+              "text": "12 mins",
+              "value": 719
+            },
+            "status": "OK"
+          },
+          {
+            "distance": {
+              "text": "5.0 km",
+              "value": 5033
+            },
+            "duration": {
+              "text": "13 mins",
+              "value": 800
+            },
+            "status": "OK"
+          }
+        ]
+      }
+    ],
+    "status": "OK"
+  },
   "geocode:39.7533,30.4828": {
     "plus_code": {
       "compound_code": "QF3M+847 Odunpazar\u0131/Eski\u015fehir, T\u00fcrkiye",

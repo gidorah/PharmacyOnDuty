@@ -37,7 +37,10 @@ class TestPerformance:
         print("Data ingestion complete.")
 
     def test_spatial_query_performance_under_load(
-        self, client: Any, mock_google_maps: Any, off_hours_now: datetime
+        self,
+        client: Any,
+        mock_google_maps_generated_distances: Any,
+        off_hours_now: datetime,
     ) -> None:
         """
         Verifies that finding nearest pharmacies remains fast (< 500ms)
