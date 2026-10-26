@@ -615,8 +615,6 @@ uv run python manage.py test
 
 The project maintains a comprehensive test suite with high code coverage (>90%). It uses `pytest` and `coverage` to ensure reliability. Contributions should include tests to maintain this standard.
 
-Docstring coverage is enforced using `interrogate`. Run `uv run interrogate -v .` to check compliance.
-
 ## Contributing
 
 Contributions are welcome! Here's how you can contribute:

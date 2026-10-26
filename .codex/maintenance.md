@@ -36,7 +36,7 @@
 
 - Auto-merge patch: allowed when CI is green, release notes are clear, no relevant breaking behavior exists, and repo API/config usage is unaffected.
 - Auto-merge minor: allowed for low-risk minor updates only. Dev dependencies may qualify when CI is green and release notes show no relevant config/API impact. Runtime dependencies qualify only when listed in `Low-risk minor packages`.
-- Low-risk minor packages: `ruff`, `pytest`, `pytest-django`, `pytest-cov`, `mypy`, `django-stubs`, `django-stubs-ext`, `types-requests`, `types-redis`, `pre-commit`, `interrogate`, `pygments`, `faker`.
+- Low-risk minor packages: `ruff`, `pytest`, `pytest-django`, `pytest-cov`, `mypy`, `django-stubs`, `django-stubs-ext`, `types-requests`, `types-redis`, `pre-commit`, `pygments`, `faker`.
 - Never auto-merge: `django`, `celery`, `django-celery-beat`, `django-celery-results`, `redis`, `django-redis`, `psycopg2-binary`, `sentry-sdk`, `requests`, `urllib3`, `gunicorn`, `whitenoise`, `django-tailwind`, `beautifulsoup4`, `python-dotenv`, major updates, red/pending/missing CI, ambiguous release notes.
 - Lockfile repair command: `docker-compose -f docker/dev/docker-compose.yml --project-directory . exec django uv sync`
 - Review cap per run: 10 Dependabot PRs.
