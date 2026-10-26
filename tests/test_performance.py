@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime
 from typing import Any
 
 import pytest
@@ -35,7 +36,9 @@ class TestPerformance:
             add_scraped_data_to_db(items, city_name)
         print("Data ingestion complete.")
 
-    def test_spatial_query_performance_under_load(self, client: Any) -> None:
+    def test_spatial_query_performance_under_load(
+        self, client: Any, mock_google_maps: Any, off_hours_now: datetime
+    ) -> None:
         """
         Verifies that finding nearest pharmacies remains fast (< 500ms)
         even with a populated database (1500+ records).
