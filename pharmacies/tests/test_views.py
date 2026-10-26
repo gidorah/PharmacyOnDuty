@@ -1,4 +1,5 @@
 import json
+import logging
 from collections.abc import Iterator
 from datetime import UTC, datetime, time
 from unittest.mock import MagicMock, patch
@@ -91,6 +92,62 @@ class TestGetPharmacyPoints:
         data = response.json()
         assert "points" in data
         assert data["points"][0]["title"] == "Open Pharmacy"
+
+    @patch("pharmacies.views.get_city_name_from_location")
+    @patch("pharmacies.views.get_nearest_pharmacies_open")
+    def test_get_pharmacy_points_success_keeps_location_out_of_output(
+        self,
+        mock_fetch_open: MagicMock,
+        mock_get_city: MagicMock,
+        client: Client,
+        setup_city: City,
+        capsys: pytest.CaptureFixture[str],
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        mock_get_city.return_value = "eskisehir"
+        mock_fetch_open.return_value = [
+            {
+                "title": "Secret Pharmacy",
+                "position": {"lat": 39.7654321, "lng": 30.5123456},
+            }
+        ]
+        sensitive = [
+            "39.7123987",
+            "30.5987123",
+            # The view rounds to 4 decimals before using the coordinates.
+            "39.7124",
+            "30.5987",
+            "39.7654321",
+            "30.5123456",
+            "Secret Pharmacy",
+        ]
+
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        # Tuesday 10:00 (Open)
+        with (
+            patch("django.utils.timezone.now") as mock_now,
+            caplog.at_level(logging.DEBUG, logger="pharmacies"),
+        ):
+            mock_now.return_value = datetime(2025, 12, 16, 10, 0, tzinfo=UTC)
+
+            response = client.post(
+                url,
+                data=json.dumps({"lat": 39.7123987, "lng": 30.5987123}),
+                content_type="application/json",
+            )
+
+        assert response.status_code == 200
+        assert response.json()["points"][0]["title"] == "Secret Pharmacy"
+        assert capsys.readouterr().out == ""
+        records = [r for r in caplog.records if r.name.startswith("pharmacies")]
+        assert any(
+            r.getMessage().startswith("City status for eskisehir") for r in records
+        )
+        for record in records:
+            logged = record.getMessage() + repr(record.args)
+            for value in sensitive:
+                assert value not in logged
 
     @patch("pharmacies.views.get_city_name_from_location")
     @patch("pharmacies.views.get_nearest_pharmacies_on_duty")
