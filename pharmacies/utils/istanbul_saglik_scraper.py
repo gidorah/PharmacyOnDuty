@@ -122,8 +122,14 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
     Iterates through all districts, posts to the endpoint, parses the HTML response,
     and extracts pharmacy details including coordinates from the map link.
+
+    A district whose request fails is skipped with a warning. If every district's
+    request fails, a ``requests.exceptions.RequestException`` is raised so the
+    caller treats it as an upstream fetch failure rather than an empty result.
     """
     all_pharmacies: list[dict[str, Any]] = []
+    failed_districts = 0
+    last_error: requests.exceptions.RequestException | None = None
 
     for district_name in DISTRICTS:
         payload = {"ilce": district_name}
@@ -136,6 +142,8 @@ def get_istanbul_data() -> list[dict[str, Any]]:
                 district_name,
                 e,
             )
+            failed_districts += 1
+            last_error = e
             continue
 
         html_content = response.text
@@ -198,6 +206,11 @@ def get_istanbul_data() -> list[dict[str, Any]]:
             # Set duty times
             pharmacy["duty_start"], pharmacy["duty_end"] = _get_duty_times()
             all_pharmacies.append(pharmacy)
+
+    if DISTRICTS and failed_districts == len(DISTRICTS):
+        raise requests.exceptions.RequestException(
+            f"All {failed_districts} Istanbul district requests failed"
+        ) from last_error
 
     return all_pharmacies
 
