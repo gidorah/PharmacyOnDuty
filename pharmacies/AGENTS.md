@@ -7,7 +7,7 @@ Core domain handling PostGIS models, external data scrapers, and duty-scheduling
 - `models.py`: `Pharmacy` (GIS Point), `City` (Schedule), `ScraperConfig` (Celery trigger).
 - `utils/`: City scrapers (`ankaraeo`, `eskisehireo`, `istanbul_saglik`) + GIS helpers.
 - `tasks.py`: Celery entrypoints for city-specific scraping.
-- `views.py`: Geo-spatial API endpoints for nearest-pharmacy search.
+- `views.py`: Geo-spatial API endpoints for nearest-pharmacy search. `get_pharmacy_points` is rate-limited per client IP (`ratelimit.py`, Redis `"ratelimit"` cache alias; `PHARMACY_POINTS_RATE_LIMIT`, default `30/m`; `RATELIMIT_TRUSTED_PROXY_COUNT`, default 0 = `REMOTE_ADDR`).
 - `management/`: `seed_cities.py` for bootstrapping system.
 
 ## WHERE TO LOOK

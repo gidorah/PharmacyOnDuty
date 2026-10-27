@@ -1,4 +1,5 @@
 import json
+import logging
 from collections.abc import Iterator
 from datetime import UTC, datetime, time
 from unittest.mock import MagicMock, patch
@@ -11,6 +12,7 @@ from django.test.utils import override_settings
 from django.urls import reverse
 
 from pharmacies.models import City, PharmacyStatus, WorkingSchedule
+from pharmacies.utils.utils import UnknownCityError, UpstreamGeocodingError
 
 
 @pytest.fixture(autouse=True)
@@ -90,6 +92,62 @@ class TestGetPharmacyPoints:
         data = response.json()
         assert "points" in data
         assert data["points"][0]["title"] == "Open Pharmacy"
+
+    @patch("pharmacies.views.get_city_name_from_location")
+    @patch("pharmacies.views.get_nearest_pharmacies_open")
+    def test_get_pharmacy_points_success_keeps_location_out_of_output(
+        self,
+        mock_fetch_open: MagicMock,
+        mock_get_city: MagicMock,
+        client: Client,
+        setup_city: City,
+        capsys: pytest.CaptureFixture[str],
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        mock_get_city.return_value = "eskisehir"
+        mock_fetch_open.return_value = [
+            {
+                "title": "Secret Pharmacy",
+                "position": {"lat": 39.7654321, "lng": 30.5123456},
+            }
+        ]
+        sensitive = [
+            "39.7123987",
+            "30.5987123",
+            # The view rounds to 4 decimals before using the coordinates.
+            "39.7124",
+            "30.5987",
+            "39.7654321",
+            "30.5123456",
+            "Secret Pharmacy",
+        ]
+
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        # Tuesday 10:00 (Open)
+        with (
+            patch("django.utils.timezone.now") as mock_now,
+            caplog.at_level(logging.DEBUG, logger="pharmacies"),
+        ):
+            mock_now.return_value = datetime(2025, 12, 16, 10, 0, tzinfo=UTC)
+
+            response = client.post(
+                url,
+                data=json.dumps({"lat": 39.7123987, "lng": 30.5987123}),
+                content_type="application/json",
+            )
+
+        assert response.status_code == 200
+        assert response.json()["points"][0]["title"] == "Secret Pharmacy"
+        assert capsys.readouterr().out == ""
+        records = [r for r in caplog.records if r.name.startswith("pharmacies")]
+        assert any(
+            r.getMessage().startswith("City status for eskisehir") for r in records
+        )
+        for record in records:
+            logged = record.getMessage() + repr(record.args)
+            for value in sensitive:
+                assert value not in logged
 
     @patch("pharmacies.views.get_city_name_from_location")
     @patch("pharmacies.views.get_nearest_pharmacies_on_duty")
@@ -240,6 +298,181 @@ class TestGetPharmacyPoints:
         assert body["error"] == "Location lookup temporarily unavailable."
         assert "upstream down" not in body["error"]
 
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_unknown_city_error_returns_400_without_logging(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = UnknownCityError("No city for location")
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "No city found for the provided location."
+        mock_logger.exception.assert_not_called()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_water_zero_results_via_unknown_city_error_returns_400(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = UnknownCityError(
+            "ZERO_RESULTS: sea coordinates have no city"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 36.0, "lng": 30.0}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "No city found for the provided location."
+        mock_logger.exception.assert_not_called()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_unknown_city_value_error_returns_400_without_logging(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = ValueError("Unknown city: Somewhere")
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "No city found for the provided location."
+        mock_logger.exception.assert_not_called()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_upstream_geocoding_error_returns_502(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = UpstreamGeocodingError(
+            "Geocoding upstream failed: INVALID_REQUEST"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 502
+        body = response.json()
+        assert body["error"] == "Location lookup temporarily unavailable."
+        assert "INVALID_REQUEST" not in body["error"]
+        mock_logger.exception.assert_called_once()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_over_query_limit_returns_502(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = UpstreamGeocodingError(
+            "Unable to retrieve city name: OVER_QUERY_LIMIT"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 502
+        body = response.json()
+        assert body["error"] == "Location lookup temporarily unavailable."
+        assert "OVER_QUERY_LIMIT" not in body["error"]
+        mock_logger.exception.assert_called_once()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_residual_unable_to_parse_returns_502(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        # Residual plain ValueError with "Unable ..." prefix is treated as
+        # upstream (502). Client-side water/ZERO_RESULTS cases are now raised
+        # as UnknownCityError (400); only genuine upstream parse failures
+        # remain here.
+        mock_get_city.side_effect = ValueError(
+            "Unable to parse_location_identifier: status is not OK"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 502
+        assert response.json()["error"] == "Location lookup temporarily unavailable."
+        mock_logger.exception.assert_called_once()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_distance_matrix_value_error_returns_502(
+        self, mock_get_city: MagicMock, mock_logger: MagicMock, client: Client
+    ) -> None:
+        mock_get_city.side_effect = ValueError(
+            "Distance Matrix API error: REQUEST_DENIED"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        response = client.post(
+            url,
+            data=json.dumps({"lat": 39.7, "lng": 30.5}),
+            content_type="application/json",
+        )
+
+        assert response.status_code == 502
+        body = response.json()
+        assert body["error"] == "Location lookup temporarily unavailable."
+        assert "REQUEST_DENIED" not in body["error"]
+        mock_logger.exception.assert_called_once()
+
+    @patch("pharmacies.views.logger")
+    @patch("pharmacies.views.get_city_name_from_location")
+    @patch("pharmacies.views.get_nearest_pharmacies_on_duty")
+    def test_travel_distances_value_error_returns_502(
+        self,
+        mock_fetch_duty: MagicMock,
+        mock_get_city: MagicMock,
+        mock_logger: MagicMock,
+        client: Client,
+        setup_city: City,
+    ) -> None:
+        mock_get_city.return_value = "eskisehir"
+        mock_fetch_duty.side_effect = ValueError(
+            "Cannot retrieve travel distances. Pharmacy data is empty!"
+        )
+        url = reverse("pharmacies:get_pharmacy_points")
+
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = datetime(2025, 12, 16, 20, 0, tzinfo=UTC)
+            response = client.post(
+                url,
+                data=json.dumps({"lat": 39.7, "lng": 30.5}),
+                content_type="application/json",
+            )
+
+        assert response.status_code == 502
+        assert response.json()["error"] == "Location lookup temporarily unavailable."
+        mock_logger.exception.assert_called_once()
+
 
 class TestOtherViews:
     def test_pharmacies_list(self, client: Client) -> None:
@@ -299,6 +532,123 @@ class TestOtherViews:
         params = call_kwargs["params"]
         libraries = set(params["libraries"].split(","))
         assert {"marker", "routes", "geometry"} <= libraries
+
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_ignores_client_key_and_unknown_params(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        with patch("pharmacies.views.is_allowed_referer", return_value=True):
+            response = client.get(
+                url,
+                {"key": "X", "libraries": "places", "foo": "bar", "callback": "cb"},
+            )
+
+        assert response.status_code == 200
+        params = mock_get.call_args.kwargs["params"]
+        assert params["key"] == settings.GOOGLE_MAPS_API_KEY
+        assert params["libraries"] == "marker,routes,geometry"
+        assert params["callback"] == "cb"
+        assert "foo" not in params
+
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_forwards_template_params(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        with patch("pharmacies.views.is_allowed_referer", return_value=True):
+            response = client.get(url, {"loading": "async", "callback": "mapsCallback"})
+
+        assert response.status_code == 200
+        params = mock_get.call_args.kwargs["params"]
+        assert params["loading"] == "async"
+        assert params["callback"] == "mapsCallback"
+
+    @override_settings(ALLOWED_REFERERS=["http://allowed.example/"])
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_cached_response_not_served_to_bad_referer(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        allowed = client.get(url, HTTP_REFERER="http://allowed.example/map")
+        no_referer = client.get(url)
+        bad_referer = client.get(url, HTTP_REFERER="http://evil.example/")
+
+        assert allowed.status_code == 200
+        assert no_referer.status_code == 403
+        assert bad_referer.status_code == 403
+
+    @override_settings(ALLOWED_REFERERS=["http://allowed.example/"])
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_caches_allowed_requests(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        first = client.get(url, HTTP_REFERER="http://allowed.example/map")
+        second = client.get(url, HTTP_REFERER="http://allowed.example/map")
+
+        assert first.status_code == 200
+        assert second.status_code == 200
+        assert second.content == b"console.log('google maps');"
+        assert mock_get.call_count == 1
+
+    @override_settings(ALLOWED_REFERERS=["http://allowed.example/"])
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_disallowed_request_does_not_fill_cache(
+        self, mock_get: MagicMock, client: Client
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        mock_response = MagicMock()
+        mock_response.text = "console.log('google maps');"
+        mock_get.return_value = mock_response
+
+        url = reverse("pharmacies:google_maps_proxy")
+        denied = client.get(url, HTTP_REFERER="http://evil.example/")
+        assert denied.status_code == 403
+        assert mock_get.call_count == 0
+
+        allowed = client.get(url, HTTP_REFERER="http://allowed.example/map")
+        assert allowed.status_code == 200
+        assert allowed.content == b"console.log('google maps');"
+        assert mock_get.call_count == 1
+
+        denied_again = client.get(url)
+        assert denied_again.status_code == 403
 
 
 class TestProxyAwareCsrf:

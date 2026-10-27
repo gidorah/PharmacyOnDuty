@@ -37,4 +37,3 @@
 - **Ruff:** Fast Python linter and formatter.
 - **Mypy:** Static type checking.
 - **debugpy:** Remote debugging support in Docker.
-- **interrogate:** Docstring coverage analysis tool.

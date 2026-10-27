@@ -5,6 +5,7 @@ Fetches duty pharmacy data for all districts in Istanbul.
 """
 
 import csv
+import logging
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -16,6 +17,8 @@ from django.utils import timezone
 
 BASE_URL = "https://nobetcieczane.istanbulsaglik.gov.tr:88/"
 API_ENDPOINT = f"{BASE_URL}Home/GetEczaneler"
+
+logger = logging.getLogger(__name__)
 
 
 DISTRICTS: list[str] = [
@@ -119,13 +122,29 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
     Iterates through all districts, posts to the endpoint, parses the HTML response,
     and extracts pharmacy details including coordinates from the map link.
+
+    A district whose request fails is skipped with a warning. If every district's
+    request fails, a ``requests.exceptions.RequestException`` is raised so the
+    caller treats it as an upstream fetch failure rather than an empty result.
     """
     all_pharmacies: list[dict[str, Any]] = []
+    failed_districts = 0
+    last_error: requests.exceptions.RequestException | None = None
 
     for district_name in DISTRICTS:
         payload = {"ilce": district_name}
-        response = requests.post(API_ENDPOINT, params=payload, timeout=10)
-        response.raise_for_status()
+        try:
+            response = requests.post(API_ENDPOINT, params=payload, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logger.warning(
+                "Failed to fetch Istanbul pharmacies for district %s: %s",
+                district_name,
+                e,
+            )
+            failed_districts += 1
+            last_error = e
+            continue
 
         html_content = response.text
         soup = BeautifulSoup(html_content, "html.parser")
@@ -179,7 +198,7 @@ def get_istanbul_data() -> list[dict[str, Any]]:
 
             coordinates = _get_coordinates_from_sehirharitasi_url(directions_url)
             if coordinates is None:
-                print(f"Warning: Unable to get coordinates for {pharmacy['name']}")
+                logger.warning("Unable to get coordinates for %s", pharmacy["name"])
                 continue
 
             pharmacy["coordinates"] = coordinates
@@ -187,6 +206,11 @@ def get_istanbul_data() -> list[dict[str, Any]]:
             # Set duty times
             pharmacy["duty_start"], pharmacy["duty_end"] = _get_duty_times()
             all_pharmacies.append(pharmacy)
+
+    if DISTRICTS and failed_districts == len(DISTRICTS):
+        raise requests.exceptions.RequestException(
+            f"All {failed_districts} Istanbul district requests failed"
+        ) from last_error
 
     return all_pharmacies
 

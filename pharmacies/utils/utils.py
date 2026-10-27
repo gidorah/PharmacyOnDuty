@@ -21,6 +21,18 @@ from pharmacies.utils import get_ankara_data, get_eskisehir_data, get_istanbul_d
 from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 
 
+class UnknownCityError(ValueError):
+    """Geocoding succeeded but no known city matches (maps to HTTP 400)."""
+
+    pass
+
+
+class UpstreamGeocodingError(ValueError):
+    """Geocoding upstream failed (maps to HTTP 502)."""
+
+    pass
+
+
 def get_nearest_pharmacies_open(
     lat: float, lng: float, limit: int = 5
 ) -> list[dict[str, Any]]:
@@ -242,20 +254,47 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
     Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
 
 
+def _raise_for_non_ok_status(status: Any, results: list[Any]) -> None:
+    """Raise for non-OK geocoding payloads; no-op when OK with results."""
+    if status != "OK" or not results:
+        if status == "ZERO_RESULTS" or (status == "OK" and not results):
+            raise UnknownCityError(f"Unknown city: {status}")
+        raise UpstreamGeocodingError(f"Unable to retrieve city name: {status}")
+
+
 def _parse_location_identifier(data: dict[str, Any]) -> str:
-    """Extract a location identifier (compound code or admin area) from Geocoding results."""
-    if data["status"] != "OK" or not data["results"]:
-        raise ValueError("Unable to parse_location_identifier: status is not OK")
+    """Extract a location identifier (admin area or compound code) from results."""
+    status: Any = data.get("status")
+    raw_results: Any = data.get("results") or []
+    results: list[Any] = raw_results if isinstance(raw_results, list) else []
+    _raise_for_non_ok_status(status, results)
 
-    compound_code = data.get("plus_code", {}).get("compound_code")
-    if compound_code is not None:
-        return cast(str, compound_code)
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+        raw_components: Any = result.get("address_components") or []
+        if not isinstance(raw_components, list):
+            continue
+        for component in raw_components:
+            if not isinstance(component, dict):
+                continue
+            raw_types: Any = component.get("types")
+            if not isinstance(raw_types, list):
+                continue
+            if "administrative_area_level_1" not in raw_types:
+                continue
+            raw_name: Any = component.get("long_name")
+            if isinstance(raw_name, str) and raw_name:
+                return raw_name
 
-    for component in data["results"][0]["address_components"]:
-        if "administrative_area_level_1" in component["types"]:
-            return cast(str, component["long_name"])
+    raw_plus_code: Any = data.get("plus_code") or {}
+    if not isinstance(raw_plus_code, dict):
+        raw_plus_code = {}
+    compound: Any = raw_plus_code.get("compound_code")
+    if isinstance(compound, str) and compound:
+        return compound
 
-    raise ValueError("Unable to parse_location_identifier")
+    raise UnknownCityError("Unknown city: no administrative area found")
 
 
 @lru_cache(maxsize=1024)
@@ -265,21 +304,40 @@ def get_city_name_from_location(lat: float, lng: float) -> str:
 
     response = requests.get(url, timeout=10)
     response.raise_for_status()
-    data = response.json()
+    try:
+        payload: Any = response.json()
+    except ValueError as exc:
+        raise UpstreamGeocodingError(
+            "Unable to retrieve city name: invalid response"
+        ) from exc
 
-    if data["status"] != "OK" or not data["results"]:
-        raise ValueError("Unable to retrieve city name: status is not OK")
+    if not isinstance(payload, dict):
+        raise UpstreamGeocodingError(
+            f"Unable to retrieve city name: invalid response: {payload}"
+        )
 
-    city_data = _parse_location_identifier(data)
+    typed_data: dict[str, Any] = payload
+    status: Any = typed_data.get("status")
+    raw_results: Any = typed_data.get("results") or []
+    results: list[Any] = raw_results if isinstance(raw_results, list) else []
+    _raise_for_non_ok_status(status, results)
+
+    city_data = _parse_location_identifier(typed_data)
     normalized_data = normalize_string(city_data)
 
     known_cities = list(City.objects.values_list("name", flat=True))
 
+    substring_match: str | None = None
     for city_slug in known_cities:
-        if normalize_string(city_slug) in normalized_data:
+        normalized_slug = normalize_string(city_slug)
+        if normalized_slug == normalized_data:
             return city_slug
+        if substring_match is None and normalized_slug in normalized_data:
+            substring_match = city_slug
+    if substring_match is not None:
+        return substring_match
 
-    raise ValueError(f"Unknown city: {city_data}")
+    raise UnknownCityError(f"Unknown city: {city_data}")
 
 
 @lru_cache(maxsize=1024)

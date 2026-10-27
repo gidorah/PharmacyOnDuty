@@ -1,8 +1,14 @@
+import logging
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-from requests.exceptions import ConnectionError, HTTPError
+from requests.exceptions import (
+    ConnectionError,
+    HTTPError,
+    RequestException,
+    Timeout,
+)
 
 from pharmacies.utils.istanbul_saglik_scraper import (
     _get_coordinates_from_sehirharitasi_url,
@@ -61,48 +67,127 @@ def test_get_istanbul_data(mock_post: MagicMock) -> None:
     assert data[0]["district"] == "Adalar"
 
 
-@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
-@patch("pharmacies.utils.istanbul_saglik_scraper.DISTRICTS", ["Adalar"])
-def test_get_istanbul_data_failure(mock_post: MagicMock) -> None:
-    mock_response = MagicMock()
-    mock_response.raise_for_status.side_effect = HTTPError("500")
-    mock_post.return_value = mock_response
-
-    with pytest.raises(HTTPError):
-        get_istanbul_data()
-
-    mock_response.raise_for_status.assert_called_once()
-
-
-@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
-@patch("pharmacies.utils.istanbul_saglik_scraper.DISTRICTS", ["Adalar", "Ataşehir"])
-def test_get_istanbul_data_raises_on_connection_error_after_partial_fetch(
-    mock_post: MagicMock,
-) -> None:
-    html_content = """
+def _card_html(name: str) -> str:
+    return f"""
     <div class="card">
         <div class="card-header">Ignored</div>
-        <div class="card-header"><b>TEST ECZANESİ</b></div>
+        <div class="card-header"><b>{name}</b></div>
         <label>Ignored</label>
         <label><a href="tel:123456">123 456</a></label>
         <i class="la la-home"></i><label>Test Address</label>
         <a class="btn btn-primary btn-block" href="http://sehirharitasi.ibb.gov.tr/?lat=41.0&lon=28.9">Yol Tarifi</a>
     </div>
     """
+
+
+def _ok_response(name: str) -> MagicMock:
     mock_response = MagicMock()
     mock_response.raise_for_status.return_value = None
-    mock_response.text = html_content
-    mock_post.side_effect = [mock_response, ConnectionError("down")]
+    mock_response.text = _card_html(name)
+    return mock_response
 
-    with pytest.raises(ConnectionError):
+
+def _http_error_response() -> MagicMock:
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = HTTPError("500 Server Error")
+    return mock_response
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        pytest.param(ConnectionError("down"), id="connection-error"),
+        pytest.param(Timeout("timed out"), id="timeout"),
+        pytest.param(None, id="http-error"),
+    ],
+)
+@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
+@patch(
+    "pharmacies.utils.istanbul_saglik_scraper.DISTRICTS",
+    ["Adalar", "Ataşehir", "Beykoz"],
+)
+def test_get_istanbul_data_skips_failing_district(
+    mock_post: MagicMock,
+    failure: Exception | None,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    middle: Exception | MagicMock = (
+        failure if failure is not None else _http_error_response()
+    )
+    mock_post.side_effect = [
+        _ok_response("ADALAR ECZANESİ"),
+        middle,
+        _ok_response("BEYKOZ ECZANESİ"),
+    ]
+
+    with caplog.at_level(
+        logging.WARNING, logger="pharmacies.utils.istanbul_saglik_scraper"
+    ):
+        data = get_istanbul_data()
+
+    assert mock_post.call_count == 3
+    assert [p["district"] for p in data] == ["Adalar", "Beykoz"]
+    assert [p["name"] for p in data] == ["ADALAR ECZANESİ", "BEYKOZ ECZANESİ"]
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 1
+    assert "Ataşehir" in warnings[0].getMessage()
+
+
+@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
+@patch(
+    "pharmacies.utils.istanbul_saglik_scraper.DISTRICTS",
+    ["Adalar", "Ataşehir", "Beykoz"],
+)
+def test_get_istanbul_data_all_districts_fail_raises(
+    mock_post: MagicMock, caplog: pytest.LogCaptureFixture
+) -> None:
+    mock_post.side_effect = [
+        ConnectionError("down"),
+        Timeout("timed out"),
+        _http_error_response(),
+    ]
+
+    with (
+        caplog.at_level(
+            logging.WARNING, logger="pharmacies.utils.istanbul_saglik_scraper"
+        ),
+        pytest.raises(RequestException),
+    ):
         get_istanbul_data()
 
-    assert mock_post.call_count == 2
+    assert mock_post.call_count == 3
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 3
+    for district, message in zip(
+        ["Adalar", "Ataşehir", "Beykoz"], warnings, strict=True
+    ):
+        assert district in message
+
+
+@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
+@patch(
+    "pharmacies.utils.istanbul_saglik_scraper.DISTRICTS",
+    ["Adalar", "Ataşehir", "Beykoz"],
+)
+def test_get_istanbul_data_all_districts_empty_returns_empty(
+    mock_post: MagicMock,
+) -> None:
+    empty_response = MagicMock()
+    empty_response.raise_for_status.return_value = None
+    empty_response.text = "<html><body>No pharmacies</body></html>"
+    mock_post.return_value = empty_response
+
+    data = get_istanbul_data()
+
+    assert data == []
+    assert mock_post.call_count == 3
 
 
 @patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
 @patch("pharmacies.utils.istanbul_saglik_scraper.DISTRICTS", ["Adalar"])
-def test_get_istanbul_data_missing_tags(mock_post: MagicMock) -> None:
+def test_get_istanbul_data_missing_tags(
+    mock_post: MagicMock, caplog: pytest.LogCaptureFixture
+) -> None:
     # Structure where tags are missing or malformed to hit else branches
     html_content = """
     <div class="card">
@@ -126,11 +211,17 @@ def test_get_istanbul_data_missing_tags(mock_post: MagicMock) -> None:
     mock_response.text = html_content
     mock_post.return_value = mock_response
 
-    # Capture print output to verify warning
-    with patch("builtins.print") as mock_print:
+    with caplog.at_level(
+        logging.WARNING, logger="pharmacies.utils.istanbul_saglik_scraper"
+    ):
         data = get_istanbul_data()
-        assert len(data) == 0
-        mock_print.assert_called_with("Warning: Unable to get coordinates for N/A")
+
+    assert len(data) == 0
+    assert any(
+        r.levelno == logging.WARNING
+        and r.getMessage() == "Unable to get coordinates for N/A"
+        for r in caplog.records
+    )
 
 
 @patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")

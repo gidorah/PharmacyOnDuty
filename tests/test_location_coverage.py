@@ -1,5 +1,6 @@
 import json
 import time
+from datetime import datetime
 from typing import Any
 
 import pytest
@@ -56,8 +57,15 @@ class TestLocationCoverage:
             add_scraped_data_to_db(items, city_name)
 
     def test_smoke_scenarios(
-        self, client: Any, api_snapshots: dict[str, Any], mock_google_maps: Any
+        self,
+        client: Any,
+        settings: Any,
+        api_snapshots: dict[str, Any],
+        mock_google_maps: Any,
+        off_hours_now: datetime,
     ) -> None:
+        # One request per scenario; the per-IP limit would 429 after the 30th.
+        settings.PHARMACY_POINTS_RATE_LIMIT = "1000/m"
         for scenario in LOCATION_SCENARIOS:
             lat = scenario["latitude"]
             lng = scenario["longitude"]

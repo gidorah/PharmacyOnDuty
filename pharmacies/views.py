@@ -19,20 +19,28 @@ from django.utils import timezone
 from django.views.decorators.cache import cache_page
 
 from pharmacies.models import City, PharmacyStatus
+from pharmacies.ratelimit import is_rate_limited
 from pharmacies.utils import (
     get_city_name_from_location,
     get_nearest_pharmacies_on_duty,
     get_nearest_pharmacies_open,
     round_lat_lng,
 )
+from pharmacies.utils.utils import UnknownCityError, UpstreamGeocodingError
 
 logger = logging.getLogger(__name__)
 
 TEST_TIME = timezone.now() + timedelta(hours=10)
 SHOWN_PHARMACIES = 5
 
+# Client query params forwarded to the Google Maps JS API. "key" and "libraries"
+# are always set server-side and must never come from the client.
+ALLOWED_PROXY_PARAMS = frozenset({"loading", "callback", "v", "language", "region"})
 
-def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
+
+def get_pharmacy_points(
+    request: HttpRequest,
+) -> JsonResponse | HttpResponseNotAllowed:
     """
     Handle POST requests to retrieve the nearest pharmacies based on user location.
 
@@ -41,7 +49,12 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
     pharmacies on duty accordingly.
     """
     if request.method != "POST":
-        return HttpResponseNotAllowed(["POST"])  # type: ignore
+        return HttpResponseNotAllowed(["POST"])
+
+    if is_rate_limited(request, "pharmacy_points", settings.PHARMACY_POINTS_RATE_LIMIT):
+        return JsonResponse(
+            {"error": "Too many requests. Please try again later."}, status=429
+        )
 
     try:
         data = loads(request.body)
@@ -92,10 +105,25 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
         return JsonResponse(
             {"error": "No city found for the provided location."}, status=400
         )
+    except UnknownCityError:
+        return JsonResponse(
+            {"error": "No city found for the provided location."}, status=400
+        )
+    except UpstreamGeocodingError:
+        logger.exception("Upstream location/pharmacy lookup failed.")
+        return JsonResponse(
+            {"error": "Location lookup temporarily unavailable."},
+            status=502,
+        )
+    except requests.RequestException:
+        logger.exception("Upstream location/pharmacy lookup failed.")
+        return JsonResponse(
+            {"error": "Location lookup temporarily unavailable."},
+            status=502,
+        )
     except ValueError as exc:
-        # Domain / client-facing ValueErrors from city lookup and duty search.
-        # Upstream geocoding / Distance Matrix failures also raise ValueError and
-        # are mapped to 502 below.
+        # Client-facing ValueErrors return 400 without logging to avoid
+        # Sentry noise. All other ValueErrors are upstream and return 502.
         message = str(exc)
         if message.startswith("Unknown city"):
             return JsonResponse(
@@ -105,12 +133,10 @@ def get_pharmacy_points(request: HttpRequest) -> JsonResponse:
             return JsonResponse({"error": message}, status=400)
         if message == "Unable to retrieve city status.":
             return JsonResponse({"error": message}, status=400)
-        logger.exception("Upstream location/pharmacy lookup failed.")
-        return JsonResponse(
-            {"error": "Location lookup temporarily unavailable."},
-            status=502,
-        )
-    except requests.RequestException:
+        # Residual "Unable ..." ValueErrors (parse/retrieve city name,
+        # Distance Matrix, travel distances, INVALID_REQUEST,
+        # REQUEST_DENIED) are upstream failures. Water/sea/ZERO_RESULTS
+        # client cases are now raised as UnknownCityError (400) above.
         logger.exception("Upstream location/pharmacy lookup failed.")
         return JsonResponse(
             {"error": "Location lookup temporarily unavailable."},
@@ -131,13 +157,13 @@ def is_allowed_referer(request: HttpRequest) -> bool:
     return any(referer.startswith(allowed) for allowed in settings.ALLOWED_REFERERS)
 
 
-@cache_page(60 * 60)  # cache for 1 hour
 def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     """
     Proxy request to Google Maps API to hide the API key.
 
     This view validates the referrer before forwarding the request to Google Maps,
-    allowing the frontend to load maps without exposing credentials.
+    allowing the frontend to load maps without exposing credentials. The check
+    runs before the cache, so only allowed requests are served from or fill it.
     """
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
@@ -145,12 +171,18 @@ def google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
     if not is_allowed_referer(request):
         return HttpResponse("Forbidden", status=403)
 
+    return _cached_google_maps_proxy(request)
+
+
+@cache_page(60 * 60)  # cache for 1 hour
+def _cached_google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonResponse:
+    """Fetch the Google Maps JS API with the server-side key (cached per URL)."""
     endpoint = "https://maps.googleapis.com/maps/api/js"
     # "marker" → AdvancedMarkerElement; "routes" → Route.computeRoutes.
     params = {
+        **{k: request.GET[k] for k in ALLOWED_PROXY_PARAMS if k in request.GET},
         "key": settings.GOOGLE_MAPS_API_KEY,
         "libraries": "marker,routes,geometry",
-        **dict(request.GET),
     }
 
     try:
