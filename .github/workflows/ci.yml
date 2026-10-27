@@ -1,0 +1,175 @@
+# CI for every pull request and every push to main.
+#
+# Three jobs run in parallel: lint (ruff, format, mypy, djlint), test (pytest
+# and the missing-migrations check against PostGIS and Redis) and build (the
+# production image). The final `check` job passes only when all three pass, so
+# a single check name gives the result. The factory reads the check by name,
+# so keep the workflow and job names stable.
+#
+# The settings come from .env.example with the same test values that
+# docker/testenv/testenv.sh writes, so results match the factory's testenv
+# check. The commands match `testenv.sh check`.
+#
+# No path filters on purpose: a filtered check that never runs stays pending.
+
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UV_LOCKED: "1"
+  # The djlint version the pre-commit hook pins (.pre-commit-config.yaml).
+  DJLINT_VERSION: "1.36.4"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Lint and test run in the production image's base, with GDAL from Debian.
+    # The runner's Ubuntu apt mirror sometimes fetches at 30 kB/s and stalled
+    # the GDAL install for minutes; deb.debian.org is behind a CDN.
+    container: python:3.13-slim
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # mypy's Django plugin loads the settings, and GeoDjango needs GDAL.
+      # gdal-bin pulls in libgdal, GEOS and PROJ. libpq is not needed because
+      # the project uses psycopg2-binary.
+      - name: Install GDAL
+        timeout-minutes: 4
+        run: |
+          apt-get -o Acquire::Retries=3 update -q
+          apt-get -o Acquire::Retries=3 install -y -q --no-install-recommends gdal-bin
+
+      - uses: astral-sh/setup-uv@v10.3.2 # no major tag is published
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Write .env
+        run: .github/scripts/ci_env.sh
+
+      # Later steps run after a failure, so one run reports every failing check.
+      - name: ruff check
+        run: uv run ruff check --output-format=github .
+
+      - name: ruff format
+        if: ${{ !cancelled() }}
+        run: uv run ruff format --check .
+
+      - name: mypy
+        if: ${{ !cancelled() }}
+        run: uv run mypy .
+
+      # The same arguments as the two djlint hooks in .pre-commit-config.yaml.
+      - name: djlint format
+        if: ${{ !cancelled() }}
+        run: uvx "djlint@$DJLINT_VERSION" theme/templates --check --profile=django
+
+      - name: djlint lint
+        if: ${{ !cancelled() }}
+        run: >-
+          uvx "djlint@$DJLINT_VERSION" theme/templates --lint --profile=django
+          --ignore H030,H031,H021,H023,D018,D004,H006
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: python:3.13-slim
+    # The services are reachable as db and redis, the host names the testenv
+    # uses. The database matches docker/postgis: postgres 15 with PostGIS 3.
+    # Redis has no password here, because a service container cannot be given
+    # the --requirepass command; nothing in the code reads the password.
+    services:
+      db:
+        image: postgis/postgis:15-3.5
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: gis
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install GDAL
+        timeout-minutes: 4
+        run: |
+          apt-get -o Acquire::Retries=3 update -q
+          apt-get -o Acquire::Retries=3 install -y -q --no-install-recommends gdal-bin
+
+      - uses: astral-sh/setup-uv@v10.3.2 # no major tag is published
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Write .env
+        run: .github/scripts/ci_env.sh
+
+      - name: Check PostGIS and Redis are reachable
+        run: uv run python -m scripts.wait_for_services
+
+      - name: Missing migrations
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      # Tests render templates with the manifest storage, as testenv.sh start does.
+      - name: collectstatic
+        run: uv run python manage.py collectstatic --noinput
+
+      - name: pytest
+        run: uv run pytest -p no:cacheprovider
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: docker/setup-buildx-action@v4
+
+      # One image covers both Coolify apps (services and workers).
+      - name: docker build
+        uses: docker/build-push-action@v7
+        with:
+          file: docker/prod/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  check:
+    if: ${{ always() }}
+    needs: [lint, test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: All jobs passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = "success" ] || exit 1
+          done
