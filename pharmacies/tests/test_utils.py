@@ -471,6 +471,138 @@ class TestUtilsDB:
         pharmacy = Pharmacy.objects.get(name="New Eczane", city=city)
         assert pharmacy.phone == "456"
 
+    @staticmethod
+    def _scraped_item(
+        name: str, phone: str, coordinates: Any, address: str, district: str
+    ) -> dict[str, Any]:
+        return {
+            "name": name,
+            "address": address,
+            "phone": phone,
+            "district": district,
+            "coordinates": coordinates,
+            "duty_start": datetime(2025, 12, 16, 18, 0, tzinfo=UTC),
+            "duty_end": datetime(2025, 12, 17, 8, 0, tzinfo=UTC),
+        }
+
+    @staticmethod
+    def _existing_pharmacy(city: City, name: str, phone: str) -> Pharmacy:
+        return Pharmacy.objects.create(
+            name=name,
+            phone=phone,
+            address="Old Address",
+            district="Old District",
+            city=city,
+            location=Point(30.5082, 39.7728),
+            duty_start=datetime(2025, 12, 10, 18, 0, tzinfo=UTC),
+            duty_end=datetime(2025, 12, 11, 8, 0, tzinfo=UTC),
+        )
+
+    def test_add_scraped_data_to_db_moves_existing_pharmacy(self) -> None:
+        from pharmacies.utils.utils import add_scraped_data_to_db
+
+        city = City.objects.create(name="eskisehir")
+        existing = self._existing_pharmacy(city, "Eczane A", "111")
+
+        add_scraped_data_to_db(
+            [
+                self._scraped_item(
+                    "Eczane A",
+                    "111",
+                    {"lat": 39.773155, "lng": 30.96744},
+                    "New Address",
+                    "New District",
+                )
+            ],
+            "eskisehir",
+        )
+
+        existing.refresh_from_db()
+        assert existing.location.x == pytest.approx(30.96744)
+        assert existing.location.y == pytest.approx(39.773155)
+        assert existing.address == "New Address"
+        assert existing.district == "New District"
+        assert existing.duty_start == datetime(2025, 12, 16, 18, 0, tzinfo=UTC)
+        assert existing.duty_end == datetime(2025, 12, 17, 8, 0, tzinfo=UTC)
+
+    @pytest.mark.parametrize(
+        "bad_coordinates",
+        [
+            None,
+            {},
+            {"lat": "abc", "lng": "30"},
+            {"lat": 91, "lng": 30},
+            {"lat": -91, "lng": 30},
+            {"lat": 39, "lng": 181},
+            {"lat": 39, "lng": -181},
+            {"lat": float("nan"), "lng": 30},
+            {"lat": 39, "lng": float("inf")},
+            {"lat": True, "lng": 30},
+        ],
+    )
+    def test_add_scraped_data_to_db_invalid_coordinates_keep_location(
+        self, bad_coordinates: Any
+    ) -> None:
+        from pharmacies.utils.utils import add_scraped_data_to_db
+
+        city = City.objects.create(name="eskisehir")
+        bad = self._existing_pharmacy(city, "Eczane Bad", "222")
+        good = self._existing_pharmacy(city, "Eczane Good", "333")
+
+        add_scraped_data_to_db(
+            [
+                self._scraped_item(
+                    "Eczane Bad", "222", bad_coordinates, "New Address", "New District"
+                ),
+                self._scraped_item(
+                    "Eczane Good",
+                    "333",
+                    {"lat": 39.773155, "lng": 30.96744},
+                    "Good Address",
+                    "Good District",
+                ),
+            ],
+            "eskisehir",
+        )
+
+        bad.refresh_from_db()
+        assert bad.location.x == pytest.approx(30.5082)
+        assert bad.location.y == pytest.approx(39.7728)
+        assert bad.address == "New Address"
+        assert bad.district == "New District"
+        assert bad.duty_start == datetime(2025, 12, 16, 18, 0, tzinfo=UTC)
+        assert bad.duty_end == datetime(2025, 12, 17, 8, 0, tzinfo=UTC)
+
+        good.refresh_from_db()
+        assert good.location.x == pytest.approx(30.96744)
+        assert good.location.y == pytest.approx(39.773155)
+        assert good.address == "Good Address"
+
+    def test_add_scraped_data_to_db_accepts_numeric_string_coordinates(
+        self,
+    ) -> None:
+        from pharmacies.utils.utils import add_scraped_data_to_db
+
+        city = City.objects.create(name="eskisehir")
+        existing = self._existing_pharmacy(city, "Eczane S", "444")
+
+        add_scraped_data_to_db(
+            [
+                self._scraped_item(
+                    "Eczane S",
+                    "444",
+                    {"lat": "39.773155", "lng": "30.96744"},
+                    "Old Address",
+                    "Old District",
+                )
+            ],
+            "eskisehir",
+        )
+
+        existing.refresh_from_db()
+        assert existing.location.x == pytest.approx(30.96744)
+        assert existing.location.y == pytest.approx(39.773155)
+
     def test_check_scraped_data_age_new(self) -> None:
         from pharmacies.utils.utils import ScrapedDataStatus, check_scraped_data_age
 

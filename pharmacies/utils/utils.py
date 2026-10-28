@@ -5,6 +5,7 @@ This module provides helpers for scraping, geospatial calculations,
 and interacting with the Google Maps API.
 """
 
+import math
 from datetime import datetime, timedelta
 from enum import Enum
 from functools import lru_cache
@@ -210,6 +211,26 @@ def get_city_data(city_name: str) -> list[dict[str, Any]]:
     raise ValueError("Unknown city")
 
 
+def _point_from_coordinates(coordinates: Any) -> Point | None:
+    """Build a Point(lng, lat) from scraped coordinates, or None if invalid."""
+    if not isinstance(coordinates, dict):
+        return None
+    raw_lat: Any = coordinates.get("lat")
+    raw_lng: Any = coordinates.get("lng")
+    if isinstance(raw_lat, bool) or isinstance(raw_lng, bool):
+        return None
+    try:
+        lat = float(raw_lat)
+        lng = float(raw_lng)
+    except (TypeError, ValueError):
+        return None
+    if not (math.isfinite(lat) and math.isfinite(lng)):
+        return None
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return None
+    return Point(lng, lat)
+
+
 def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -> None:
     """
     Save scraped pharmacy data to the database.
@@ -248,10 +269,18 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
         else:
             existing_pharmacy.duty_start = item["duty_start"]
             existing_pharmacy.duty_end = item["duty_end"]
+            existing_pharmacy.address = item["address"]
+            existing_pharmacy.district = item["district"]
+            new_location = _point_from_coordinates(item.get("coordinates"))
+            if new_location is not None:
+                existing_pharmacy.location = new_location
             pharmacies_to_update.append(existing_pharmacy)
 
     Pharmacy.objects.bulk_create(pharmacies_to_create, ignore_conflicts=True)
-    Pharmacy.objects.bulk_update(pharmacies_to_update, ["duty_start", "duty_end"])
+    Pharmacy.objects.bulk_update(
+        pharmacies_to_update,
+        ["duty_start", "duty_end", "location", "address", "district"],
+    )
 
 
 def _raise_for_non_ok_status(status: Any, results: list[Any]) -> None:
