@@ -48,10 +48,32 @@ state_dir() { echo "$STATE_HOME/$1"; }
 
 compose_as() {
   local name=$1; shift
+  local files=(-f "$ROOT/docker/dev/docker-compose.yml" -f "$ROOT/docker/testenv/compose.yml")
+  local ca
+  ca="$(state_dir "$name")/extra-ca.crt"
+  if [[ -f "$ca" ]]; then
+    files+=(-f "$ROOT/docker/testenv/compose.ca.yml")
+    export TESTENV_CA_FILE=$ca
+  fi
   "${COMPOSE_BIN[@]}" -p "$name" --project-directory "$ROOT" \
     --env-file "$ROOT/.env" --env-file "$ROOT/docker/dev/automation.env" \
-    -f "$ROOT/docker/dev/docker-compose.yml" -f "$ROOT/docker/testenv/compose.yml" \
-    "$@"
+    "${files[@]}" "$@"
+}
+
+# Cloud sessions (claude.ai/code) route HTTPS through a proxy whose CA the
+# containers do not trust. $TESTENV_EXTRA_CA_FILE wins; in a cloud session the
+# session's own bundle is used. The copy is world-readable for UID 1000.
+copy_extra_ca() {
+  local src=${TESTENV_EXTRA_CA_FILE:-} dest
+  dest="$(state_dir "$1")/extra-ca.crt"
+  if [[ -z "$src" && "${CLAUDE_CODE_REMOTE:-}" == "true" ]]; then
+    src=${SSL_CERT_FILE:-/root/.ccr/ca-bundle.crt}
+  fi
+  rm -f "$dest"
+  [[ -n "$src" ]] || return 0
+  [[ -f "$src" ]] || die "CA bundle $src not found"
+  install -m 644 "$src" "$dest"
+  log "containers trust the CA bundle from $src"
 }
 
 compose() { compose_as "$(run_name)" "$@"; }
@@ -140,6 +162,7 @@ cmd_prepare() {
   echo "$name" >"$NAME_FILE"
   mkdir -p "$(state_dir "$name")/logs"
   write_env
+  copy_extra_ca "$name"
 
   docker volume inspect "$UV_CACHE_VOLUME" >/dev/null 2>&1 || docker volume create "$UV_CACHE_VOLUME" >/dev/null
   compose build ${TESTENV_NO_CACHE:+--no-cache} 2>&1 | tee "$(state_dir "$name")/logs/build.log" >&2
