@@ -474,6 +474,46 @@ class TestGetPharmacyPoints:
         mock_logger.exception.assert_called_once()
 
 
+class TestHomePageErrorMessages:
+    """Failure states on the home page are Turkish, chosen by the page."""
+
+    @pytest.fixture
+    def html(self, client: Client) -> str:
+        response = client.get(reverse("home"))
+        assert response.status_code == 200
+        return response.content.decode()
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Bu konumda hizmet vermiyoruz (yalnızca İstanbul, Ankara, Eskişehir)",
+            "Çok fazla istek, lütfen biraz sonra tekrar deneyin",
+            "Konum servisine şu an ulaşılamıyor",
+            "Bir hata oluştu, lütfen tekrar deneyin",
+            "Harita yüklenemedi.",
+        ],
+    )
+    def test_turkish_error_messages_present(self, html: str, message: str) -> None:
+        assert message in html
+
+    @pytest.mark.parametrize(
+        "english",
+        [
+            "An unknown server error occurred.",
+            "No city found for the provided location.",
+            "Too many requests",
+            "Location lookup temporarily unavailable",
+            "An internal server error occurred.",
+        ],
+    )
+    def test_no_english_error_text(self, html: str, english: str) -> None:
+        assert english not in html
+
+    def test_status_pill_hidden_on_error_and_shown_on_success(self, html: str) -> None:
+        assert "$('#selectedPharmacyStatus').addClass('hidden')" in html
+        assert "$('#selectedPharmacyStatus').removeClass('hidden')" in html
+
+
 class TestOtherViews:
     def test_pharmacies_list(self, client: Client) -> None:
         url = reverse("home")
