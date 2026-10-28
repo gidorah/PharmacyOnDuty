@@ -1,33 +1,28 @@
 # PHARMACY DOMAIN KNOWLEDGE BASE
 
-## OVERVIEW
-Core domain handling PostGIS models, external data scrapers, and duty-scheduling logic.
+The only app: PostGIS models, city scrapers and duty-scheduling logic.
 
-## STRUCTURE
-- `models.py`: `Pharmacy` (GIS Point), `City` (Schedule), `ScraperConfig` (Celery trigger).
-- `utils/`: City scrapers (`ankaraeo`, `eskisehireo`, `istanbul_saglik`) + GIS helpers.
-- `tasks.py`: Celery entrypoints for city-specific scraping.
-- `views.py`: Geo-spatial API endpoints for nearest-pharmacy search. `get_pharmacy_points` is rate-limited per client IP (`ratelimit.py`, Redis `"ratelimit"` cache alias; `PHARMACY_POINTS_RATE_LIMIT`, default `30/m`; `RATELIMIT_TRUSTED_PROXY_COUNT`, default 0 = `REMOTE_ADDR`).
-- `management/`: `seed_cities.py` for bootstrapping system.
+## Where to look
 
-## WHERE TO LOOK
-- **Add City**: Create `utils/<city>_scraper.py` -> Register in `utils/utils.py:get_city_data`.
-- **Tune Search**: `utils/utils.py:get_nearest_pharmacies_on_duty` (Annotation logic).
-- **Fix Data**: `utils/utils.py:add_scraped_data_to_db` (UPSERT logic with pre-fetching map).
+- **Add a city**: create `utils/<city>_scraper.py`, register it in `utils/utils.py:get_city_data`.
+- **Nearest search**: `utils/utils.py:get_nearest_pharmacies_on_duty` (`Distance` annotation); travel time comes separately from Google Distance Matrix.
+- **Ingest**: `utils/utils.py:add_scraped_data_to_db` (bulk UPSERT with a pre-fetched lookup map).
+- **Rate limit**: `get_pharmacy_points` in `views.py` is rate-limited per client IP in `ratelimit.py`; the client-IP rule is [ADR 0003](../docs/decisions/0003-trust-one-proxy-hop-for-the-rate-limit-key.md).
+- **Schedules**: `ScraperConfig` writes celery-beat rows, see [ADR 0002](../docs/decisions/0002-drive-scrape-schedules-from-the-database.md).
 
-## CONVENTIONS
-- **GIS Order**: `Point(longitude, latitude)` - standard for GeoDjango.
-- **Scraper Output**: MUST return standardized dict: `name`, `address`, `district`, `phone`, `coordinates` (`lat`/`lng`), `duty_start`, `duty_end`.
-- **String Normalization**: Use `utils.py:normalize_string` for Turkish char handling.
-- **Distance**: Use `Distance` annotation for DB queries; use Google Distance Matrix for travel time.
+## Conventions
 
-## ANTI-PATTERNS
-- **Sequential Ingest**: Never loop `.save()`; use `bulk_create` / `bulk_update` (see `add_scraped_data_to_db`).
-- **Coordinate Swap**: Do not use `(lat, lng)` for `Point` creation; GeoDjango expects `(x, y)` which is `(lng, lat)`.
-- **Untrusted Coords**: Always validate scraped lat/lng before Point creation.
-- **O(N) Scraper Registry**: Avoid adding scrapers manually in multiple places; use `utils.py:get_city_data`.
+- **Scraper output** must be the standardized dict: `name`, `address`, `district`, `phone`, `coordinates` (`lat`/`lng`), `duty_start`, `duty_end`.
+- **Turkish characters**: use `utils.py:normalize_string`.
+- **GIS order**: `Point(longitude, latitude)`; validate scraped lat/lng before building a Point.
 
-## TESTING
-- **Scrapers**: Mock `requests.get`. Use `test_scraper_performance.py` for ingest efficiency.
-- **Geo-Queries**: Test `Distance` functions with known coordinate pairs.
-- **Data Integrity**: `Pharmacy` has no unique constraint; `(name, phone)` is matched in Python only, and `ignore_conflicts=True` does not prevent duplicates (ADR 0005).
+## Anti-patterns
+
+- Looping `.save()` on ingest; use `bulk_create` / `bulk_update`.
+- Registering scrapers anywhere but `get_city_data`.
+
+## Testing
+
+- Scrapers: mock `requests` (get or post). `tests/test_scraper_performance.py` guards ingest efficiency.
+- Geo queries: test `Distance` with known coordinate pairs.
+- `Pharmacy` has no unique constraint; `(name, phone)` is matched in Python only, and `ignore_conflicts=True` does not prevent duplicates ([ADR 0005](../docs/decisions/0005-identify-a-pharmacy-by-name-and-phone-and-never-delete-rows.md)).

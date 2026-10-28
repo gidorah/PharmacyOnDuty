@@ -1,83 +1,93 @@
 # AGENTS.md
 
-This file provides guidance to coding agents (Codex, Claude Code, etc.) when working with code in this repository.
+Guidance for coding agents (Codex, Claude Code, etc.) working in this repository.
 
 ## Project
 
-Pharmacy on-duty finder for Turkey (Eskişehir, Istanbul, Ankara). Django 5 + GeoDjango/PostGIS, Celery/Redis, Tailwind. Python 3.13, `uv` for deps, `just` as task runner, Docker Compose for environments.
+Pharmacy on-duty finder for Turkey (Eskişehir, Istanbul, Ankara). Django 6 with
+GeoDjango/PostGIS, Celery/Redis, Tailwind. Python 3.13, `uv` for dependencies,
+`just` as task runner, Docker Compose for every environment. Product overview:
+[readme.md](readme.md).
+
+## Where to read
+
+- [CONTEXT.md](CONTEXT.md): glossary. Use its terms in code, tests and PRs.
+- [docs/decisions/](docs/decisions/README.md): ADRs. Read the ones touching the
+  area you change; the README says when a change needs a new one.
+- [docs/explanation/production.md](docs/explanation/production.md): hosts,
+  Coolify apps and the deploy path. Update it with any change to `docker/prod/`.
+- [docker/testenv/README.md](docker/testenv/README.md): the per-worktree test stack.
+- Area files, read before non-trivial edits there:
+  [pharmacies/AGENTS.md](pharmacies/AGENTS.md),
+  [docker/AGENTS.md](docker/AGENTS.md), [theme/AGENTS.md](theme/AGENTS.md).
 
 ## Commands
 
-Everything routes through `just`, which shells into the dev Docker Compose stack. Do not invoke `python`/`pytest`/`pip` on the host — use `uv run` inside the container (or via `just`).
+Everything runs in containers. Do not invoke `python`, `pytest`, `ruff`, `mypy`
+or `pip` on the host; use `uv run` inside the stack. `uv` only: `uv sync`,
+`uv run`, `uv add`; no `pip`, no manual venvs.
 
 ```bash
-just dev-up          # Start dev stack (django, db, redis, celery, beat, flower)
-just dev-rebuild     # Rebuild + start
-just dev-down
-just dev-django      # Shell into the django container
-just dev-db          # psql into the PostGIS db
-just logs <service>  # Tail one service
-
-just migrate / just makemigrations
-just shell           # Django shell
-just seed            # Run seed_cities management command
-just test            # Runs `manage.py test` inside container
-
-# Single test via pytest (preferred for dev):
-just manage "test pharmacies.tests.test_views.TestNearest::test_happy_path"
-# or inside `just dev-django`:
-uv run pytest pharmacies/tests/test_views.py::TestNearest::test_happy_path -x
+just dev-up / dev-down / dev-rebuild   # shared dev stack
+just dev-django                        # shell in the django container
+just dev-db                            # psql into the PostGIS db
+just logs <service>                    # django, db, redis, worker, beat, flower
+just manage "<command>"                # manage.py inside the container
+just migrate / makemigrations / shell / seed
 ```
 
-Lint/format/type-check (run inside container or via `uv run`):
+Flower is on `localhost:5555` in dev. Sentry starts when `SENTRY_DSN` is set.
+
+## Proving a change: the testenv
+
+Run from inside your worktree; it gives each worktree its own full stack, so
+runs never collide with each other or the shared dev stack. `just testenv <args>`
+is the same script.
+
 ```bash
-uv run ruff check --fix .
-uv run ruff format .
-uv run mypy .
+docker/testenv/testenv.sh prepare <name>   # once: .env and images
+docker/testenv/testenv.sh start            # up, validate, seed cities
+docker/testenv/testenv.sh check            # validate, ruff, format, mypy, full pytest
+docker/testenv/testenv.sh exec django uv run pytest pharmacies/tests/test_views.py -x
+docker/testenv/testenv.sh reset            # tear down
 ```
 
-Pytest is configured via `pyproject.toml` with `DJANGO_SETTINGS_MODULE=PharmacyOnDuty.settings` and `--cov=pharmacies`. Test discovery covers both `tests/` (top-level infra/perf tests) and `pharmacies/tests/` (domain tests).
+A change counts as proven when `check` passes after `validate`. `just test`
+runs Django's runner, not pytest; prefer the testenv.
 
-## Architecture
+## Gates CI runs
 
-**Django project**: `PharmacyOnDuty/` holds settings, urls, celery app, sitemaps, and `database_config.py` (env-driven DB selection).
+`.github/workflows/ci.yml` reports one aggregate check, `check`, that passes
+only when its three jobs pass. Run these through `testenv.sh exec django ...`
+(or in the dev stack).
 
-**Core domain**: `pharmacies/` is the only app.
-- `models.py` — `City`, `Pharmacy` (PostGIS Point), `ScraperConfig`, `WorkingSchedule`. `ScraperConfig.save()` mutates `django-celery-beat` `PeriodicTask` rows, so scraping cadence is controlled from the DB, not code.
-- `utils/` — one `*_scraper.py` per city chamber (`ankaraeo`, `eskisehireo`, `istanbul_saglik`) plus shared helpers in `utils.py`. Scrapers must return the standardized dict (`name`, `address`, `district`, `phone`, `coordinates.{lat,lng}`, `duty_start`, `duty_end`) and are registered in `utils/utils.py:get_city_data` — do not wire them up anywhere else.
-- `tasks.py` — Celery entrypoints that invoke scrapers; results ingested via `utils.py:add_scraped_data_to_db` (bulk UPSERT with a pre-fetched lookup map; **never** loop `.save()`).
-- `views.py` — geo-spatial endpoints. Nearest-pharmacy search uses `Distance` annotations via `utils.py:get_nearest_pharmacies_on_duty`; travel time uses Google Distance Matrix separately.
-- `management/commands/seed_cities.py` — bootstraps City rows.
+- Lint: `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy .`.
+- Templates: djlint is not a project dependency; CI runs it with `uvx` at the
+  workflow's `DJLINT_VERSION` (the pin in `.pre-commit-config.yaml`):
+  `uvx djlint@<version> theme/templates --check --profile=django`, and the same
+  with `--lint` and the workflow's `--ignore` list.
+- Test: `uv run python manage.py makemigrations --check --dry-run`,
+  `uv run python manage.py collectstatic --noinput`,
+  `uv run pytest -p no:cacheprovider`.
+- Build: the image from `docker/prod/Dockerfile` must build.
 
-**GIS gotcha**: GeoDjango `Point(x, y)` expects `(lng, lat)`, not `(lat, lng)`. Always validate scraped coordinates before constructing a Point. Use `utils.py:normalize_string` for Turkish character handling.
+`testenv.sh check` covers ruff, mypy and pytest only. It does not run djlint,
+the migrations check, collectstatic or the image build; run those yourself when
+you touch templates, models, static files or `docker/prod/`.
 
-**Frontend**: `theme/` is a `django-tailwind` app. Build CSS with `uv run python manage.py tailwind build` (or the dev watcher). Don't hand-write raw CSS — use Tailwind classes.
+## Conventions the code cannot show
 
-**Docker layout** (`docker/`):
-- `dev/` — hot-reload stack, mounts host source, runs as UID 1000 (`python` user), isolated venv at `/opt/venv` (never mount host `.venv`).
-- `prod/services/` — web stack (gunicorn + nginx + redis + db).
-- `prod/workers/` — scalable Celery worker stack.
-- `postgis/` — custom PostGIS image with auto-init.
-- Containers run `uv sync` on startup; entrypoint scripts live in `/usr/local/bin/` so they aren't masked by volume mounts. `scripts/wait_for_services.py` gates startup on DB/Redis.
-
-**Observability**: Sentry auto-initializes if `SENTRY_DSN` is set. Flower is exposed at `localhost:5555` in dev. `debugpy` auto-attaches if its port env var is set.
-
-**Deployment**: Coolify/PaaS via `Procfile` + `Aptfile` (GDAL/Proj system deps) + `scripts/on_deploy.sh`.
-
-## Conventions & gates
-
-- **`uv` only.** No `pip`, no manual venvs. `uv sync` / `uv run` / `uv add`.
-- **Strict mypy** (`python_version = 3.13`, `strict = true`) — don't weaken it; fix types properly.
-- **Ruff** is the sole linter/formatter (`E4/E7/F/I/UP`, line length 88, double quotes). Never suppress a lint error to make it go away — if you can't resolve it, ask.
-- **Bulk DB ops**: `bulk_create(ignore_conflicts=True)` / `bulk_update`. Ingest performance is enforced by tests in `pharmacies/tests/test_scraper_performance.py`.
-- **Time**: `timezone.now()`, never `datetime.now()`.
-- **Scraper tests** mock `requests.get`; don't hit the network.
-
-## Companion docs
-
-- `AGENTS.md` (root) and `pharmacies/AGENTS.md`, `docker/AGENTS.md` — per-area knowledge bases; read the relevant one before non-trivial edits in that area.
-- `CONTEXT.md` — the glossary. Use its terms in code, issues and tests.
-- `docs/decisions/` — why things are the way they are. Read the records that touch the area before changing it, and add one for a decision that is hard to reverse, surprising and a real trade-off (`docs/decisions/README.md`).
-- `docs/explanation/production.md` — hosts, Coolify apps and the deploy path. Update it with any change to `docker/prod/`.
-- `docker/testenv/README.md` — the per-worktree test stack used to prove a change.
-- `readme.md` — long-form product/feature doc.
+- Ruff is the sole linter and formatter (`E4/E7/F/I/UP`, line length 88, double
+  quotes). Strict mypy with the django plugin; fix types, do not weaken it.
+  Never suppress a lint error to make it go away; if you cannot resolve it, ask.
+- `timezone.now()`, never `datetime.now()`.
+- Ingest uses bulk operations (`bulk_create(ignore_conflicts=True)`,
+  `bulk_update`); never loop `.save()`.
+  `pharmacies/tests/test_scraper_performance.py` enforces it.
+- Scraper tests mock `requests` (scrapers use `get` and `post`); never hit the network.
+- Scrapers are registered only in `pharmacies/utils/utils.py:get_city_data`.
+- GeoDjango `Point(x, y)` is `(lng, lat)`. Validate scraped coordinates first.
+- Scraping cadence lives in the database: `ScraperConfig.save()` writes
+  `django-celery-beat` `PeriodicTask` rows ([ADR 0002](docs/decisions/0002-drive-scrape-schedules-from-the-database.md)).
+- Do not hand-edit `theme/static/css/dist/styles.css`; use Tailwind classes, not raw CSS.
+- Tests live in `tests/` (infra and performance) and `pharmacies/tests/` (domain).
