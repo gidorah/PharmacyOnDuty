@@ -13,6 +13,7 @@ from json import JSONDecodeError, loads
 
 import requests
 from django.conf import settings
+from django.db.models import Count, F, Q
 from django.http import HttpRequest, HttpResponse, HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -193,6 +194,56 @@ def _cached_google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonRespon
         return JsonResponse(
             {"error": "Failed to proxy Google Maps request."}, status=500
         )
+
+
+def data_health(request: HttpRequest) -> HttpResponse | JsonResponse:
+    """
+    Report scrape freshness and duty counts per city for health checks.
+
+    Read-only and public: it exposes only counts and timestamps, makes no
+    outbound calls and is deliberately not rate limited.
+    """
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+
+    return _cached_data_health(request)
+
+
+@cache_page(60)  # cache for 1 minute
+def _cached_data_health(request: HttpRequest) -> JsonResponse:
+    """Build the per-city data health summary with a single query."""
+    now = timezone.now()
+    rows = (
+        City.objects.annotate(
+            last_scrape=F("scraperconfig__last_run"),
+            duty_now=Count(
+                "pharmacies",
+                filter=Q(
+                    pharmacies__duty_start__lte=now, pharmacies__duty_end__gte=now
+                ),
+            ),
+            duty_next_12h=Count(
+                "pharmacies",
+                filter=Q(
+                    pharmacies__duty_start__lt=now + timedelta(hours=12),
+                    pharmacies__duty_end__gt=now,
+                ),
+            ),
+        )
+        .order_by("name")
+        .values("name", "last_scrape", "duty_now", "duty_next_12h")
+    )
+    cities = {
+        row["name"]: {
+            "last_scrape": (
+                row["last_scrape"].isoformat() if row["last_scrape"] else None
+            ),
+            "duty_now": row["duty_now"],
+            "duty_next_12h": row["duty_next_12h"],
+        }
+        for row in rows
+    }
+    return JsonResponse({"cities": cities, "time": now.isoformat()})
 
 
 def pharmacies_list(request: HttpRequest) -> HttpResponse:
