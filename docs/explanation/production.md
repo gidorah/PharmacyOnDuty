@@ -68,6 +68,7 @@ Nothing in the Coolify build reads them.
 
 ## Secrets and settings
 
-Values live in Coolify, per app. The names the code reads are in
-`PharmacyOnDuty/settings.py`; the production-only switches are set in
+Values live in Coolify, per app. The names the code reads, with their defaults,
+are in [the environment reference](../reference/environment.md); the
+production-only switches are set in
 `docker/prod/services/docker-compose.yml` with their defaults and reasons.

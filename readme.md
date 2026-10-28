@@ -260,7 +260,7 @@ PharmacyOnDuty/
 
 4.  **Set Environment Variables:**
 
-   Create a `.env` file in the project root directory (or set these variables directly in your environment, for example in `docker-compose.yml` for Docker-based setups). See the [Environment Variables](#environment-variables) section for details.  Make sure to set `REDIS_PASSWORD` to a secure password.
+   Create a `.env` file in the project root directory (or set these variables directly in your environment, for example in `docker-compose.yml` for Docker-based setups). Copy `.env.example` to start. See the [Environment Variables](#environment-variables) section, or the [reference](docs/reference/environment.md) directly, for details.  Make sure to set `REDIS_PASSWORD` to a secure password.
 
 5. **Database Setup:**
 
@@ -582,28 +582,7 @@ This section explains how to run the application in a production setting using d
 
 ## Environment Variables
 
-The following environment variables are used to configure the application:
-
-- `DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER`: Optional. Set to any truthy value (`True`, `1`, `yes`, `on` — case-insensitive) to enable proxy HTTPS detection when Django is running behind a trusted reverse proxy that overwrites `X-Forwarded-Proto` (for example Coolify). When unset or set to a falsy value, the setting stays disabled. **Required in production** when `SECURE_SSL_REDIRECT` is enabled behind a TLS-terminating proxy, otherwise requests will redirect in a loop.
-
-| Variable Name             | Description                                                                                                                                                                                                                            | Default Value | Required |
-| :------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------ | :------- |
-| `DJANGO_SECRET_KEY`       | A secret key used by Django for cryptographic signing. **This should be a long, random, and unpredictable value.**                                                                                                                   |               | Yes      |
-| `DJANGO_DEBUG`            | A boolean value indicating whether Django is in debug mode. Set to `True` for development and leave it unset or `False` for production.                                                                                              | `False`       | No       |
-| `GOOGLE_MAPS_API_KEY`     | Your Google Maps API key.                                                                                                                                                                                                             |               | Yes      |
-| `GOOGLE_MAPS_MAP_ID`      | A Google Maps Map ID (vector map). Required by `AdvancedMarkerElement` and the modern Maps JS rendering pipeline. Defaults to Google's `DEMO_MAP_ID` for local development; **required in production** (create a Map ID in Google Cloud). | `DEMO_MAP_ID` | Yes (prod) |
-| `CSRF_TRUSTED_ORIGINS`    | Space-separated HTTPS origins trusted for CSRF (e.g. `https://eczanerede.com`).                                                                                                                                                      | `http://localhost:8000` | Yes (prod) |
-| `CELERY_BROKER_URL`       | Redis broker URL for Celery workers/beat (include password when Redis requires auth).                                                                                                                                                 | `redis://localhost:6379/0` | Yes (workers) |
-| `DB_NAME`                 | The name of the PostgreSQL database.                                                                                                                                                                                                  | `postgres`    | Yes      |
-| `DB_USER`                 | The username for the PostgreSQL database.                                                                                                                                                                                               | `postgres`    | Yes      |
-| `DB_PASSWORD`             | The password for the PostgreSQL database.                                                                                                                                                                                               | `password`    | Yes      |
-| `DB_HOST`                 | The hostname or IP address of the PostgreSQL database server. Use `localhost` if running without Docker, `db` for Docker Compose.                                                                                                      | `db`          | Yes      |
-| `DB_PORT`                 | The port number of the PostgreSQL database server.                                                                                                                                                                                      | `5432`        | Yes      |
-| `SENTRY_DSN`              | Your Sentry DSN (Data Source Name) for error tracking.                                                                                                                                                                                 |               | No       |
-| `DJANGO_ALLOWED_HOSTS`   | A list of allowed hostnames for the Django application. Add your domain in production.                                                                                                                                                 | `localhost`   | Yes      |
-| `ALLOWED_REFERERS`        | A list of allowed referrers for the Google Maps proxy. Add your domain in production.                                                                                                                                                  |               | Yes      |
-| `REMOTE_DEBUGGING_PORT` | The port number for remote debugging with `debugpy`.                                                                                                                                                                                    | `5678`        | No       |
-| `REDIS_PASSWORD`          | The password for Redis. Required for both the Redis server and Celery to connect.                                                                                                                                                  |               | Yes      |
+Every environment variable, its default and where production sets it is listed in [docs/reference/environment.md](docs/reference/environment.md). `.env.example` is the starting point for a local `.env`.
 
 ## Testing
 
