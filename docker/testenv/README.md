@@ -48,3 +48,43 @@ and `measure` (cold and warm start, peak memory, disk, check time).
   `testenv.sh exec redis redis-cli <cmd>` needs no password flag. The password
   is `REDIS_PASSWORD` in the worktree's `.env`; the container has no variable
   of that name, so `redis-cli -a "$REDIS_PASSWORD"` inside it sends an empty one.
+
+## Cloud sessions (claude.ai/code)
+
+testenv runs in a Claude Code cloud session too. The environment is set up in
+the claude.ai/code UI, not in this repo:
+
+- **Network access: Custom.** Tick "include default package managers" and add
+  the hosts the image builds use that the default list may miss:
+
+  ```text
+  deb.debian.org
+  security.debian.org
+  apt.postgresql.org
+  production.cloudflare.docker.com
+  pkg-containers.githubusercontent.com
+  ```
+
+  The chamber sites are not on the list, so beat's scrapes fail there. Tests
+  mock the network and `validate` does not scrape, so nothing else depends on them.
+- **Environment variables:** none. `prepare` falls back to `.env.example` and
+  fills in test values. Put no secrets here: anyone using the environment can
+  read them.
+- **Setup script:** runs once as root and is snapshotted, so it pulls the
+  base images the builds need:
+
+  ```bash
+  #!/bin/bash
+  set -euo pipefail
+  nohup dockerd >/var/log/dockerd-setup.log 2>&1 &
+  for _ in $(seq 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
+  for image in python:3.13-slim postgres:15 redis:alpine ghcr.io/astral-sh/uv:latest; do
+    docker pull "$image"
+  done
+  pkill dockerd || true
+  for _ in $(seq 30); do pgrep -x dockerd >/dev/null || break; sleep 1; done
+  ```
+
+The snapshot keeps files but no processes. The SessionStart hook in
+`.claude/settings.json` runs `scripts/cloud/start-docker.sh`, which starts
+dockerd in each cloud session and does nothing locally.
