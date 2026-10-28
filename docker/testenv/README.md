@@ -97,7 +97,10 @@ the claude.ai/code UI, not in this repo:
 
 The snapshot keeps files but no processes. The SessionStart hook in
 `.claude/settings.json` runs `scripts/cloud/start-docker.sh`, which starts
-dockerd in each cloud session and does nothing locally. The container can
+dockerd in each cloud session and does nothing locally. It also hands the
+root-owned checkout to UID 1000, which the app containers run as, and marks it
+a git `safe.directory`; without that `start` fails at `collectstatic` with
+`Permission denied: '/app/staticfiles'`. The container can
 restart while a session is idle, which stops dockerd and the stack but keeps
 files. When docker commands fail, rerun `scripts/cloud/start-docker.sh`, then
 `reset` the stack before using it again.

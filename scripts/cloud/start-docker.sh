@@ -4,13 +4,24 @@
 # starts it here. testenv.sh needs it. Local sessions exit at once.
 # The container can restart while the session is idle, which stops dockerd;
 # rerun this script by hand when docker commands fail.
+#
+# The cloud checkout is root-owned, but the app containers run as UID 1000 and
+# write to the bind-mounted worktree (staticfiles, caches). Hand it to UID 1000
+# and tell git that is fine, or it refuses with "dubious ownership".
 set -euo pipefail
 
 [[ "${CLAUDE_CODE_REMOTE:-}" == "true" ]] || exit 0
-docker info >/dev/null 2>&1 && exit 0
 
 sudo=()
 [[ $EUID -eq 0 ]] || sudo=(sudo -n)
+
+root=${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}
+"${sudo[@]}" chown -R 1000:1000 "$root"
+git config --global --get-all safe.directory | grep -qxF "$root" \
+  || git config --global --add safe.directory "$root"
+
+docker info >/dev/null 2>&1 && exit 0
+
 # setsid: dockerd must outlive the hook's process group.
 setsid "${sudo[@]}" dockerd >/tmp/dockerd.log 2>&1 </dev/null &
 
