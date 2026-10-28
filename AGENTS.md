@@ -16,6 +16,9 @@ GeoDjango/PostGIS, Celery/Redis, Tailwind. Python 3.13, `uv` for dependencies,
   area you change; the README says when a change needs a new one.
 - [docs/explanation/production.md](docs/explanation/production.md): hosts,
   Coolify apps and the deploy path. Update it with any change to `docker/prod/`.
+- [docs/explanation/scraping.md](docs/explanation/scraping.md): each city's
+  source and duty window, the scrape schedule and the ingest. Update it with any
+  change to a scraper or the scrape path.
 - [docker/testenv/README.md](docker/testenv/README.md): the per-worktree test stack.
 - Area files, read before non-trivial edits there:
   [pharmacies/AGENTS.md](pharmacies/AGENTS.md),

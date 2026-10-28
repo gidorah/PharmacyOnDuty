@@ -4,7 +4,7 @@ The only app: PostGIS models, city scrapers and duty-scheduling logic.
 
 ## Where to look
 
-- **Add a city**: create `utils/<city>_scraper.py`, register it in `utils/utils.py:get_city_data`.
+- **Add a city**: create `utils/<city>_scraper.py`, register it in `utils/utils.py:get_city_data`. How the existing scrapers read their sources and duty windows: [`docs/explanation/scraping.md`](../docs/explanation/scraping.md).
 - **Nearest search**: `utils/utils.py:get_nearest_pharmacies_on_duty` (`Distance` annotation); travel time comes separately from Google Distance Matrix.
 - **Ingest**: `utils/utils.py:add_scraped_data_to_db` (bulk UPSERT with a pre-fetched lookup map).
 - **Rate limit**: `get_pharmacy_points` in `views.py` is rate-limited per client IP in `ratelimit.py`; the client-IP rule is [ADR 0003](../docs/decisions/0003-trust-one-proxy-hop-for-the-rate-limit-key.md).
