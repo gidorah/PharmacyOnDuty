@@ -1,0 +1,15 @@
+# Overlay testenv.sh adds when the run has an extra CA bundle (cloud sessions
+# route HTTPS through a proxy with its own CA). uv reads SSL_CERT_FILE, so
+# `uv sync` in the containers can reach PyPI through the proxy.
+x-extra-ca: &extra-ca
+  volumes:
+    - ${TESTENV_CA_FILE}:/etc/ssl/certs/testenv-extra-ca.crt:ro
+  environment:
+    SSL_CERT_FILE: /etc/ssl/certs/testenv-extra-ca.crt
+    REQUESTS_CA_BUNDLE: /etc/ssl/certs/testenv-extra-ca.crt
+
+services:
+  django: *extra-ca
+  worker: *extra-ca
+  beat: *extra-ca
+  flower: *extra-ca

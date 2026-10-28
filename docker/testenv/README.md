@@ -48,3 +48,64 @@ and `measure` (cold and warm start, peak memory, disk, check time).
   `testenv.sh exec redis redis-cli <cmd>` needs no password flag. The password
   is `REDIS_PASSWORD` in the worktree's `.env`; the container has no variable
   of that name, so `redis-cli -a "$REDIS_PASSWORD"` inside it sends an empty one.
+
+## Cloud sessions (claude.ai/code)
+
+testenv runs in a Claude Code cloud session too. The environment is set up in
+the claude.ai/code UI, not in this repo:
+
+- **Network access: Custom.** Tick "include default package managers" and add
+  the hosts the image builds use that the default list may miss:
+
+  ```text
+  deb.debian.org
+  security.debian.org
+  apt.postgresql.org
+  production.cloudflare.docker.com
+  pkg-containers.githubusercontent.com
+  ```
+
+  The chamber sites are not on the list, so beat's scrapes fail there. Tests
+  mock the network and `validate` does not scrape, so nothing else depends on them.
+- **Environment variables:** none. `prepare` falls back to `.env.example` and
+  fills in test values. Put no secrets here: anyone using the environment can
+  read them.
+- **Setup script:** runs once as root and is snapshotted for about seven
+  days, so it pulls the base images the builds need. Failures only warn, so a
+  flaky pull never blocks a session from starting:
+
+  ```bash
+  #!/bin/bash
+  # Pre-pulls testenv's base images into the environment snapshot.
+  set -uo pipefail
+  dockerd >/var/log/dockerd-setup.log 2>&1 &
+  dockerd_pid=$!
+  for _ in $(seq 30); do docker info >/dev/null 2>&1 && break; sleep 1; done
+  pids=()
+  for image in python:3.13-slim postgres:15 redis:alpine ghcr.io/astral-sh/uv:latest; do
+    docker pull -q "$image" >/dev/null &
+    pids+=("$!")
+  done
+  for pid in "${pids[@]}"; do
+    wait "$pid" || echo "[pod-cloud-setup] warning: an image pull failed"
+  done
+  # Stop the daemon so the snapshot is consistent.
+  kill "$dockerd_pid" 2>/dev/null
+  wait "$dockerd_pid" 2>/dev/null
+  exit 0
+  ```
+
+The snapshot keeps files but no processes. The SessionStart hook in
+`.claude/settings.json` runs `scripts/cloud/start-docker.sh`, which starts
+dockerd in each cloud session and does nothing locally. The container can
+restart while a session is idle, which stops dockerd and the stack but keeps
+files. When docker commands fail, rerun `scripts/cloud/start-docker.sh`, then
+`reset` the stack before using it again.
+
+The session sends HTTPS through a proxy with its own CA, which containers do
+not trust, so `uv sync` in them would fail against PyPI. In a cloud session
+`prepare` copies the session's CA bundle (`$SSL_CERT_FILE`, else
+`/root/.ccr/ca-bundle.crt`) into the run's state folder, and the
+`compose.ca.yml` overlay mounts it and sets `SSL_CERT_FILE`. Set
+`TESTENV_EXTRA_CA_FILE` to use another bundle anywhere. Image builds only use
+plain-HTTP Debian mirrors and registry pulls by dockerd, so they need no CA.
