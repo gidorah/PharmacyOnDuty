@@ -10,6 +10,7 @@ import requests
 from pharmacies.utils.ankaraeo_scraper import (
     AnkaraScraperError,
     _get_duty_times,
+    _turkish_title,
     get_ankara_data,
 )
 
@@ -74,6 +75,31 @@ def test_get_duty_times_sunday(mock_now: MagicMock) -> None:
     assert duty_end == datetime(2025, 12, 22, 6, 0, tzinfo=UTC)
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("YENİ ÜMİT", "Yeni Ümit"),
+        ("NEHİR MURAT", "Nehir Murat"),
+        ("CENGİZ", "Cengiz"),
+        ("ŞİFA", "Şifa"),
+        ("SAĞLIK", "Sağlık"),
+        ("ÇINAR", "Çınar"),
+        ("AKYURT MERKEZ", "Akyurt Merkez"),
+        ("Yeni Ümit", "Yeni Ümit"),
+        ("AYŞE-NUR", "Ayşe-Nur"),
+        ("DR.AHMET", "Dr.Ahmet"),
+        ("(YENİ)", "(Yeni)"),
+        ("İLKER", "İlker"),
+        ("IŞIK", "Işık"),
+    ],
+)
+def test_turkish_title_cases_turkish_letters(raw: str, expected: str) -> None:
+    result = _turkish_title(raw)
+
+    assert result == expected
+    assert "\u0307" not in result
+
+
 @patch("pharmacies.utils.ankaraeo_scraper._get_duty_times")
 @patch("pharmacies.utils.ankaraeo_scraper.requests.get")
 def test_get_ankara_data_parses_get_pharmacies_html(
@@ -86,7 +112,7 @@ def test_get_ankara_data_parses_get_pharmacies_html(
 
     assert len(data) == 3
     assert data[0] == {
-        "name": "Emek Sağlik Eczanesi",  # str.title() lowercases I to i
+        "name": "Emek Sağlık Eczanesi",
         "address": "Emek Mah. Kırım Cad. No:80/C Çankaya/ ANKARA",
         "district": "Çankaya",
         "phone": "3122211770",
@@ -94,13 +120,14 @@ def test_get_ankara_data_parses_get_pharmacies_html(
         "duty_start": DUTY_START,
         "duty_end": DUTY_END,
     }
-    assert data[1]["name"] == "Çinar Eczanesi"
+    assert data[1]["name"] == "Çınar Eczanesi"
     assert data[1]["phone"] == "3123123334"
     assert data[1]["coordinates"] == {"lat": 39.909901855431, "lng": 32.796953469515}
     assert data[2]["name"] == "Akyurt Merkez Eczanesi"
     assert data[2]["district"] == "Akyurt"
     assert data[2]["phone"] == "3125122612"
     assert data[2]["coordinates"] == {"lat": 40.13111297929, "lng": 33.080611489713}
+    assert all("\u0307" not in item["name"] for item in data)
 
 
 @patch("pharmacies.utils.ankaraeo_scraper.timezone.localtime")
@@ -252,6 +279,6 @@ def test_get_ankara_data_normalizes_phone_to_stored_format(
 
     assert [(pharmacy["name"], pharmacy["phone"]) for pharmacy in data] == [
         ("Spaced Eczanesi", "3122302312"),
-        ("Mobile Eczanesi", "5333015404"),
+        ("Mobıle Eczanesi", "5333015404"),
         ("Double Zero Eczanesi", "3127281533"),
     ]
