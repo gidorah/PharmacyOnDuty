@@ -76,5 +76,8 @@ Pytest is configured via `pyproject.toml` with `DJANGO_SETTINGS_MODULE=PharmacyO
 ## Companion docs
 
 - `AGENTS.md` (root) and `pharmacies/AGENTS.md`, `docker/AGENTS.md` — per-area knowledge bases; read the relevant one before non-trivial edits in that area.
-- `GEMINI.md` — mostly overlaps with this file; kept for the Gemini review workflows in `.github/`.
+- `CONTEXT.md` — the glossary. Use its terms in code, issues and tests.
+- `docs/decisions/` — why things are the way they are. Read the records that touch the area before changing it, and add one for a decision that is hard to reverse, surprising and a real trade-off (`docs/decisions/README.md`).
+- `docs/explanation/production.md` — hosts, Coolify apps and the deploy path. Update it with any change to `docker/prod/`.
+- `docker/testenv/README.md` — the per-worktree test stack used to prove a change.
 - `readme.md` — long-form product/feature doc.
