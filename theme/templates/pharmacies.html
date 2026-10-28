@@ -51,12 +51,12 @@
                     <img src="static/icons/eczane-logo.png"
                          alt="Eczanerede - Açık Eczaneler Logosu">
                 </div>
-                <div class="h-12 px-8 gap-4 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
+                <div class="min-h-12 py-2 px-4 gap-2 mr-5 min-w-0 flex items-center bg-primary-100 rounded-3xl relative z-10 border-b border-neutral-400"
                      style="box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)">
                     <span id="selectedPharmacyStatus"
-                          class="inline-block text-sm font-medium px-2 py-2 rounded-full bg-secondary border-2 border-secondary text-white">
+                          class="hidden shrink-0 inline-block text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">
                     </span>
-                    <span id="selectedPharmacyName" class="text-sm font-semibold text-gray-800">Açık Eczaneler Yükleniyor</span>
+                    <span id="selectedPharmacyName" class="min-w-0 break-words text-sm font-semibold text-gray-800">Açık Eczaneler Yükleniyor</span>
                 </div>
             </div>
             <!-- Map Section -->
@@ -415,15 +415,38 @@
 
 		function showHeaderError(message) {
 			$('#selectedPharmacyName').text(message);
+			hideHeaderStatus();
+		}
+
+		// Full literal class strings so Tailwind's content scan keeps them.
+		const HEADER_STATUS_STYLES = {
+			"Açık": "bg-green-100 text-green-800",
+			"Nöbetçi": "bg-amber-100 text-amber-800",
+		};
+		const HEADER_STATUS_FALLBACK_STYLE = "bg-gray-100 text-gray-800";
+		const HEADER_STATUS_ALL_STYLES = "bg-green-100 text-green-800 bg-amber-100 text-amber-800 bg-gray-100 text-gray-800";
+
+		function hideHeaderStatus() {
 			$('#selectedPharmacyStatus').text("");
 			$('#selectedPharmacyStatus').addClass('hidden');
+		}
+
+		function setHeaderStatus(status) {
+			if (!status) {
+				hideHeaderStatus();
+				return;
+			}
+			const badge = $('#selectedPharmacyStatus');
+			badge.removeClass(HEADER_STATUS_ALL_STYLES);
+			badge.addClass(HEADER_STATUS_STYLES[status] ?? HEADER_STATUS_FALLBACK_STYLE);
+			badge.text(status);
+			$('#selectedPharmacyStatus').removeClass('hidden');
 		}
 
 		function showDirectionsToPharmacy(pharmacy, drawRoute = true, { collapseSheet = true } = {}) {
 			selectedPharmacy = pharmacy;
 			$('#selectedPharmacyName').text(pharmacy.title ?? "");
-			$('#selectedPharmacyStatus').text(pharmacy.status ?? "");
-			$('#selectedPharmacyStatus').removeClass('hidden');
+			setHeaderStatus(pharmacy.status);
 			addMarkers(pharmacy);
 			if (drawRoute) {
 				showDirectionsToMarker(pharmacy, userLocation);
@@ -441,7 +464,7 @@
 		function renderPharmacyResults(points, { drawRoute = false, preserveSelection = false } = {}) {
 			if (!Array.isArray(points) || points.length === 0) {
 				$('#selectedPharmacyName').text("Eczane bulunamadı");
-				$('#selectedPharmacyStatus').text("");
+				hideHeaderStatus();
 				clearMarkers();
 				console.error("No pharmacy points found.");
 				return;

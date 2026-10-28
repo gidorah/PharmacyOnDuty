@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, time
 from unittest.mock import MagicMock, patch
@@ -512,6 +513,84 @@ class TestHomePageErrorMessages:
     def test_status_pill_hidden_on_error_and_shown_on_success(self, html: str) -> None:
         assert "$('#selectedPharmacyStatus').addClass('hidden')" in html
         assert "$('#selectedPharmacyStatus').removeClass('hidden')" in html
+
+
+class TestHeaderStatusBadge:
+    """The header island's status badge is a compact, readable pill."""
+
+    @pytest.fixture
+    def html(self, client: Client) -> str:
+        response = client.get(reverse("home"))
+        assert response.status_code == 200
+        return response.content.decode()
+
+    @staticmethod
+    def _badge_classes(html: str) -> set[str]:
+        tag = re.search(r'<span[^>]*id="selectedPharmacyStatus"[^>]*>', html)
+        assert tag is not None
+        classes = re.search(r'class="([^"]*)"', tag.group(0))
+        assert classes is not None
+        return set(classes.group(1).split())
+
+    @staticmethod
+    def _function_body(html: str, name: str) -> str:
+        start = html.index(f"function {name}(")
+        nxt = html.find("\n\t\tfunction ", start + 1)
+        return html[start:nxt]
+
+    def test_badge_is_not_solid_secondary_with_white_text(self, html: str) -> None:
+        classes = self._badge_classes(html)
+        assert not {"bg-secondary", "text-white"} <= classes
+        assert "bg-secondary" not in classes
+
+    def test_badge_is_compact_and_starts_hidden(self, html: str) -> None:
+        classes = self._badge_classes(html)
+        assert {"text-xs", "py-0.5", "px-2", "rounded-full", "hidden"} <= classes
+        assert "text-sm" not in classes
+
+    def test_each_status_has_its_own_style(self, html: str) -> None:
+        assert re.search(r'"Açık":\s*"bg-green-100 text-green-800"', html)
+        assert re.search(r'"Nöbetçi":\s*"bg-amber-100 text-amber-800"', html)
+
+    def test_island_wraps_and_stays_in_viewport(self, html: str) -> None:
+        tag = re.search(r"<div[^>]*bg-primary-100 rounded-3xl[^>]*>", html)
+        assert tag is not None
+        classes = set(tag.group(0).split('class="')[1].split('"')[0].split())
+        assert {"min-h-12", "py-2", "min-w-0"} <= classes
+        assert "h-12" not in classes
+
+    def test_empty_result_path_hides_badge(self, html: str) -> None:
+        body = self._function_body(html, "renderPharmacyResults")
+        empty = body[body.index("points.length === 0") : body.index("return;")]
+        assert "hideHeaderStatus()" in empty
+
+    def test_error_path_hides_badge(self, html: str) -> None:
+        body = self._function_body(html, "showHeaderError")
+        assert "hideHeaderStatus()" in body
+
+    def test_directions_path_uses_status_helper(self, html: str) -> None:
+        body = self._function_body(html, "showDirectionsToPharmacy")
+        assert "setHeaderStatus(pharmacy.status)" in body
+
+    @pytest.mark.parametrize(
+        "css_class",
+        [
+            r"bg-green-100",
+            r"text-green-800",
+            r"bg-amber-100",
+            r"text-amber-800",
+            r"bg-gray-100",
+            r"text-gray-800",
+            r"text-xs",
+            r"min-h-12",
+            r"min-w-0",
+            "py-0.5",
+        ],
+    )
+    def test_compiled_css_contains_class(self, css_class: str) -> None:
+        css = (settings.BASE_DIR / "theme/static/css/dist/styles.css").read_text()
+        selector = "." + css_class.replace(".", "\\.")
+        assert f"{selector}{{" in css
 
 
 class TestOtherViews:
