@@ -1,0 +1,204 @@
+# Scraping and duty times
+
+How a duty list gets from a chamber's website to a visitor: what each scraper
+reads, how it gets each pharmacy's duty window, when scrapes run, how a
+scrape is written, how a request picks open or duty pharmacies, and how
+`/health/data/` shows freshness. Terms are those of [`CONTEXT.md`](../../CONTEXT.md).
+Read from the code and from scrapes in the testenv on 28 Oct 2026. Change
+this page in the same PR as any change to a scraper, to `run_scraper`, to
+`add_scraped_data_to_db` or to the scrape schedule.
+
+```
+chamber site ──scraper──▶ run_scraper ──add_scraped_data_to_db──▶ Pharmacy rows
+                (worker)                                              │
+visitor ──POST /get_pharmacy_points──▶ city status ─┬─ open ──▶ Google Places
+                                                    └─ closed ─▶ rows on duty now
+```
+
+## Sources
+
+`get_city_data` (`pharmacies/utils/utils.py`) maps a city to its scraper.
+Every scraper returns the standard dict per pharmacy: `name`, `address`,
+`district`, `phone`, `coordinates` (`lat`, `lng`), `duty_start`, `duty_end`.
+
+### Eskişehir
+
+- **Source:** the Eskişehir chamber's page
+  `https://www.eskisehireo.org.tr/eskisehir-nobetci-eczaneler`, a plain `GET`
+  (60 s timeout) of server-rendered HTML
+  (`pharmacies/utils/eskisehireo_scraper.py`, `get_eskisehir_data`).
+- **Format:** one `div.nobetci` per pharmacy. The `h4.text-danger` holds
+  `NAME - DISTRICT`, the address follows the `fa-home` icon, the phone is the
+  `tel:` link, the location is a `google.com/maps?q=<lat>,<lng>` link, and
+  the duty window is a `span.text-danger` such as
+  `28.10.2026 13:00 / 29.10.2026 08:30 nöbetçidir.`
+- **Duty window: parsed.** `_get_duty_dates` reads the two dates and times
+  from that span, so each pharmacy has its own window as the chamber
+  publishes it (on 28 Oct 2026, a holiday eve, windows started at 13:00,
+  18:00 or 18:30 and ended at 08:00, 08:30 or 09:00). The datetimes are
+  naive; with `USE_TZ` Django stores them as `TIME_ZONE` (`Europe/Istanbul`)
+  times, so 13:00 is stored as 10:00 UTC.
+- **Quirks:**
+  - The district is the last space-separated word of the heading
+    (`_get_district_from_name`), so it is the chamber's `MERKEZ-ODUNPAZARI`
+    form, not a plain district name. The name is the text before the first
+    `-`.
+  - The location is parsed by `get_coordinates_from_google_maps_url`, which
+    takes everything after the last `=`. A pharmacy without a map link gets
+    `coordinates` of `None`: a known pharmacy keeps its old location, but a
+    new one makes `add_scraped_data_to_db` raise `TypeError`.
+  - A malformed time span or map link raises `ValueError` or `IndexError`.
+    `run_scraper` catches neither, nor that `TypeError`: the task fails and
+    nothing of the scrape is written.
+
+### Istanbul
+
+- **Source:** the Istanbul health directorate's
+  `https://nobetcieczane.istanbulsaglik.gov.tr:88/Home/GetEczaneler`, one
+  `POST` per district with `ilce=<district>` in the query string (10 s
+  timeout), for the 39 names in `DISTRICTS`
+  (`pharmacies/utils/istanbul_saglik_scraper.py`, `get_istanbul_data`).
+- **Format:** an HTML fragment with one `.card` per pharmacy: the name in the
+  second `div.card-header`, the phone in the second `label`, the address in
+  the `label` after the `la la-home` icon, and the location as `lat` and
+  `lon` query parameters of a `sehirharitasi.ibb.gov.tr` link.
+- **Duty window: computed** by `_get_duty_times` from the time of the scrape,
+  not read from the source: 16:00 UTC (19:00 TRT) to 06:00 UTC (09:00 TRT)
+  the next day. Before 06:00 UTC it is the window that started the previous
+  evening. On Sunday from 06:00 UTC it is the whole day, to Monday 06:00 UTC.
+  Every pharmacy of a scrape gets the same window.
+- **Quirks:**
+  - A district whose request fails is skipped with a warning. Only when all
+    39 fail does the scraper raise `RequestException`. A pharmacy without a
+    parseable map link is skipped; missing name, phone or address become
+    `"N/A"`.
+  - The source did not answer from the testenv on 28 Oct 2026, nor in
+    production: every district times out, so a scrape takes about 6.5
+    minutes and writes nothing (#204, #238).
+  - The computed window starts after working hours end (#259) and ignores
+    public holidays (#260).
+
+### Ankara
+
+- **Source:** the Ankara chamber's `https://www.aeo.org.tr/getPharmacies/<YYYY-MM-DD>`,
+  the endpoint behind its duty page, a `GET` with redirects off (10 s
+  timeout) (`pharmacies/utils/ankaraeo_scraper.py`, `get_ankara_data`). The
+  date is today in Istanbul (`timezone.localtime()`).
+- **Format:** JSON `{"status": "success", "html": "..."}`; the HTML holds a
+  notice paragraph and one `div.inline-box` per pharmacy, with `data-name`
+  and `data-district` attributes, the address and phone in its `p`, and the
+  location as the `query=<lat>,<lng>` parameter of a Google Maps link. Each
+  date's list is the duty that starts that evening; the notice may say
+  otherwise ("29.10.2026 saat 08:30'a kadar 28.10.2026 tarihli nöbet listesi
+  geçerlidir").
+- **Duty window: computed**, with the same `_get_duty_times` rules as
+  Istanbul (a copy in this module).
+- **Quirks:**
+  - A redirect, a non-JSON body, a status other than `success` or a missing
+    `html` raises `AnkaraScraperError`, a `RequestException`. An entry
+    without name, phone or location is skipped with a warning.
+  - The phone keeps digits only, without leading zeros (`3122155354`), so it
+    matches rows written from the chamber's older API.
+  - The name is `data-name` in Turkish title case plus ` Eczanesi`
+    (`_turkish_title`).
+  - The list's date comes from Istanbul time and the window from UTC, so from
+    00:00 to 09:00 TRT a scrape writes the next night's list with the current
+    night's window (#258).
+  - The computed window starts after working hours end (#259); the notice's
+    own times (13:00 on a holiday eve, 08:30 the next morning) are not read.
+
+## Schedule
+
+Beat uses `django_celery_beat`'s `DatabaseScheduler`, so the schedule is rows
+in the database ([ADR 0002](../decisions/0002-drive-scrape-schedules-from-the-database.md)).
+Each city has five `PeriodicTask` rows that call
+`pharmacies.tasks.run_scraper` with the city name:
+
+| Task | Written by | When (as `seed_cities` sets it) |
+|---|---|---|
+| `Scrape <city> (<pk>)` | `ScraperConfig.save()` | every `interval` hours: 1 (model default 24) |
+| `Scrape <city> Weekday Start` | `WorkingSchedule.save()` | Mon to Fri 05:30 UTC (08:30 TRT) |
+| `Scrape <city> Weekday End` | `WorkingSchedule.save()` | Mon to Fri 15:30 UTC (18:30 TRT) |
+| `Scrape <city> Saturday Start` | `WorkingSchedule.save()` | Sat 07:00 UTC (10:00 TRT) |
+| `Scrape <city> Saturday End` | `WorkingSchedule.save()` | Sat 15:00 UTC (18:00 TRT) |
+
+`WorkingSchedule` times are UTC and their crontabs use `timezone="UTC"`,
+although `CELERY_TIMEZONE` is `Europe/Istanbul`. Nothing removes these rows
+when a city, schedule or config goes (#252). In production beat runs on
+`unit-01` and the worker on `monolith` ([production](production.md)).
+
+## Ingest
+
+`run_scraper` (`pharmacies/tasks.py`) is one scrape:
+
+1. `get_city_data(city_name)` fetches the list.
+2. An empty list is logged as a warning and nothing is written, so
+   `ScraperConfig.last_run` stays as it was.
+3. `_persist_scraped_data` runs, in one transaction,
+   `add_scraped_data_to_db` and the update of `ScraperConfig.last_run` to
+   now. A stale database connection (`InterfaceError`) gets one retry.
+4. `JSONDecodeError` and `RequestException` (Ankara's `AnkaraScraperError`
+   and Istanbul's all-districts failure included) are logged as a warning and
+   the task ends without writing. Other errors fail the task.
+
+`add_scraped_data_to_db` (`pharmacies/utils/utils.py`) loads the city's rows
+once and keys them by `(name, phone)`
+([ADR 0005](../decisions/0005-identify-a-pharmacy-by-name-and-phone-and-never-delete-rows.md)).
+An unseen key becomes a new row (`bulk_create`). A known key gets its
+`duty_start`, `duty_end`, `address` and `district` overwritten, and its
+`location` when the scraped coordinates are valid (`_point_from_coordinates`),
+in one `bulk_update`; ADR 0005's "only duty times update" predates that
+change (#241). Rows are never deleted: a pharmacy missing from a scrape keeps
+its old window, which simply passes.
+
+`City.last_scraped_at` is not written by any scrape; freshness is
+`ScraperConfig.last_run`.
+
+## Open or duty pharmacies
+
+`get_pharmacy_points` (`pharmacies/views.py`) answers
+`POST /get_pharmacy_points` with `{"lat": ..., "lng": ...}`
+([ADR 0006](../decisions/0006-serve-open-pharmacies-from-google-and-duty-pharmacies-from-the-database.md)):
+
+1. It rounds the location to 4 decimals and finds the city by reverse
+   geocoding (`get_city_name_from_location`), matching Google's province
+   name against the `City` names with `normalize_string`.
+2. `City.get_city_status` asks the city's `WorkingSchedule`: **open** inside
+   working hours (Mon to Fri and Sat, start and end exclusive, compared in
+   UTC), otherwise **closed**. Sunday is always closed; public holidays are
+   not known and count as ordinary days (#260). In `DEBUG` the time is
+   `TEST_TIME`, ten hours after the process started, not now.
+3. **Open:** `get_nearest_pharmacies_open` asks Google Places for the nearest
+   pharmacies (`fetch_nearest_pharmacies`, cached in the process). Nothing
+   comes from this database.
+4. **Closed:** `get_nearest_pharmacies_on_duty` takes the city's rows with
+   `duty_start <= time <= duty_end`, the 10 nearest by distance. None gives a
+   400, "No pharmacies are on duty at this time."
+5. Either way `add_travel_distances_to_pharmacy_data` adds the travel
+   distance from Google's Distance Matrix, the list is sorted by it, and the
+   first 5 are returned.
+
+So a city's duty windows matter only while it is closed, and a closed city
+with no window covering the time answers 400 (#259 is such a gap).
+
+## Data health
+
+`GET /health/data/` (`data_health`) is public, makes no outbound call, is not
+rate limited and is cached for 60 seconds. Per city it reports:
+
+- `last_scrape`: `ScraperConfig.last_run`, the end of the last scrape that
+  wrote something, or `null` if none has;
+- `duty_now`: rows whose duty window covers now;
+- `duty_next_12h`: rows whose window overlaps the next 12 hours.
+
+```json
+{"cities": {"ankara": {"last_scrape": "2026-10-28T19:39:46.674836+00:00", "duty_now": 66, "duty_next_12h": 66},
+            "eskisehir": {"last_scrape": "2026-10-28T19:39:45.940562+00:00", "duty_now": 14, "duty_next_12h": 14},
+            "istanbul": {"last_scrape": null, "duty_now": 0, "duty_next_12h": 0}},
+ "time": "2026-10-28T19:46:29.814792+00:00"}
+```
+
+A city with an old `last_scrape` or `duty_now` of 0 while closed is the sign
+of a broken scraper; the testenv answer above is Istanbul's (#204). Because
+failed and empty scrapes leave `last_run` alone, `last_scrape` is the last
+good scrape, not the last attempt; the attempts are in the worker's log.

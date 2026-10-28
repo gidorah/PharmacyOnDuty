@@ -11,7 +11,7 @@ Core domain handling PostGIS models, external data scrapers, and duty-scheduling
 - `management/`: `seed_cities.py` for bootstrapping system.
 
 ## WHERE TO LOOK
-- **Add City**: Create `utils/<city>_scraper.py` -> Register in `utils/utils.py:get_city_data`.
+- **Add City**: Create `utils/<city>_scraper.py` -> Register in `utils/utils.py:get_city_data`. How the existing scrapers read their sources and duty windows: [`docs/explanation/scraping.md`](../docs/explanation/scraping.md).
 - **Tune Search**: `utils/utils.py:get_nearest_pharmacies_on_duty` (Annotation logic).
 - **Fix Data**: `utils/utils.py:add_scraped_data_to_db` (UPSERT logic with pre-fetching map).
 

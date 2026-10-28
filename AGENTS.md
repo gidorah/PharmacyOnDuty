@@ -79,6 +79,7 @@ Pytest is configured via `pyproject.toml` with `DJANGO_SETTINGS_MODULE=PharmacyO
 - `CONTEXT.md` — the glossary. Use its terms in code, issues and tests.
 - `docs/decisions/` — why things are the way they are. Read the records that touch the area before changing it, and add one for a decision that is hard to reverse, surprising and a real trade-off (`docs/decisions/README.md`).
 - `docs/explanation/production.md` — hosts, Coolify apps and the deploy path. Update it with any change to `docker/prod/`.
+- `docs/explanation/scraping.md` — each city's source and duty window, the scrape schedule, the ingest, open versus duty pharmacies and `/health/data/`. Update it with any change to a scraper or the scrape path.
 - `docs/reference/environment.md` — every environment variable, its default and where production sets it; update it in the same PR as any variable you add or remove (the test `tests/test_environment_reference.py` fails otherwise).
 - `docker/testenv/README.md` — the per-worktree test stack used to prove a change.
 - `readme.md` — long-form product/feature doc.
