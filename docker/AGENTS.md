@@ -19,6 +19,6 @@ non-obvious parts are here.
 ## Conventions
 
 - App containers run as the `python` user (UID 1000), never root.
-- The venv lives at `/opt/venv` (`UV_PROJECT_ENVIRONMENT`); containers run
-  `uv sync` on startup. Never mount the host `.venv`: its binaries are not Linux-container ones.
+- The venv lives at `/opt/venv` (`UV_PROJECT_ENVIRONMENT`). Dev containers run
+  `uv sync` on startup; the prod image syncs at build time (`--frozen --no-dev`). Never mount the host `.venv`: its binaries are not Linux-container ones.
 - `uv` only, no direct `pip`.
