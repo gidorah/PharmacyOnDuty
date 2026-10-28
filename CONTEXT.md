@@ -35,7 +35,8 @@ _Avoid_: pharmacy status (for this meaning)
 
 **Open pharmacies**:
 What a visitor gets when the city status is open: the nearest pharmacies from
-Google Places, not from this database.
+Google Places, not from this database
+([ADR 0006](docs/decisions/0006-serve-open-pharmacies-from-google-and-duty-pharmacies-from-the-database.md)).
 
 **Duty pharmacies**:
 What a visitor gets when the city status is closed: the nearest pharmacies on
@@ -53,8 +54,8 @@ The code that reads one source's duty list and returns the standard dict
 (`pharmacies/utils/<source>_scraper.py`), registered in `get_city_data`.
 
 **Scrape**:
-One run of `run_scraper` for one city: fetch, then one bulk upsert
-([ADR 0005](docs/decisions/0005-ingest-each-scrape-with-one-bulk-upsert.md)).
+One run of `run_scraper` for one city: fetch, then one bulk write
+([ADR 0005](docs/decisions/0005-identify-a-pharmacy-by-name-and-phone-and-never-delete-rows.md)).
 
 **Scraper config**:
 A city's scrape interval in hours and its last successful scrape

@@ -30,4 +30,4 @@ Core domain handling PostGIS models, external data scrapers, and duty-scheduling
 ## TESTING
 - **Scrapers**: Mock `requests.get`. Use `test_scraper_performance.py` for ingest efficiency.
 - **Geo-Queries**: Test `Distance` functions with known coordinate pairs.
-- **Data Integrity**: Ensure `bulk_create` uses `ignore_conflicts=True` to prevent duplicates.
+- **Data Integrity**: `Pharmacy` has no unique constraint; `(name, phone)` is matched in Python only, and `ignore_conflicts=True` does not prevent duplicates (ADR 0005).
