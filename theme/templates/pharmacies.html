@@ -327,12 +327,12 @@
 					callback(null, response);
 				},
 				error: function (error) {
-					const message = error.responseJSON?.error || "An unknown server error occurred.";
-					console.error("Error fetching pharmacy points:", message);
+					const apiError = error.responseJSON?.error;
+					console.error("Error fetching pharmacy points:", error.status, apiError);
 					// Do not mutate the header here: overlapping requests must
 					// decide in the caller (via request id) whether this error
 					// is still current.
-					callback(message, null);
+					callback({ status: error.status, apiError: apiError }, null);
 				}
 			});
 		}
@@ -400,10 +400,30 @@
 			);
 		}
 
+		function pharmacyErrorMessage(err) {
+			if (err?.status === 400 && String(err.apiError ?? "").startsWith("No city found")) {
+				return "Bu konumda hizmet vermiyoruz (yalnızca İstanbul, Ankara, Eskişehir)";
+			}
+			if (err?.status === 429) {
+				return "Çok fazla istek, lütfen biraz sonra tekrar deneyin";
+			}
+			if (err?.status === 502) {
+				return "Konum servisine şu an ulaşılamıyor";
+			}
+			return "Bir hata oluştu, lütfen tekrar deneyin";
+		}
+
+		function showHeaderError(message) {
+			$('#selectedPharmacyName').text(message);
+			$('#selectedPharmacyStatus').text("");
+			$('#selectedPharmacyStatus').addClass('hidden');
+		}
+
 		function showDirectionsToPharmacy(pharmacy, drawRoute = true, { collapseSheet = true } = {}) {
 			selectedPharmacy = pharmacy;
 			$('#selectedPharmacyName').text(pharmacy.title ?? "");
 			$('#selectedPharmacyStatus').text(pharmacy.status ?? "");
+			$('#selectedPharmacyStatus').removeClass('hidden');
 			addMarkers(pharmacy);
 			if (drawRoute) {
 				showDirectionsToMarker(pharmacy, userLocation);
@@ -463,8 +483,7 @@
 							return;
 						}
 						if (err) {
-							$('#selectedPharmacyName').text("Hata");
-							$('#selectedPharmacyStatus').text(err);
+							showHeaderError(pharmacyErrorMessage(err));
 							return;
 						}
 						renderPharmacyResults(result?.points, {
@@ -496,8 +515,7 @@
 				});
 			}).catch((err) => {
 				console.error("Failed to initialize map:", err);
-				$('#selectedPharmacyName').text("Hata");
-				$('#selectedPharmacyStatus').text("Harita yüklenemedi.");
+				showHeaderError("Harita yüklenemedi.");
 			});
 		});
         </script>
