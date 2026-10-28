@@ -26,6 +26,23 @@ class AnkaraScraperError(requests.exceptions.RequestException):
     """The AEO endpoint answered with something other than duty pharmacy data."""
 
 
+_TR_LOWER = str.maketrans({"İ": "i", "I": "ı"})
+_TR_UPPER = str.maketrans({"i": "İ", "ı": "I"})
+
+
+def _turkish_title(name: str) -> str:
+    """Title-case ``name`` like ``str.title()`` but with Turkish İ/i and I/ı."""
+    chars: list[str] = []
+    prev_is_letter = False
+    for char in name:
+        if prev_is_letter:
+            chars.append(char.translate(_TR_LOWER).lower())
+        else:
+            chars.append(char.translate(_TR_UPPER).upper())
+        prev_is_letter = char.isalpha()
+    return "".join(chars)
+
+
 def _get_duty_times() -> tuple[datetime, datetime]:
     """
     Calculate the start and end times for the duty shift.
@@ -112,7 +129,7 @@ def _parse_pharmacy(
         address = _collapse("".join(address_parts))
 
     return {
-        "name": name.title() + " Eczanesi",
+        "name": _turkish_title(name) + " Eczanesi",
         "address": address,
         "district": str(box.get("data-district", "")).strip(),
         "phone": phone,
