@@ -14,6 +14,18 @@ from pharmacies.models import (
 )
 
 
+def _create_realistic_schedule(
+    city: City, weekday_end: time = time(15, 0)
+) -> WorkingSchedule:
+    return WorkingSchedule.objects.create(
+        city=city,
+        weekday_start=time(6, 0),
+        weekday_end=weekday_end,
+        saturday_start=time(6, 0),
+        saturday_end=time(11, 0),
+    )
+
+
 @pytest.mark.django_db
 class TestCityModel:
     def test_city_creation(self) -> None:
@@ -47,6 +59,14 @@ class TestCityModel:
 
         # Tuesday at 20:00
         query_time = datetime(2025, 12, 16, 20, 0, tzinfo=UTC)
+        assert city.get_city_status(query_time) == PharmacyStatus.CLOSED
+
+    def test_get_city_status_closed_on_public_holiday(self) -> None:
+        city = City.objects.create(name="Eskişehir")
+        _create_realistic_schedule(city)
+
+        # Republic Day (Thursday), inside the usual weekday hours
+        query_time = datetime(2026, 10, 29, 7, 0, tzinfo=UTC)
         assert city.get_city_status(query_time) == PharmacyStatus.CLOSED
 
     def test_get_pharmacies_on_duty_success(self) -> None:
@@ -119,6 +139,77 @@ class TestWorkingScheduleModel:
 
         # Sunday - Always closed
         assert schedule.is_open(datetime(2025, 12, 21, 10, 0)) is False
+
+    def test_is_closed_on_weekday_public_holiday(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        assert schedule.is_open(datetime(2026, 10, 29, 7, 0, tzinfo=UTC)) is False
+
+    def test_is_closed_on_saturday_public_holiday(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        # Kurban Bayrami 2026-05-30 is a Saturday
+        assert schedule.is_open(datetime(2026, 5, 30, 8, 0, tzinfo=UTC)) is False
+
+    def test_is_closed_on_2027_bayram(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        # Ramazan Bayrami day 1, Tuesday
+        assert schedule.is_open(datetime(2027, 3, 9, 8, 0, tzinfo=UTC)) is False
+
+    def test_naive_query_time_is_treated_as_utc(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        assert schedule.is_open(datetime(2026, 10, 29, 7, 0)) is False
+        assert schedule.is_open(datetime(2026, 10, 28, 9, 0)) is True
+
+    def test_eve_open_until_1300_istanbul(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        # 2026-10-28 is the eve of Republic Day (Wednesday)
+        assert schedule.is_open(datetime(2026, 10, 28, 9, 0, tzinfo=UTC)) is True
+        assert schedule.is_open(datetime(2026, 10, 28, 10, 30, tzinfo=UTC)) is False
+
+    def test_eve_closed_before_usual_start(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        assert schedule.is_open(datetime(2026, 10, 28, 5, 0, tzinfo=UTC)) is False
+
+    def test_eve_on_saturday_uses_saturday_hours(self) -> None:
+        schedule = WorkingSchedule.objects.create(
+            city=City.objects.create(name="Test City"),
+            weekday_start=time(6, 0),
+            weekday_end=time(15, 0),
+            saturday_start=time(6, 0),
+            saturday_end=time(12, 0),
+        )
+        # 2027-05-15 is a Saturday eve
+        assert schedule.is_open(datetime(2027, 5, 15, 9, 0, tzinfo=UTC)) is True
+        assert schedule.is_open(datetime(2027, 5, 15, 10, 30, tzinfo=UTC)) is False
+
+    def test_eve_closes_at_usual_end_when_earlier(self) -> None:
+        schedule = _create_realistic_schedule(
+            City.objects.create(name="Test City"), weekday_end=time(9, 0)
+        )
+        assert schedule.is_open(datetime(2026, 10, 28, 8, 30, tzinfo=UTC)) is True
+        assert schedule.is_open(datetime(2026, 10, 28, 9, 30, tzinfo=UTC)) is False
+
+    def test_istanbul_date_after_utc_midnight_eve_is_holiday(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        # 22:30 UTC on 28 Oct is 01:30 on 29 Oct in Istanbul
+        assert schedule.is_open(datetime(2026, 10, 28, 22, 30, tzinfo=UTC)) is False
+
+    def test_istanbul_date_after_utc_midnight_ordinary_day(self) -> None:
+        schedule = WorkingSchedule.objects.create(
+            city=City.objects.create(name="Test City"),
+            weekday_start=time(21, 0),
+            weekday_end=time(23, 0),
+            saturday_start=time(9, 0),
+            saturday_end=time(13, 0),
+        )
+        # 21:30 UTC on Thursday 29 Oct is 00:30 Friday 30 Oct in Istanbul: ordinary
+        assert schedule.is_open(datetime(2026, 10, 29, 21, 30, tzinfo=UTC)) is True
+        # Same hour, ordinary Thursday a week later behaves identically
+        assert schedule.is_open(datetime(2026, 11, 5, 21, 30, tzinfo=UTC)) is True
+
+    def test_sunday_eve_stays_closed(self) -> None:
+        schedule = _create_realistic_schedule(City.objects.create(name="Test City"))
+        # Ordinary Sunday inside the weekday hours
+        assert schedule.is_open(datetime(2026, 11, 1, 8, 0, tzinfo=UTC)) is False
 
     def test_update_periodic_tasks(self) -> None:
         from django_celery_beat.models import PeriodicTask

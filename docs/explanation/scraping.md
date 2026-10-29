@@ -76,7 +76,7 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
     production: every district times out, so a scrape takes about 6.5
     minutes and writes nothing (#204, #238).
   - The computed window starts after working hours end (#259) and ignores
-    public holidays (#260).
+    public holidays and eves (the second part of #260).
 
 ### Ankara
 
@@ -166,8 +166,15 @@ its old window, which simply passes.
    name against the `City` names with `normalize_string`.
 2. `City.get_city_status` asks the city's `WorkingSchedule`: **open** inside
    working hours (Mon to Fri and Sat, start and end exclusive, compared in
-   UTC), otherwise **closed**. Sunday is always closed; public holidays are
-   not known and count as ordinary days (#260). In `DEBUG` the time is
+   UTC), otherwise **closed**. Sunday is always closed, and so is a Turkish
+   public holiday all day; on a half-day eve ("arefe": 28 Oct and the eves of
+   Ramazan and Kurban Bayramı) the city is open from the usual start until
+   13:00 TRT (10:00 UTC, or the usual end if earlier). The dates come from the
+   `holidays` package (`holidays.Turkey`, categories `PUBLIC` and `HALF_DAY`,
+   which computes the moving Bayram dates), looked up by the date of the
+   query time in `Europe/Istanbul`. Istanbul's and Ankara's computed duty
+   windows don't cover holidays yet, so a holiday daytime there answers 400
+   (#260's second part). In `DEBUG` the time is
    `TEST_TIME`, ten hours after the process started, not now.
 3. **Open:** `get_nearest_pharmacies_open` asks Google Places for the nearest
    pharmacies (`fetch_nearest_pharmacies`, cached in the process). Nothing

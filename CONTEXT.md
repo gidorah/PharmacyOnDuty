@@ -25,7 +25,10 @@ _Avoid_: shift (except when quoting a source)
 
 **Working hours**:
 The hours ordinary pharmacies in a city are open: weekdays and Saturday, start
-and end, stored in UTC (`WorkingSchedule`). Sundays have none.
+and end, stored in UTC (`WorkingSchedule`). Sundays and Turkish public holidays
+have none; a half-day eve ("arefe") ends at 13:00 TRT. The dates come from the
+`holidays` package (`holidays.Turkey`, categories `PUBLIC` and `HALF_DAY`),
+looked up by the date in `Europe/Istanbul`.
 
 **City status**:
 For one city at one time, either **open** (inside working hours) or **closed**
