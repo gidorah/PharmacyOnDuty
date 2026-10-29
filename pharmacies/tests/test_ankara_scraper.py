@@ -1,5 +1,6 @@
 import json
-from datetime import UTC, datetime
+from collections.abc import Iterator
+from datetime import UTC, datetime, time
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -7,9 +8,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
+from pharmacies.models import City, WorkingSchedule
 from pharmacies.utils.ankaraeo_scraper import (
     AnkaraScraperError,
-    _get_duty_times,
     _turkish_title,
     get_ankara_data,
 )
@@ -24,6 +25,19 @@ def _load_fixture() -> dict[str, Any]:
     return data
 
 
+@pytest.fixture(autouse=True)
+def _fixed_duty_window(request: pytest.FixtureRequest) -> Iterator[None]:
+    """Keep scraper tests off the database, except the ones that opt in."""
+    if request.node.get_closest_marker("django_db"):
+        yield
+        return
+    with patch(
+        "pharmacies.utils.ankaraeo_scraper.get_duty_window",
+        return_value=(DUTY_START, DUTY_END),
+    ):
+        yield
+
+
 def _json_response(payload: Any) -> MagicMock:
     response = MagicMock()
     response.status_code = 200
@@ -32,47 +46,6 @@ def _json_response(payload: Any) -> MagicMock:
     response.raise_for_status.return_value = None
     response.json.return_value = payload
     return response
-
-
-@patch("pharmacies.utils.ankaraeo_scraper.timezone.now")
-def test_get_duty_times_weekday_afternoon(mock_now: MagicMock) -> None:
-    # Tuesday, Dec 16, 2025, 14:00
-
-    mock_now.return_value = datetime(2025, 12, 16, 14, 0, tzinfo=UTC)
-
-    duty_start, duty_end = _get_duty_times()
-
-    assert duty_start == datetime(2025, 12, 16, 16, 0, tzinfo=UTC)
-
-    assert duty_end == datetime(2025, 12, 17, 6, 0, tzinfo=UTC)
-
-
-@patch("pharmacies.utils.ankaraeo_scraper.timezone.now")
-def test_get_duty_times_weekday_morning(mock_now: MagicMock) -> None:
-    # Tuesday, Dec 16, 2025, 05:00
-
-    mock_now.return_value = datetime(2025, 12, 16, 5, 0, tzinfo=UTC)
-
-    duty_start, duty_end = _get_duty_times()
-
-    # Should be for Monday's duty
-
-    assert duty_start == datetime(2025, 12, 15, 16, 0, tzinfo=UTC)
-
-    assert duty_end == datetime(2025, 12, 16, 6, 0, tzinfo=UTC)
-
-
-@patch("pharmacies.utils.ankaraeo_scraper.timezone.now")
-def test_get_duty_times_sunday(mock_now: MagicMock) -> None:
-    # Sunday, Dec 21, 2025, 10:00
-
-    mock_now.return_value = datetime(2025, 12, 21, 10, 0, tzinfo=UTC)
-
-    duty_start, duty_end = _get_duty_times()
-
-    assert duty_start == datetime(2025, 12, 21, 6, 0, tzinfo=UTC)
-
-    assert duty_end == datetime(2025, 12, 22, 6, 0, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(
@@ -100,12 +73,8 @@ def test_turkish_title_cases_turkish_letters(raw: str, expected: str) -> None:
     assert "\u0307" not in result
 
 
-@patch("pharmacies.utils.ankaraeo_scraper._get_duty_times")
 @patch("pharmacies.utils.ankaraeo_scraper.requests.get")
-def test_get_ankara_data_parses_get_pharmacies_html(
-    mock_get: MagicMock, mock_duty_times: MagicMock
-) -> None:
-    mock_duty_times.return_value = (DUTY_START, DUTY_END)
+def test_get_ankara_data_parses_get_pharmacies_html(mock_get: MagicMock) -> None:
     mock_get.return_value = _json_response(_load_fixture())
 
     data = get_ankara_data()
@@ -137,28 +106,28 @@ def test_get_ankara_data_parses_get_pharmacies_html(
         (
             datetime(2026, 10, 28, 21, 0, tzinfo=UTC),
             "2026-10-28",
-            datetime(2026, 10, 28, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 28, 15, 30, tzinfo=UTC),
             datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
         ),
         # 02:00 TRT Thu
         (
             datetime(2026, 10, 28, 23, 0, tzinfo=UTC),
             "2026-10-28",
-            datetime(2026, 10, 28, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 28, 15, 30, tzinfo=UTC),
             datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
         ),
         # 05:00 TRT Thu
         (
             datetime(2026, 10, 29, 2, 0, tzinfo=UTC),
             "2026-10-28",
-            datetime(2026, 10, 28, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 28, 15, 30, tzinfo=UTC),
             datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
         ),
         # 17:00 TRT Thu
         (
             datetime(2026, 10, 29, 14, 0, tzinfo=UTC),
             "2026-10-29",
-            datetime(2026, 10, 29, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 29, 15, 30, tzinfo=UTC),
             datetime(2026, 10, 30, 6, 0, tzinfo=UTC),
         ),
         # Sunday daytime
@@ -170,20 +139,27 @@ def test_get_ankara_data_parses_get_pharmacies_html(
         ),
     ],
 )
-@patch("pharmacies.utils.ankaraeo_scraper.timezone.now")
+@pytest.mark.django_db
 @patch("pharmacies.utils.ankaraeo_scraper.requests.get")
 def test_get_ankara_data_requests_the_list_of_the_duty_windows_date(
     mock_get: MagicMock,
-    mock_now: MagicMock,
     now: datetime,
     url_date: str,
     start: datetime,
     end: datetime,
 ) -> None:
-    mock_now.return_value = now
+    city = City.objects.create(name="ankara")
+    WorkingSchedule.objects.create(
+        city=city,
+        weekday_start=time(5, 30),
+        weekday_end=time(15, 30),
+        saturday_start=time(7, 0),
+        saturday_end=time(15, 0),
+    )
     mock_get.return_value = _json_response(_load_fixture())
 
-    data = get_ankara_data()
+    with patch("pharmacies.utils.duty_window.timezone.now", return_value=now):
+        data = get_ankara_data()
 
     mock_get.assert_called_once_with(
         f"https://www.aeo.org.tr/getPharmacies/{url_date}",

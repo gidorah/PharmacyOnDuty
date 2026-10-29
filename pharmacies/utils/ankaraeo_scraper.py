@@ -8,7 +8,7 @@ pharmacy fields are parsed out of that HTML fragment.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -16,6 +16,8 @@ import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from django.utils import timezone
+
+from pharmacies.utils.duty_window import get_duty_window
 
 logger = logging.getLogger(__name__)
 
@@ -41,37 +43,6 @@ def _turkish_title(name: str) -> str:
             chars.append(char.translate(_TR_UPPER).upper())
         prev_is_letter = char.isalpha()
     return "".join(chars)
-
-
-def _get_duty_times() -> tuple[datetime, datetime]:
-    """
-    Calculate the start and end times for the duty shift.
-
-    Duty shifts typically start at 18:30 or 19:00 (handled here as 16:00 UTC?)
-    and end at 08:30 or 09:00 the next day.
-    """
-    current_time = timezone.now()
-
-    if (
-        current_time.weekday() == 6 and current_time.hour >= 6
-    ):  # If it's Sunday, pharmacies are open all day until 9am tomorrow
-        duty_start = current_time.replace(hour=6, minute=0, second=0, microsecond=0)
-        duty_end = current_time.replace(
-            hour=6, minute=0, second=0, microsecond=0
-        ) + timedelta(days=1)
-        return duty_start, duty_end
-
-    if (
-        current_time.hour < 6
-    ):  # If it's before 9am, pharmacies are in duty of the previous day
-        current_time = current_time - timedelta(days=1)
-
-    duty_start = current_time.replace(hour=16, minute=0, second=0, microsecond=0)
-    duty_end = current_time.replace(
-        hour=6, minute=0, second=0, microsecond=0
-    ) + timedelta(days=1)
-
-    return duty_start, duty_end
 
 
 def _collapse(text: str) -> str:
@@ -149,7 +120,7 @@ def get_ankara_data() -> list[dict[str, Any]]:
     Returns a list of standardized dicts (name, address, district, phone,
     coordinates, duty_start, duty_end).
     """
-    duty_start, duty_end = _get_duty_times()
+    duty_start, duty_end = get_duty_window("ankara")
     url = BASE_URL + timezone.localtime(duty_start).strftime("%Y-%m-%d")
     response = requests.get(url, timeout=10, allow_redirects=False)
     if 300 <= response.status_code < 400:
