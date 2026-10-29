@@ -1,10 +1,10 @@
 # CI for every pull request and every push to main.
 #
-# Three jobs run in parallel: lint (ruff, format, mypy, djlint), test (pytest
-# and the missing-migrations check against PostGIS and Redis) and build (the
-# production image). The final `check` job passes only when all three pass, so
-# a single check name gives the result. The factory reads the check by name,
-# so keep the workflow and job names stable.
+# Three jobs run in parallel: lint (ruff, format, mypy, djlint, docs
+# check), test (pytest and the missing-migrations check against PostGIS and
+# Redis) and build (the production image). The final `check` job passes only
+# when all three pass, so a single check name gives the result. The factory
+# reads the check by name, so keep the workflow and job names stable.
 #
 # The settings come from .env.example with the same test values that
 # docker/testenv/testenv.sh writes, so results match the factory's testenv
@@ -86,6 +86,11 @@ jobs:
         run: >-
           uvx "djlint@$DJLINT_VERSION" theme/templates --lint --profile=django
           --ignore H030,H031,H021,H023,D018,D004,H006
+
+      # Dead paths, recipes, manage.py commands and links in the Markdown docs.
+      - name: docs check
+        if: ${{ !cancelled() }}
+        run: uv run python scripts/check_docs.py
 
   test:
     runs-on: ubuntu-latest
