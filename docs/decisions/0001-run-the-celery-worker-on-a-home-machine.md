@@ -5,6 +5,8 @@
 Accepted. Back-filled 28 Oct 2026. The reason is recorded in one old note
 only and has not been re-tested since the worker moved to `monolith`.
 
+Amended 28 Oct 2026 by #249: the worker now receives `SENTRY_DSN`.
+
 ## Context
 
 The scrapers read the chambers' websites (`pharmacies/utils/*_scraper.py`).
@@ -38,9 +40,9 @@ machine; it gets them only because it is the only worker.
   when it is back.
 - `unit-01` must publish Redis and Postgres to the tailnet and nowhere else;
   not yet confirmed on the server (#242).
-- The worker gets only `CELERY_BROKER_URL` and `DB_*`: no `SENTRY_DSN`, no
-  Google key. Scraper exceptions do not reach Sentry, and a new task that
-  needs another setting must have it added to the worker compose.
+- The worker gets only `CELERY_BROKER_URL`, `DB_*` and `SENTRY_DSN`: no
+  Google key. A new task that needs another setting must have it added to the
+  worker compose.
 - A scraper change takes effect when `workers` deploys. Both apps deploy on
   every push to `main` and django migrates on start, so for a short time the
   worker can run older code against a newer schema: migrations must stay
