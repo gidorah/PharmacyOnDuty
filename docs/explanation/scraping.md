@@ -83,7 +83,8 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
 - **Source:** the Ankara chamber's `https://www.aeo.org.tr/getPharmacies/<YYYY-MM-DD>`,
   the endpoint behind its duty page, a `GET` with redirects off (10 s
   timeout) (`pharmacies/utils/ankaraeo_scraper.py`, `get_ankara_data`). The
-  date is today in Istanbul (`timezone.localtime()`).
+  date is the Istanbul date of the duty window's start, so before 09:00 TRT it
+  is the previous day's list.
 - **Format:** JSON `{"status": "success", "html": "..."}`; the HTML holds a
   notice paragraph and one `div.inline-box` per pharmacy, with `data-name`
   and `data-district` attributes, the address and phone in its `p`, and the
@@ -101,9 +102,6 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
     matches rows written from the chamber's older API.
   - The name is `data-name` in Turkish title case plus ` Eczanesi`
     (`_turkish_title`).
-  - The list's date comes from Istanbul time and the window from UTC, so from
-    00:00 to 09:00 TRT a scrape writes the next night's list with the current
-    night's window (#258).
   - The computed window starts after working hours end (#259); the notice's
     own times (13:00 on a holiday eve, 08:30 the next morning) are not read.
 

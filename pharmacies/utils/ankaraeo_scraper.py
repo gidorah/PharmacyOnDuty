@@ -141,12 +141,16 @@ def _parse_pharmacy(
 
 def get_ankara_data() -> list[dict[str, Any]]:
     """
-    Scrape today's duty pharmacies from the Ankara Eczacılar Odası.
+    Scrape the current duty pharmacies from the Ankara Eczacılar Odası.
+
+    AEO's list for date D is the duty starting on the evening of D, so the URL
+    date is the Istanbul date of the duty window's start.
 
     Returns a list of standardized dicts (name, address, district, phone,
     coordinates, duty_start, duty_end).
     """
-    url = BASE_URL + timezone.localtime().strftime("%Y-%m-%d")
+    duty_start, duty_end = _get_duty_times()
+    url = BASE_URL + timezone.localtime(duty_start).strftime("%Y-%m-%d")
     response = requests.get(url, timeout=10, allow_redirects=False)
     if 300 <= response.status_code < 400:
         raise AnkaraScraperError(
@@ -171,7 +175,6 @@ def get_ankara_data() -> list[dict[str, Any]]:
         raise AnkaraScraperError(f"AEO endpoint {url} returned no 'html' field.")
 
     soup = BeautifulSoup(html, "html.parser")
-    duty_start, duty_end = _get_duty_times()
     pharmacies: list[dict[str, Any]] = []
     for box in soup.find_all("div", class_="inline-box"):
         if not isinstance(box, Tag):

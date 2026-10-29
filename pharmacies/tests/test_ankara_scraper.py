@@ -130,21 +130,69 @@ def test_get_ankara_data_parses_get_pharmacies_html(
     assert all("\u0307" not in item["name"] for item in data)
 
 
-@patch("pharmacies.utils.ankaraeo_scraper.timezone.localtime")
+@pytest.mark.parametrize(
+    ("now", "url_date", "start", "end"),
+    [
+        # 00:00 TRT Thu: still Wednesday night's duty
+        (
+            datetime(2026, 10, 28, 21, 0, tzinfo=UTC),
+            "2026-10-28",
+            datetime(2026, 10, 28, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
+        ),
+        # 02:00 TRT Thu
+        (
+            datetime(2026, 10, 28, 23, 0, tzinfo=UTC),
+            "2026-10-28",
+            datetime(2026, 10, 28, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
+        ),
+        # 05:00 TRT Thu
+        (
+            datetime(2026, 10, 29, 2, 0, tzinfo=UTC),
+            "2026-10-28",
+            datetime(2026, 10, 28, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
+        ),
+        # 17:00 TRT Thu
+        (
+            datetime(2026, 10, 29, 14, 0, tzinfo=UTC),
+            "2026-10-29",
+            datetime(2026, 10, 29, 16, 0, tzinfo=UTC),
+            datetime(2026, 10, 30, 6, 0, tzinfo=UTC),
+        ),
+        # Sunday daytime
+        (
+            datetime(2026, 11, 1, 10, 0, tzinfo=UTC),
+            "2026-11-01",
+            datetime(2026, 11, 1, 6, 0, tzinfo=UTC),
+            datetime(2026, 11, 2, 6, 0, tzinfo=UTC),
+        ),
+    ],
+)
+@patch("pharmacies.utils.ankaraeo_scraper.timezone.now")
 @patch("pharmacies.utils.ankaraeo_scraper.requests.get")
-def test_get_ankara_data_requests_todays_get_pharmacies_url(
-    mock_get: MagicMock, mock_localtime: MagicMock
+def test_get_ankara_data_requests_the_list_of_the_duty_windows_date(
+    mock_get: MagicMock,
+    mock_now: MagicMock,
+    now: datetime,
+    url_date: str,
+    start: datetime,
+    end: datetime,
 ) -> None:
-    mock_localtime.return_value = datetime(2026, 10, 26, 17, 4, tzinfo=UTC)
+    mock_now.return_value = now
     mock_get.return_value = _json_response(_load_fixture())
 
-    get_ankara_data()
+    data = get_ankara_data()
 
     mock_get.assert_called_once_with(
-        "https://www.aeo.org.tr/getPharmacies/2026-10-26",
+        f"https://www.aeo.org.tr/getPharmacies/{url_date}",
         timeout=10,
         allow_redirects=False,
     )
+    assert len(data) == 3
+    assert all(item["duty_start"] == start for item in data)
+    assert all(item["duty_end"] == end for item in data)
 
 
 @patch("pharmacies.utils.ankaraeo_scraper.requests.get")
