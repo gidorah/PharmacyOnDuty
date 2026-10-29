@@ -19,6 +19,10 @@ GeoDjango/PostGIS, Celery/Redis, Tailwind. Python 3.13, `uv` for dependencies,
 - [docs/explanation/scraping.md](docs/explanation/scraping.md): each city's
   source and duty window, the scrape schedule and the ingest. Update it with any
   change to a scraper or the scrape path.
+- [docs/reference/environment.md](docs/reference/environment.md): every
+  environment variable, its default and where production sets it. Update it in
+  the same PR as any variable you add or remove;
+  `tests/test_environment_reference.py` fails otherwise.
 - [docker/testenv/README.md](docker/testenv/README.md): the per-worktree test stack.
 - Area files, read before non-trivial edits there:
   [pharmacies/AGENTS.md](pharmacies/AGENTS.md),

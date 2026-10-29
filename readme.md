@@ -34,7 +34,7 @@ git clone https://github.com/gidorah/PharmacyOnDuty.git && cd PharmacyOnDuty
 cp .env.example .env
 ```
 
-Edit `.env`: set `REDIS_PASSWORD` and use the same password in `CELERY_BROKER_URL`, set `DJANGO_DEBUG=True` for local work, set the four HTTPS switches in the "Production HTTPS" block (`DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER`, `DJANGO_SECURE_SSL_REDIRECT`, `DJANGO_SESSION_COOKIE_SECURE` and `DJANGO_CSRF_COOKIE_SECURE`) to `False` for local work (left on, `http://localhost:8000/` redirects to https and the site cannot be opened), and optionally set `GOOGLE_MAPS_API_KEY` (without it the maps and the Google results do not work). `.env.example` lists every variable.
+Edit `.env`: set `REDIS_PASSWORD` and use the same password in `CELERY_BROKER_URL`, set `DJANGO_DEBUG=True` for local work, set the four HTTPS switches in the "Production HTTPS" block (`DJANGO_ENABLE_SECURE_PROXY_SSL_HEADER`, `DJANGO_SECURE_SSL_REDIRECT`, `DJANGO_SESSION_COOKIE_SECURE` and `DJANGO_CSRF_COOKIE_SECURE`) to `False` for local work (left on, `http://localhost:8000/` redirects to https and the site cannot be opened), and optionally set `GOOGLE_MAPS_API_KEY` (without it the maps and the Google results do not work). [`docs/reference/environment.md`](docs/reference/environment.md) lists every variable, its default and where production sets it.
 
 ```bash
 just dev-setup   # starts the dev stack and runs migrations
@@ -73,6 +73,7 @@ Coolify deploys every push to `main`. The web stack (`docker/prod/services/`) ru
 - [`AGENTS.md`](AGENTS.md): how to work in the repo, for people and coding agents.
 - [`CONTEXT.md`](CONTEXT.md): the project glossary.
 - [`docs/`](docs/): architecture decisions in `docs/decisions/` and explanations such as [`docs/explanation/production.md`](docs/explanation/production.md).
+- [`docs/reference/environment.md`](docs/reference/environment.md): every environment variable, its default and where production sets it.
 - [`docker/testenv/README.md`](docker/testenv/README.md): the test environment.
 
 ## Contributing
