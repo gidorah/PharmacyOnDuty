@@ -1,27 +1,24 @@
 # AGENTS: DOCKER
 
-## OVERVIEW
-Container orchestration for GeoDjango, PostGIS, and Celery stacks. Manages development and production environments.
+Compose stacks and images. Directory names say what each holds; only the
+non-obvious parts are here.
 
-## STRUCTURE
-- `dev/`: Hot-reloading development stack with host source mounting.
-- `prod/services/`: Production web stack (Django, Redis, DB).
-- `prod/workers/`: Dedicated scalable Celery worker stack.
-- `postgis/`: Custom spatial database with auto-initialization.
+- `dev/`: hot-reload stack that mounts the host source. Services: django, db,
+  redis, worker, beat, flower.
+- `prod/`: one `Dockerfile` serving two Coolify apps, `prod/services/`
+  (django, db, redis, beat, flower) and `prod/workers/` (worker). See
+  [docs/explanation/production.md](../docs/explanation/production.md); update it
+  with any change here.
+- `testenv/`: per-worktree test stack for agent runs, see
+  [its README](testenv/README.md).
+- `scripts/` here holds only `setup-postgis.sh`. The entrypoint and
+  `wait_for_services.py` live in the root `scripts/` and the Dockerfiles copy
+  them to `/usr/local/bin/`, so volume mounts do not mask them. The latter gates
+  startup on DB and Redis.
 
-## WHERE TO LOOK
-- `dev/Dockerfile`: Development image with dev-tools and hot-reload support.
-- `prod/Dockerfile`: Optimized production image with frozen dependencies.
-- `docker-compose.yml`: Service definitions across `dev/` and `prod/`.
-- `scripts/`: Internal orchestration (entrypoints, health checks).
+## Conventions
 
-## CONVENTIONS
-- **Non-root**: Processes MUST run as `python` user (UID 1000).
-- **uv logic**: `uv sync` for dependency sync; `uv run` for execution.
-- **Isolated Venv**: Persisted in `/opt/venv` to avoid host mount conflicts.
-- **Health Checks**: `wait_for_services.py` ensures DB/Redis availability.
-
-## ANTI-PATTERNS
-- **Root execution**: Forbidden; security violation and permission drift.
-- **Local venv mount**: Mapping host `.venv` to container breaks Linux binaries.
-- **Direct pip**: Bypasses `uv` integrity and performance benefits.
+- App containers run as the `python` user (UID 1000), never root.
+- The venv lives at `/opt/venv` (`UV_PROJECT_ENVIRONMENT`). Dev containers run
+  `uv sync` on startup; the prod image syncs at build time (`--frozen --no-dev`). Never mount the host `.venv`: its binaries are not Linux-container ones.
+- `uv` only, no direct `pip`.
