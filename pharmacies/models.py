@@ -12,8 +12,33 @@ from typing import Any
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.indexes import GistIndex
+from django.db import transaction
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
+
+SCHEDULE_TASK_SUFFIXES = (
+    "Weekday Start",
+    "Weekday End",
+    "Saturday Start",
+    "Saturday End",
+)
+
+
+def schedule_task_name(city_name: str, suffix: str) -> str:
+    """Return one crontab PeriodicTask name for a city name and suffix."""
+    return f"Scrape {city_name} {suffix}"
+
+
+def schedule_task_names(city_name: str) -> list[str]:
+    """Return the four crontab PeriodicTask names for a city name."""
+    return [schedule_task_name(city_name, suffix) for suffix in SCHEDULE_TASK_SUFFIXES]
+
+
+def interval_task_name(city_name: str, city_pk: int) -> str:
+    """Return the interval PeriodicTask name for a city name and pk."""
+    return f"Scrape {city_name} ({city_pk})"
 
 
 class PharmacyStatus(StrEnum):
@@ -48,6 +73,40 @@ class City(models.Model):
 
         verbose_name = "City"
         verbose_name_plural = "Cities"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Save the city and move its periodic tasks when it is renamed.
+
+        Tasks are keyed by city name, so a rename removes the tasks under the
+        old name and rewrites them under the new one.
+        """
+        old_name = None
+        if self.pk is not None:
+            old_name = (
+                City.objects.filter(pk=self.pk).values_list("name", flat=True).first()
+            )
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            if old_name is not None and old_name != self.name:
+                self._rename_periodic_tasks(old_name)
+
+    def _rename_periodic_tasks(self, old_name: str) -> None:
+        """Delete tasks under the old name and recreate them under the new one."""
+        PeriodicTask.objects.filter(
+            name__in=[
+                *schedule_task_names(old_name),
+                interval_task_name(old_name, self.pk),
+            ]
+        ).delete()
+        schedule = WorkingSchedule.objects.filter(city=self).first()
+        if schedule is not None:
+            schedule.city = self
+            schedule._update_periodic_tasks()
+        config = ScraperConfig.objects.filter(city=self).first()
+        if config is not None:
+            config.city = self
+            config._update_celery_schedule()
 
     def get_pharmacies_on_duty(self, current_time: datetime | None = None) -> list[Any]:
         """Return pharmacies that are on duty at the given time."""
@@ -134,7 +193,7 @@ class WorkingSchedule(models.Model):
             )
 
             PeriodicTask.objects.update_or_create(
-                name=f"Scrape {self.city.name} {suffix}",
+                name=schedule_task_name(self.city.name, suffix),
                 defaults={
                     "crontab": schedule,
                     "task": "pharmacies.tasks.run_scraper",
@@ -280,7 +339,7 @@ class ScraperConfig(models.Model):
         )
 
         PeriodicTask.objects.update_or_create(
-            name=f"Scrape {self.city.name} ({self.pk})",  # Unique name
+            name=interval_task_name(self.city.name, self.pk),  # Unique name
             defaults={
                 "interval": schedule,
                 "task": "pharmacies.tasks.run_scraper",
@@ -288,3 +347,23 @@ class ScraperConfig(models.Model):
                 "enabled": True,
             },
         )
+
+
+@receiver(pre_delete, sender=WorkingSchedule)
+def delete_schedule_periodic_tasks(
+    sender: type[WorkingSchedule], instance: WorkingSchedule, **kwargs: Any
+) -> None:
+    """Remove the crontab PeriodicTasks of a WorkingSchedule being deleted."""
+    PeriodicTask.objects.filter(
+        name__in=schedule_task_names(instance.city.name)
+    ).delete()
+
+
+@receiver(pre_delete, sender=ScraperConfig)
+def delete_config_periodic_task(
+    sender: type[ScraperConfig], instance: ScraperConfig, **kwargs: Any
+) -> None:
+    """Remove the interval PeriodicTask of a ScraperConfig being deleted."""
+    PeriodicTask.objects.filter(
+        name=interval_task_name(instance.city.name, instance.pk)
+    ).delete()

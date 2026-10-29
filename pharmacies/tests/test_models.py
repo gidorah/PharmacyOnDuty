@@ -1,9 +1,17 @@
+import json
 from datetime import UTC, datetime, time
 
 import pytest
 from django.contrib.gis.geos import Point
+from django_celery_beat.models import PeriodicTask
 
-from pharmacies.models import City, Pharmacy, PharmacyStatus, WorkingSchedule
+from pharmacies.models import (
+    City,
+    Pharmacy,
+    PharmacyStatus,
+    ScraperConfig,
+    WorkingSchedule,
+)
 
 
 @pytest.mark.django_db
@@ -164,3 +172,101 @@ class TestPharmacyModel:
 
         assert near_pharmacies[0] == p1
         assert near_pharmacies[1] == p2
+
+
+SCRAPER_TASK = "pharmacies.tasks.run_scraper"
+
+
+def _names_for(city: City) -> set[str]:
+    """Expected five task names for a city."""
+    return {
+        f"Scrape {city.name} Weekday Start",
+        f"Scrape {city.name} Weekday End",
+        f"Scrape {city.name} Saturday Start",
+        f"Scrape {city.name} Saturday End",
+        f"Scrape {city.name} ({city.pk})",
+    }
+
+
+def _task_names() -> set[str]:
+    return set(
+        PeriodicTask.objects.filter(task=SCRAPER_TASK).values_list("name", flat=True)
+    )
+
+
+def _make_city(name: str) -> City:
+    city = City.objects.create(name=name)
+    WorkingSchedule.objects.create(
+        city=city,
+        weekday_start=time(9, 0),
+        weekday_end=time(18, 0),
+        saturday_start=time(9, 0),
+        saturday_end=time(13, 0),
+    )
+    ScraperConfig.objects.create(city=city, interval=12)
+    return city
+
+
+@pytest.mark.django_db
+class TestPeriodicTaskCleanup:
+    def test_deleting_schedule_removes_its_four_tasks(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        city_a.working_schedule.delete()
+        assert _task_names() == {f"Scrape CityA ({city_a.pk})"} | _names_for(city_b)
+
+    def test_deleting_config_removes_its_interval_task(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        city_a.scraperconfig.delete()
+        assert _task_names() == (
+            _names_for(city_a) - {f"Scrape CityA ({city_a.pk})"}
+        ) | _names_for(city_b)
+
+    def test_deleting_city_removes_all_its_tasks(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        city_a.delete()
+        assert _task_names() == _names_for(city_b)
+        assert not PeriodicTask.objects.filter(args=json.dumps(["CityA"])).exists()
+
+    def test_queryset_delete_of_schedules(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        WorkingSchedule.objects.filter(city=city_a).delete()
+        assert _task_names() == {f"Scrape CityA ({city_a.pk})"} | _names_for(city_b)
+
+    def test_queryset_delete_of_configs(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        ScraperConfig.objects.filter(city=city_a).delete()
+        assert _task_names() == (
+            _names_for(city_a) - {f"Scrape CityA ({city_a.pk})"}
+        ) | _names_for(city_b)
+
+    def test_queryset_delete_of_cities(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        City.objects.filter(pk=city_a.pk).delete()
+        assert _task_names() == _names_for(city_b)
+        assert not PeriodicTask.objects.filter(args=json.dumps(["CityA"])).exists()
+
+
+@pytest.mark.django_db
+class TestCityRenameTasks:
+    def test_rename_moves_tasks_to_new_name(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        city = City.objects.get(pk=city_a.pk)
+        city.name = "CityC"
+        city.save()
+        assert _task_names() == _names_for(city) | _names_for(city_b)
+        for name in _names_for(city):
+            task = PeriodicTask.objects.get(name=name)
+            assert task.args == json.dumps(["CityC"])
+        assert not PeriodicTask.objects.filter(args=json.dumps(["CityA"])).exists()
+
+    def test_rename_city_without_schedule_or_config_creates_no_tasks(self) -> None:
+        city = City.objects.create(name="Bare")
+        city.name = "Bare2"
+        city.save()
+        assert _task_names() == set()
+
+    def test_save_without_rename_keeps_tasks(self) -> None:
+        city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        city = City.objects.get(pk=city_a.pk)
+        city.save()
+        assert _task_names() == _names_for(city_a) | _names_for(city_b)
