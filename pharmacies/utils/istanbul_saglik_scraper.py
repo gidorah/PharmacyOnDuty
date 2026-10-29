@@ -6,14 +6,14 @@ Fetches duty pharmacy data for all districts in Istanbul.
 
 import csv
 import logging
-from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from django.utils import timezone
+
+from pharmacies.utils.duty_window import get_duty_window
 
 BASE_URL = "https://nobetcieczane.istanbulsaglik.gov.tr:88/"
 API_ENDPOINT = f"{BASE_URL}Home/GetEczaneler"
@@ -84,36 +84,6 @@ def _get_coordinates_from_sehirharitasi_url(url: str) -> dict[str, float] | None
         return None
 
     return {"lat": float(lat), "lng": float(lon)}
-
-
-def _get_duty_times() -> tuple[datetime, datetime]:
-    """
-    Calculate duty start and end times for Istanbul.
-
-    Same logic as Ankara: shifts start at 16:00 UTC (19:00 TRT) and end next morning.
-    """
-    current_time = timezone.now()
-
-    if (
-        current_time.weekday() == 6 and current_time.hour >= 6
-    ):  # If it's Sunday, pharmacies are on duty all day until 9am tomorrow
-        duty_start = current_time.replace(hour=6, minute=0, second=0, microsecond=0)
-        duty_end = current_time.replace(
-            hour=6, minute=0, second=0, microsecond=0
-        ) + timedelta(days=1)
-        return duty_start, duty_end
-
-    if (
-        current_time.hour < 6
-    ):  # If it's before 9am, pharmacies are in duty of the previous day
-        current_time = current_time - timedelta(days=1)
-
-    duty_start = current_time.replace(hour=16, minute=0, second=0, microsecond=0)
-    duty_end = current_time.replace(
-        hour=6, minute=0, second=0, microsecond=0
-    ) + timedelta(days=1)
-
-    return duty_start, duty_end
 
 
 def get_istanbul_data() -> list[dict[str, Any]]:
@@ -204,7 +174,7 @@ def get_istanbul_data() -> list[dict[str, Any]]:
             pharmacy["coordinates"] = coordinates
 
             # Set duty times
-            pharmacy["duty_start"], pharmacy["duty_end"] = _get_duty_times()
+            pharmacy["duty_start"], pharmacy["duty_end"] = get_duty_window("istanbul")
             all_pharmacies.append(pharmacy)
 
     if DISTRICTS and failed_districts == len(DISTRICTS):

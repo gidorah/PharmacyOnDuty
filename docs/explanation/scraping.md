@@ -62,11 +62,17 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   second `div.card-header`, the phone in the second `label`, the address in
   the `label` after the `la la-home` icon, and the location as `lat` and
   `lon` query parameters of a `sehirharitasi.ibb.gov.tr` link.
-- **Duty window: computed** by `_get_duty_times` from the time of the scrape,
-  not read from the source: 16:00 UTC (19:00 TRT) to 06:00 UTC (09:00 TRT)
-  the next day. Before 06:00 UTC it is the window that started the previous
-  evening. On Sunday from 06:00 UTC it is the whole day, to Monday 06:00 UTC.
-  Every pharmacy of a scrape gets the same window.
+- **Duty window: computed** from the time of the scrape and the city's
+  `WorkingSchedule`, not read from the source, by `get_duty_window`
+  (`pharmacies/utils/duty_window.py`, shared with Ankara). Weekday: from
+  `weekday_end` to the later of 06:00 UTC the next day and the next opening,
+  so Friday's runs to `saturday_start`. Saturday: from `saturday_end` to
+  Sunday 06:00 UTC. Sunday: 06:00 to Monday 06:00 UTC. Before 06:00 UTC,
+  and on Saturday before `saturday_start`, it is the window that started the
+  previous day. With the seeded hours: Mon-Thu
+  15:30 UTC (18:30 TRT) to 06:00 UTC (09:00 TRT), Friday to Saturday 07:00
+  UTC, Saturday 15:00 UTC to Sunday 06:00 UTC. Every pharmacy of a scrape
+  gets the same window.
 - **Quirks:**
   - A district whose request fails is skipped with a warning. Only when all
     39 fail does the scraper raise `RequestException`. A pharmacy without a
@@ -75,8 +81,8 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   - The source did not answer from the testenv on 28 Oct 2026, nor in
     production: every district times out, so a scrape takes about 6.5
     minutes and writes nothing (#204, #238).
-  - The computed window starts after working hours end (#259) and ignores
-    public holidays and eves (the second part of #260).
+  - The computed window ignores public holidays and eves (the second part
+    of #260).
 
 ### Ankara
 
@@ -92,8 +98,8 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   date's list is the duty that starts that evening; the notice may say
   otherwise ("29.10.2026 saat 08:30'a kadar 28.10.2026 tarihli nöbet listesi
   geçerlidir").
-- **Duty window: computed**, with the same `_get_duty_times` rules as
-  Istanbul (a copy in this module).
+- **Duty window: computed**, with the same `get_duty_window` rules as
+  Istanbul (`pharmacies/utils/duty_window.py`).
 - **Quirks:**
   - A redirect, a non-JSON body, a status other than `success` or a missing
     `html` raises `AnkaraScraperError`, a `RequestException`. An entry
@@ -102,8 +108,8 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
     matches rows written from the chamber's older API.
   - The name is `data-name` in Turkish title case plus ` Eczanesi`
     (`_turkish_title`).
-  - The computed window starts after working hours end (#259); the notice's
-    own times (13:00 on a holiday eve, 08:30 the next morning) are not read.
+  - The notice's own times (13:00 on a holiday eve, 08:30 the next morning)
+    are not read.
 
 ## Schedule
 
@@ -187,7 +193,7 @@ its old window, which simply passes.
    first 5 are returned.
 
 So a city's duty windows matter only while it is closed, and a closed city
-with no window covering the time answers 400 (#259 is such a gap).
+with no window covering the time answers 400.
 
 ## Data health
 

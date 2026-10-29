@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
@@ -12,9 +13,21 @@ from requests.exceptions import (
 
 from pharmacies.utils.istanbul_saglik_scraper import (
     _get_coordinates_from_sehirharitasi_url,
-    _get_duty_times,
     get_istanbul_data,
 )
+
+DUTY_START = datetime(2025, 12, 16, 15, 30, tzinfo=UTC)
+DUTY_END = datetime(2025, 12, 17, 6, 0, tzinfo=UTC)
+
+
+@pytest.fixture(autouse=True)
+def _fixed_duty_window() -> Iterator[None]:
+    """Keep scraper tests off the database."""
+    with patch(
+        "pharmacies.utils.istanbul_saglik_scraper.get_duty_window",
+        return_value=(DUTY_START, DUTY_END),
+    ):
+        yield
 
 
 def test_get_coordinates_from_sehirharitasi_url() -> None:
@@ -27,14 +40,6 @@ def test_get_coordinates_from_sehirharitasi_url_invalid() -> None:
     url = "http://sehirharitasi.ibb.gov.tr/?invalid=true"
     coords = _get_coordinates_from_sehirharitasi_url(url)
     assert coords is None
-
-
-@patch("pharmacies.utils.istanbul_saglik_scraper.timezone.now")
-def test_get_duty_times(mock_now: MagicMock) -> None:
-    mock_now.return_value = datetime(2025, 12, 16, 14, 0, tzinfo=UTC)
-    start, end = _get_duty_times()
-    assert start == datetime(2025, 12, 16, 16, 0, tzinfo=UTC)
-    assert end == datetime(2025, 12, 17, 6, 0, tzinfo=UTC)
 
 
 @patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
@@ -65,6 +70,8 @@ def test_get_istanbul_data(mock_post: MagicMock) -> None:
     assert data[0]["address"] == "Test Address"
     assert data[0]["coordinates"] == {"lat": 41.0, "lng": 28.9}
     assert data[0]["district"] == "Adalar"
+    assert data[0]["duty_start"] == DUTY_START
+    assert data[0]["duty_end"] == DUTY_END
 
 
 def _card_html(name: str) -> str:
