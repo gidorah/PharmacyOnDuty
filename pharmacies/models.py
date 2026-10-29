@@ -6,10 +6,12 @@ and Scraper Configurations, including their relationships and logic.
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime, time
 from enum import StrEnum
 from typing import Any
+from zoneinfo import ZoneInfo
 
+import holidays
 from django.contrib.gis.db import models
 from django.contrib.postgres.indexes import GistIndex
 from django.db import transaction
@@ -17,6 +19,13 @@ from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, IntervalSchedule, PeriodicTask
+
+ISTANBUL_TZ = ZoneInfo("Europe/Istanbul")
+EVE_CLOSING_TIME_ISTANBUL = time(13, 0)
+
+# Built once: the lookups are cached per year by the holidays package.
+TR_PUBLIC_HOLIDAYS = holidays.country_holidays("TR", categories=(holidays.PUBLIC,))
+TR_HALF_DAY_HOLIDAYS = holidays.country_holidays("TR", categories=(holidays.HALF_DAY,))
 
 SCHEDULE_TASK_SUFFIXES = (
     "Weekday Start",
@@ -232,15 +241,40 @@ class WorkingSchedule(models.Model):
         verbose_name_plural = "Working Schedules"
 
     def is_open(self, query_time: datetime) -> bool:
-        """Check if the working schedule is open at the given time."""
-        current_time = query_time.time()
+        """
+        Check if the working schedule is open at the given time.
+
+        Hours are compared in UTC (a naive ``query_time`` counts as UTC). Turkish
+        public holidays close the day; on a half-day eve the schedule closes at
+        13:00 Europe/Istanbul or the usual end, whichever is earlier. Only the
+        holiday lookup uses the Istanbul date.
+        """
+        if query_time.tzinfo is None:
+            query_time = query_time.replace(tzinfo=UTC)
+        utc_time = query_time.astimezone(UTC)
+        current_time = utc_time.time()
+        istanbul_date = utc_time.astimezone(ISTANBUL_TZ).date()
+
+        if istanbul_date in TR_PUBLIC_HOLIDAYS:
+            return False
+
         current_weekday = query_time.weekday()
-        return (
-            current_weekday < 5 and self.weekday_start < current_time < self.weekday_end
-        ) or (
-            current_weekday == 5
-            and self.saturday_start < current_time < self.saturday_end
-        )
+        if current_weekday < 5:
+            start, end = self.weekday_start, self.weekday_end
+        elif current_weekday == 5:
+            start, end = self.saturday_start, self.saturday_end
+        else:
+            return False
+
+        if istanbul_date in TR_HALF_DAY_HOLIDAYS:
+            eve_close = (
+                datetime.combine(istanbul_date, EVE_CLOSING_TIME_ISTANBUL, ISTANBUL_TZ)
+                .astimezone(UTC)
+                .time()
+            )
+            end = min(end, eve_close)
+
+        return start < current_time < end
 
     def get_status(self, query_time: datetime | None = None) -> PharmacyStatus:
         """Return the status of the working schedule for the given time."""

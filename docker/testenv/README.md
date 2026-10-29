@@ -29,6 +29,9 @@ and `measure` (cold and warm start, peak memory, disk, check time).
   the worker answers a Celery ping, beat has started and Flower is healthy.
 - **check** runs every step to the end (no `-x`) and writes each step's output
   to the run's log folder. Its summary names every failed test.
+- **Docs gate.** `scripts/check_docs.py` checks the Markdown docs' paths,
+  `just` recipes, `manage.py` commands, links and agent-file lengths; CI's lint
+  job runs it, and check's pytest runs it through `tests/test_check_docs.py`.
 - **Logs and state** live outside the worktree, in
   `~/.local/state/pod-testenv/<name>/`, so they survive the worktree's removal.
 - **Buildx state** lives in `~/.local/state/pod-testenv/buildx/` (the script
