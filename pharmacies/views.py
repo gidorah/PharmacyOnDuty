@@ -190,7 +190,7 @@ def _cached_google_maps_proxy(request: HttpRequest) -> HttpResponse | JsonRespon
         response = requests.get(endpoint, params=params, timeout=10)
         return HttpResponse(response.text, content_type="text/javascript")
     except requests.exceptions.RequestException as e:
-        logger.error("Failed to proxy Google Maps request: %s", e)
+        logger.error("Failed to proxy Google Maps request: %s", type(e).__name__)
         return JsonResponse(
             {"error": "Failed to proxy Google Maps request."}, status=500
         )
