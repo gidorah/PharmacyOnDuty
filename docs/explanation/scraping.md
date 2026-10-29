@@ -67,7 +67,11 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   (`pharmacies/utils/duty_window.py`, shared with Ankara). Weekday: from
   `weekday_end` to the later of 06:00 UTC the next day and the next opening,
   so Friday's runs to `saturday_start`. Saturday: from `saturday_end` to
-  Sunday 06:00 UTC. Sunday: 06:00 to Monday 06:00 UTC. Before 06:00 UTC,
+  Sunday 06:00 UTC. Sunday: 06:00 to Monday 06:00 UTC. A Turkish public
+  holiday (Istanbul date) is a Sunday: 06:00 UTC that day to the later of
+  06:00 and the next opening, and a working day before a holiday ends at
+  06:00. On a half-day eve the window starts at 13:00 TRT (10:00 UTC) or the
+  usual end if earlier, like `WorkingSchedule.is_open`. Before 06:00 UTC,
   and on Saturday before `saturday_start`, it is the window that started the
   previous day. With the seeded hours: Mon-Thu
   15:30 UTC (18:30 TRT) to 06:00 UTC (09:00 TRT), Friday to Saturday 07:00
@@ -81,8 +85,6 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   - The source did not answer from the testenv on 28 Oct 2026, nor in
     production: every district times out, so a scrape takes about 6.5
     minutes and writes nothing (#204, #238).
-  - The computed window ignores public holidays and eves (the second part
-    of #260).
 
 ### Ankara
 
@@ -95,7 +97,8 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   notice paragraph and one `div.inline-box` per pharmacy, with `data-name`
   and `data-district` attributes, the address and phone in its `p`, and the
   location as the `query=<lat>,<lng>` parameter of a Google Maps link. Each
-  date's list is the duty that starts that evening; the notice may say
+  date's list is the duty that starts that evening (on a Sunday or a public
+  holiday, that morning); the notice may say
   otherwise ("29.10.2026 saat 08:30'a kadar 28.10.2026 tarihli nöbet listesi
   geçerlidir").
 - **Duty window: computed**, with the same `get_duty_window` rules as
@@ -178,9 +181,9 @@ its old window, which simply passes.
    13:00 TRT (10:00 UTC, or the usual end if earlier). The dates come from the
    `holidays` package (`holidays.Turkey`, categories `PUBLIC` and `HALF_DAY`,
    which computes the moving Bayram dates), looked up by the date of the
-   query time in `Europe/Istanbul`. Istanbul's and Ankara's computed duty
-   windows don't cover holidays yet, so a holiday daytime there answers 400
-   (#260's second part). In `DEBUG` the time is
+   query time in `Europe/Istanbul`. The computed duty windows of Istanbul
+   and Ankara cover holidays and eves too, so a holiday daytime has rows on
+   duty. In `DEBUG` the time is
    `TEST_TIME`, ten hours after the process started, not now.
 3. **Open:** `get_nearest_pharmacies_open` asks Google Places for the nearest
    pharmacies (`fetch_nearest_pharmacies`, cached in the process). Nothing

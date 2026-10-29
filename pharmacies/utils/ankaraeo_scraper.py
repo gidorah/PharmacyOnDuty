@@ -115,7 +115,8 @@ def get_ankara_data() -> list[dict[str, Any]]:
     Scrape the current duty pharmacies from the Ankara Eczacılar Odası.
 
     AEO's list for date D is the duty starting on the evening of D, so the URL
-    date is the Istanbul date of the duty window's start.
+    date is the Istanbul date of the duty window's start. On a Sunday or a
+    public holiday the window starts in the morning of D, not the evening.
 
     Returns a list of standardized dicts (name, address, district, phone,
     coordinates, duty_start, duty_end).

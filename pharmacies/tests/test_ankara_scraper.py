@@ -104,31 +104,31 @@ def test_get_ankara_data_parses_get_pharmacies_html(mock_get: MagicMock) -> None
     [
         # 00:00 TRT Thu: still Wednesday night's duty
         (
-            datetime(2026, 10, 28, 21, 0, tzinfo=UTC),
-            "2026-10-28",
-            datetime(2026, 10, 28, 15, 30, tzinfo=UTC),
-            datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
+            datetime(2026, 10, 21, 21, 0, tzinfo=UTC),
+            "2026-10-21",
+            datetime(2026, 10, 21, 15, 30, tzinfo=UTC),
+            datetime(2026, 10, 22, 6, 0, tzinfo=UTC),
         ),
         # 02:00 TRT Thu
         (
-            datetime(2026, 10, 28, 23, 0, tzinfo=UTC),
-            "2026-10-28",
-            datetime(2026, 10, 28, 15, 30, tzinfo=UTC),
-            datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
+            datetime(2026, 10, 21, 23, 0, tzinfo=UTC),
+            "2026-10-21",
+            datetime(2026, 10, 21, 15, 30, tzinfo=UTC),
+            datetime(2026, 10, 22, 6, 0, tzinfo=UTC),
         ),
         # 05:00 TRT Thu
         (
-            datetime(2026, 10, 29, 2, 0, tzinfo=UTC),
-            "2026-10-28",
-            datetime(2026, 10, 28, 15, 30, tzinfo=UTC),
-            datetime(2026, 10, 29, 6, 0, tzinfo=UTC),
+            datetime(2026, 10, 22, 2, 0, tzinfo=UTC),
+            "2026-10-21",
+            datetime(2026, 10, 21, 15, 30, tzinfo=UTC),
+            datetime(2026, 10, 22, 6, 0, tzinfo=UTC),
         ),
         # 17:00 TRT Thu
         (
-            datetime(2026, 10, 29, 14, 0, tzinfo=UTC),
-            "2026-10-29",
-            datetime(2026, 10, 29, 15, 30, tzinfo=UTC),
-            datetime(2026, 10, 30, 6, 0, tzinfo=UTC),
+            datetime(2026, 10, 22, 14, 0, tzinfo=UTC),
+            "2026-10-22",
+            datetime(2026, 10, 22, 15, 30, tzinfo=UTC),
+            datetime(2026, 10, 23, 6, 0, tzinfo=UTC),
         ),
         # Sunday daytime
         (
@@ -306,3 +306,30 @@ def test_get_ankara_data_normalizes_phone_to_stored_format(
         ("Mobıle Eczanesi", "5333015404"),
         ("Double Zero Eczanesi", "3127281533"),
     ]
+
+
+@pytest.mark.django_db
+@patch("pharmacies.utils.ankaraeo_scraper.requests.get")
+def test_get_ankara_data_on_a_public_holiday_uses_the_holidays_own_window(
+    mock_get: MagicMock,
+) -> None:
+    city = City.objects.create(name="ankara")
+    WorkingSchedule.objects.create(
+        city=city,
+        weekday_start=time(5, 30),
+        weekday_end=time(15, 30),
+        saturday_start=time(7, 0),
+        saturday_end=time(15, 0),
+    )
+    mock_get.return_value = _json_response(_load_fixture())
+
+    # Republic Day, 16:00 TRT
+    now = datetime(2026, 10, 29, 13, 0, tzinfo=UTC)
+    with patch("pharmacies.utils.duty_window.timezone.now", return_value=now):
+        data = get_ankara_data()
+
+    assert mock_get.call_args.args[0].endswith("2026-10-29")
+    assert len(data) == 3
+    for row in data:
+        assert row["duty_start"] == datetime(2026, 10, 29, 6, 0, tzinfo=UTC)
+        assert row["duty_end"] == datetime(2026, 10, 30, 6, 0, tzinfo=UTC)
