@@ -11,6 +11,7 @@ from django.conf import settings
 from django.test import Client
 from django.test.utils import override_settings
 from django.urls import reverse
+from pytest_django import Settings
 
 from pharmacies.models import City, PharmacyStatus, WorkingSchedule
 from pharmacies.utils.utils import UnknownCityError, UpstreamGeocodingError
@@ -835,3 +836,48 @@ class TestProxyAwareCsrf:
         response_json = json.loads(response.content)
         assert response_json["error"] == "Failed to proxy Google Maps request."
         assert "API down" not in response_json["error"]
+
+    @patch("pharmacies.views.requests.get")
+    def test_google_maps_proxy_failure_log_does_not_leak_api_key(
+        self,
+        mock_get: MagicMock,
+        client: Client,
+        settings: Settings,
+        caplog: pytest.LogCaptureFixture,
+    ) -> None:
+        from django.core.cache import cache
+
+        cache.clear()
+
+        key = "SECRET-KEY-250-abc123"
+        settings.GOOGLE_MAPS_API_KEY = key
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "HTTPSConnectionPool(host='maps.googleapis.com', port=443): "
+            f"Max retries exceeded with url: /maps/api/js?key={key}"
+            "&libraries=marker (Caused by NewConnectionError)"
+        )
+        url = reverse("pharmacies:google_maps_proxy")
+
+        with caplog.at_level(logging.ERROR, logger="pharmacies.views"):
+            with patch("pharmacies.views.is_allowed_referer", return_value=True):
+                response = client.get(url)
+
+        records = [
+            r
+            for r in caplog.records
+            if r.name == "pharmacies.views" and r.levelno == logging.ERROR
+        ]
+        assert len(records) == 1
+        record = records[0]
+        message = record.getMessage()
+        assert key not in message
+        assert key not in str(record.args)
+        assert not record.exc_info
+        assert key not in (record.exc_text or "")
+        assert "Failed to proxy Google Maps request" in message
+        assert "ConnectionError" in message
+
+        assert response.status_code == 500
+        assert json.loads(response.content) == {
+            "error": "Failed to proxy Google Maps request."
+        }
