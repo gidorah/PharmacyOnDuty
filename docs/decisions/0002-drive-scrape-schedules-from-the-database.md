@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted. Back-filled 28 Oct 2026 from commit 3060c4b (18 Dec 2025,
+Replaced by [0007](0007-drive-scrape-schedules-from-the-database-and-remove-their-tasks.md).
+Back-filled 28 Oct 2026 from commit 3060c4b (18 Dec 2025,
 "dual-strategy scraper scheduling").
 
 ## Context

@@ -110,7 +110,7 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
 ## Schedule
 
 Beat uses `django_celery_beat`'s `DatabaseScheduler`, so the schedule is rows
-in the database ([ADR 0002](../decisions/0002-drive-scrape-schedules-from-the-database.md)).
+in the database ([ADR 0007](../decisions/0007-drive-scrape-schedules-from-the-database-and-remove-their-tasks.md)).
 Each city has five `PeriodicTask` rows that call
 `pharmacies.tasks.run_scraper` with the city name:
 
@@ -123,8 +123,11 @@ Each city has five `PeriodicTask` rows that call
 | `Scrape <city> Saturday End` | `WorkingSchedule.save()` | Sat 15:00 UTC (18:00 TRT) |
 
 `WorkingSchedule` times are UTC and their crontabs use `timezone="UTC"`,
-although `CELERY_TIMEZONE` is `Europe/Istanbul`. Nothing removes these rows
-when a city, schedule or config goes (#252). In production beat runs on
+although `CELERY_TIMEZONE` is `Europe/Istanbul`. Deleting a `WorkingSchedule`
+removes its four crontab tasks and deleting a `ScraperConfig` its interval
+task, including through the admin's bulk delete and a `City` cascade
+(`pre_delete` receivers in `pharmacies/models.py`). Renaming a city in
+`City.save()` replaces its tasks with ones under the new name. In production beat runs on
 `unit-01` and the worker on `monolith` ([production](production.md)).
 
 ## Ingest
