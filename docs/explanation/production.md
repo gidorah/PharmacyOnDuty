@@ -47,8 +47,8 @@ beat (unit-01) ──task──▶ redis (unit-01) ◀──Tailscale── work
   `DB_HOST_PORT`; the compose defaults bind to `127.0.0.1`, and Coolify sets
   the production values. Whether those bind only to the Tailscale address is
   tracked in #242.
-- The worker's compose passes in only `CELERY_BROKER_URL` and the `DB_*`
-  variables. Other variables set on the Coolify `workers` app are not used.
+- The worker's compose passes in `CELERY_BROKER_URL`, the `DB_*` variables and
+  `SENTRY_DSN`. The Coolify `workers` app needs the same DSN as `services`.
 
 ## Deploys
 

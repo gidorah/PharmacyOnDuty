@@ -44,7 +44,7 @@ anything else is false.
 | `RATELIMIT_CACHE_URL` | `CELERY_BROKER_URL` | Redis URL for the rate-limit cache. | Not set |
 | `PHARMACY_POINTS_RATE_LIMIT` | `30/m` | Rate limit of the pharmacy points endpoint. | Not set |
 | `RATELIMIT_TRUSTED_PROXY_COUNT` | `0` | `0` keys the limit on `REMOTE_ADDR`. `N` trusts the Nth-from-right `X-Forwarded-For` entry. See [ADR 0003](../decisions/0003-trust-one-proxy-hop-for-the-rate-limit-key.md). | `services` compose file, default `1` |
-| `SENTRY_DSN` | unset | Turns Sentry on when set. | Coolify (`services` app) |
+| `SENTRY_DSN` | unset | Turns Sentry on when set. | Coolify (`services` and `workers` apps); the `workers` compose file passes it through |
 | `REMOTE_DEBUGGING_PORT` | unset | debugpy port. It listens only when `DJANGO_DEBUG` is also on. | Not set (the dev compose file sets `5678`) |
 | `DOTENV_PATH` | unset (python-dotenv finds `.env`); `.env` in `scripts/wait_for_services.py` | Path of the dotenv file to load. | Not set |
 | `DJANGO_SETTINGS_MODULE` | `PharmacyOnDuty.settings` in `scripts/record_distance_matrix.py` | Django settings module. | `workers` compose file |
