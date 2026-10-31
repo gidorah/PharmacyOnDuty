@@ -1,6 +1,6 @@
 from pharmacies.utils.ankaraeo_scraper import get_ankara_data
 from pharmacies.utils.eskisehireo_scraper import get_eskisehir_data
-from pharmacies.utils.istanbul_saglik_scraper import get_istanbul_data
+from pharmacies.utils.istanbul_edevlet_scraper import get_istanbul_data
 from pharmacies.utils.pharmacy_fetch import fetch_nearest_pharmacies
 from pharmacies.utils.utils import (
     ScrapedDataStatus,

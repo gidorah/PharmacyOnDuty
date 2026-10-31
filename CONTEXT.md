@@ -48,8 +48,8 @@ duty at that time, from this database.
 ## Data sources
 
 **Chamber** (Eczacı Odası):
-The body that publishes a city's duty list; for Istanbul it is the provincial
-health directorate. The source of truth for duty windows.
+The body that publishes a city's duty list; for Istanbul it is the Health Ministry's
+e-Devlet service "TİTCK Nöbetçi Eczane Sorgulama". The source of truth for duty windows.
 _Avoid_: provider, API
 
 **Scraper**:

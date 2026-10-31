@@ -51,22 +51,18 @@ def test_run_scraper_skips_persistence_on_upstream_request_error(
 @patch("pharmacies.tasks.logger")
 @patch("pharmacies.tasks.close_old_connections")
 @patch("pharmacies.tasks._persist_scraped_data")
-@patch("pharmacies.utils.istanbul_saglik_scraper.requests.post")
-@patch(
-    "pharmacies.utils.istanbul_saglik_scraper.DISTRICTS",
-    ["Adalar", "Ataşehir", "Beykoz"],
-)
+@patch("pharmacies.utils.istanbul_edevlet_scraper.requests.Session")
 def test_run_scraper_handles_istanbul_request_failures_through_dispatcher(
-    mock_post: MagicMock,
+    mock_session_class: MagicMock,
     mock_persist: MagicMock,
     mock_close_old_connections: MagicMock,
     mock_logger: MagicMock,
 ) -> None:
-    mock_post.side_effect = RequestException("down")
+    mock_session_class.return_value.get.side_effect = RequestException("down")
 
     run_scraper("istanbul")
 
-    assert mock_post.call_count == 3
+    mock_session_class.return_value.get.assert_called_once()
     mock_persist.assert_not_called()
     mock_logger.warning.assert_called_once_with(
         "Skipping scraper for city %s due to upstream fetch failure.",

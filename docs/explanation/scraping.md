@@ -53,17 +53,24 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
 
 ### Istanbul
 
-- **Source:** the Istanbul health directorate's
-  `https://nobetcieczane.istanbulsaglik.gov.tr:88/Home/GetEczaneler`, one
-  `POST` per district with `ilce=<district>` in the query string (10 s
-  timeout), for the 39 names in `DISTRICTS`
-  (`pharmacies/utils/istanbul_saglik_scraper.py`, `get_istanbul_data`).
-- **Format:** an HTML fragment with one `.card` per pharmacy: the name in the
-  second `div.card-header`, the phone in the second `label`, the address in
-  the `label` after the `la la-home` icon, and the location as `lat` and
-  `lon` query parameters of a `sehirharitasi.ibb.gov.tr` link.
+- **Source:** the Health Ministry's e-Devlet service "TİTCK Nöbetçi Eczane
+  Sorgulama", `https://www.turkiye.gov.tr/saglik-titck-nobetci-eczane-sorgulama`
+  (no login). A `GET` of the form gives the session cookie and the `token`
+  hidden input; one city-wide `POST` to `...?submit` with
+  `ilkod-address-il=34` and `nobetTarihi` = the duty day on duty now
+  (day/month/year, such as 31/10/2026; the Istanbul date until 09:00 belongs to
+  the previous day's list) lists every district, so there is
+  no per-district loop. Both requests have a 10 s timeout (`pharmacies/utils/istanbul_edevlet_scraper.py`,
+  `get_istanbul_data`).
+- **Format:** an HTML page with `table#searchTable`, one `tr` per pharmacy:
+  district, name, address, phone, the source's own duty start and end text
+  (not used), a status and a "Haritada Göster" link. The coordinates come from
+  that link's map page, the `latti` and `longi` values in its
+  `parseFloat(...)` calls, fetched with the session's cookies, four pages at a
+  time (0.4 to 3 s each). The phone keeps digits only (`02163812112`).
 - **Duty window: computed** from the time of the scrape and the city's
-  `WorkingSchedule`, not read from the source, by `get_duty_window`
+  `WorkingSchedule`, not read from the source (which also lists per-pharmacy
+  start and end times, unused), by `get_duty_window`
   (`pharmacies/utils/duty_window.py`, shared with Ankara). Weekday: from
   `weekday_end` to the later of 06:00 UTC the next day and the next opening,
   so Friday's runs to `saturday_start`. Saturday: from `saturday_end` to
@@ -78,13 +85,20 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
   UTC, Saturday 15:00 UTC to Sunday 06:00 UTC. Every pharmacy of a scrape
   gets the same window.
 - **Quirks:**
-  - A district whose request fails is skipped with a warning. Only when all
-    39 fail does the scraper raise `RequestException`. A pharmacy without a
-    parseable map link is skipped; missing name, phone or address become
-    `"N/A"`.
-  - The source did not answer from the testenv on 28 Oct 2026, nor in
-    production: every district times out, so a scrape takes about 6.5
-    minutes and writes nothing (#204, #238).
+  - No list at all raises `RequestException`, so `run_scraper` logs an
+    upstream failure instead of an empty duty list: a request error or HTTP
+    error status, a form without its token, the form returned again (the
+    query was rejected), a page without `table#searchTable`, or a table with
+    no rows.
+  - A map page that fails with any request error (connection error, timeout,
+    HTTP error status) is retried once; about 3 to 8 % fail transiently. If the
+    retry also fails, or the page has no valid coordinates, that pharmacy is
+    skipped with a warning and the others are kept.
+  - When four pharmacies in a row (in table order) still fail with a connection
+    error or timeout after their retry, the host is taken as gone: the scrape
+    raises `RequestException` and requests no further batch. Only a success
+    resets that count; an HTTP error or a page without coordinates neither
+    counts nor resets it.
 
 ### Ankara
 
@@ -148,8 +162,9 @@ task, including through the admin's bulk delete and a `City` cascade
    `add_scraped_data_to_db` and the update of `ScraperConfig.last_run` to
    now. A stale database connection (`InterfaceError`) gets one retry.
 4. `JSONDecodeError` and `RequestException` (Ankara's `AnkaraScraperError`
-   and Istanbul's all-districts failure included) are logged as a warning and
-   the task ends without writing. Other errors fail the task.
+   and Istanbul's no-list and unreachable-map-page failures included) are
+   logged as a warning and the task ends without writing. Other errors fail
+   the task.
 
 `add_scraped_data_to_db` (`pharmacies/utils/utils.py`) loads the city's rows
 once and keys them by `(name, phone)`
