@@ -70,7 +70,7 @@
                 <div id="handle"
                      onclick="event.stopPropagation()"
                      class="w-12 h-1 bg-gray-400 rounded-full mx-auto mb-2"></div>
-                <h1 class="text-xl font-bold mb-4 mt-4">Şu Anda Açık Eczaneler</h1>
+                <h1 id="pharmacy-list-heading" class="text-xl font-bold mb-4 mt-4">Yakındaki Eczaneler</h1>
                 <!-- Scrollable Area -->
                 <div id="pharmacy-scrollable-area" class="flex-1 scrollable-area">
                     <div id="pharmacy-items" class="space-y-4">
@@ -417,6 +417,7 @@
 		function showHeaderError(message) {
 			$('#selectedPharmacyName').text(message);
 			hideHeaderStatus();
+			setSheetHeading(null);
 		}
 
 		// Full literal class strings so Tailwind's content scan keeps them.
@@ -426,6 +427,16 @@
 		};
 		const HEADER_STATUS_FALLBACK_STYLE = "bg-gray-100 text-gray-800";
 		const HEADER_STATUS_ALL_STYLES = "bg-green-100 text-green-800 bg-amber-100 text-amber-800 bg-gray-100 text-gray-800";
+
+		const SHEET_HEADINGS = {
+			"Açık": "Şu Anda Açık Eczaneler",
+			"Nöbetçi": "Nöbetçi Eczaneler",
+		};
+		const SHEET_HEADING_NEUTRAL = "Yakındaki Eczaneler";
+
+		function setSheetHeading(status) {
+			$('#pharmacy-list-heading').text(SHEET_HEADINGS[status] ?? SHEET_HEADING_NEUTRAL);
+		}
 
 		function hideHeaderStatus() {
 			$('#selectedPharmacyStatus').text("");
@@ -466,10 +477,12 @@
 			if (!Array.isArray(points) || points.length === 0) {
 				$('#selectedPharmacyName').text("Eczane bulunamadı");
 				hideHeaderStatus();
+				setSheetHeading(null);
 				clearMarkers();
 				console.error("No pharmacy points found.");
 				return;
 			}
+			setSheetHeading(points[0].status);
 			updatePharmacyList(points);
 			attachHammerSwipeEvents();
 
