@@ -881,3 +881,50 @@ class TestProxyAwareCsrf:
         assert json.loads(response.content) == {
             "error": "Failed to proxy Google Maps request."
         }
+
+
+class TestSheetHeading:
+    """The bottom-sheet heading follows the mode of the latest points response."""
+
+    @pytest.fixture
+    def html(self, client: Client) -> str:
+        response = client.get(reverse("home"))
+        assert response.status_code == 200
+        return response.content.decode()
+
+    @staticmethod
+    def _function_body(html: str, name: str) -> str:
+        start = html.index(f"function {name}(")
+        nxt = html.find("\n\t\tfunction ", start + 1)
+        return html[start:nxt]
+
+    def test_heading_starts_neutral(self, html: str) -> None:
+        match = re.search(
+            r'<h1[^>]*id="pharmacy-list-heading"[^>]*>(.*?)</h1>', html, re.DOTALL
+        )
+        assert match is not None
+        assert match.group(1).strip() == "Yakındaki Eczaneler"
+        assert match.group(1).strip() != "Şu Anda Açık Eczaneler"
+
+    def test_script_maps_each_status_to_its_heading(self, html: str) -> None:
+        assert re.search(r'"Nöbetçi":\s*"Nöbetçi Eczaneler"', html)
+        assert re.search(r'"Açık":\s*"Şu Anda Açık Eczaneler"', html)
+        assert re.search(r'SHEET_HEADING_NEUTRAL\s*=\s*"Yakındaki Eczaneler"', html)
+
+    def test_render_sets_heading_from_first_point_or_neutral(self, html: str) -> None:
+        body = self._function_body(html, "renderPharmacyResults")
+        assert "setSheetHeading(points[0].status)" in body
+        assert "setSheetHeading(null)" in body
+
+    def test_header_error_resets_heading(self, html: str) -> None:
+        body = self._function_body(html, "showHeaderError")
+        assert "setSheetHeading(null)" in body
+
+    def test_set_sheet_heading_falls_back_to_neutral(self, html: str) -> None:
+        body = self._function_body(html, "setSheetHeading")
+        assert "?? SHEET_HEADING_NEUTRAL" in body
+        assert "#pharmacy-list-heading" in body
+
+    def test_title_and_header_placeholder_unchanged(self, html: str) -> None:
+        assert "<title>Nöbetçi Eczaneler | Açık Eczaneler | Eczanerede</title>" in html
+        assert "Açık Eczaneler Yükleniyor" in html
