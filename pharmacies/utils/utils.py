@@ -15,6 +15,7 @@ import requests
 from django.conf import settings
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
+from django.db import transaction
 from django.utils import timezone
 
 from pharmacies.models import City, Pharmacy
@@ -64,7 +65,10 @@ def get_nearest_pharmacies_on_duty(
 
     1. Checks if the city and coordinates are valid.
     2. Filters pharmacies in the database that are on duty at the specified time.
-    3. Sorts by distance and calculates travel metrics using Google Maps.
+    3. Sorts by distance, keeps the nearest row of each pharmacy (identity is
+       `(name, phone)`, ADR 0005) until it has `limit * 2` distinct pharmacies,
+       and only then calculates travel metrics using Google Maps, so a repeated
+       row neither uses up the limit nor costs a Distance Matrix element.
     """
     if city is None:
         raise ValueError("City name is required.")
@@ -89,13 +93,18 @@ def get_nearest_pharmacies_on_duty(
     near_pharmacies_on_duty = near_pharmacies_on_duty.annotate(
         distance=Distance("location", user_location)
     )
-    near_pharmacies_on_duty = near_pharmacies_on_duty.order_by("distance")
-    near_pharmacies_on_duty = near_pharmacies_on_duty[: limit * 2]
+    near_pharmacies_on_duty = near_pharmacies_on_duty.order_by("distance", "pk")
 
-    if near_pharmacies_on_duty.count() == 0:
+    distinct_pharmacies: dict[tuple[str, str | None], Pharmacy] = {}
+    for pharmacy in near_pharmacies_on_duty:
+        distinct_pharmacies.setdefault((pharmacy.name, pharmacy.phone), pharmacy)
+        if len(distinct_pharmacies) >= limit * 2:
+            break
+
+    if not distinct_pharmacies:
         raise ValueError("No pharmacies are on duty at this time.")
 
-    pharmacy_data = get_map_points_from_pharmacies(near_pharmacies_on_duty)
+    pharmacy_data = get_map_points_from_pharmacies(list(distinct_pharmacies.values()))
     add_travel_distances_to_pharmacy_data(lat=lat, lng=lng, pharmacy_data=pharmacy_data)
     order_data_by_distance(pharmacy_data)
 
@@ -236,51 +245,69 @@ def add_scraped_data_to_db(scraped_data: list[dict[str, Any]], city_name: str) -
     Save scraped pharmacy data to the database.
 
     Updates existing pharmacies or creates new ones. Optimized using bulk operations.
+
+    Runs in a transaction that first locks the city row (`select_for_update`), so
+    two scrapes of one city run one after the other and the second sees the rows
+    of the first. A key `(name, phone)` gets one row: a key repeated in the
+    scrape updates the same object (the last item wins), and when a key already
+    has several rows only the one with the lowest pk is updated, so the others'
+    duty windows pass. Rows are never deleted.
     """
-    city: City = City.objects.get(name=city_name)
-    if not city:
-        raise ValueError("City not found")
+    with transaction.atomic():
+        city: City = City.objects.select_for_update().get(name=city_name)
+        if not city:
+            raise ValueError("City not found")
 
-    existing_pharmacies = Pharmacy.objects.filter(city=city)
-    pharmacy_map = {(p.name, p.phone): p for p in existing_pharmacies}
+        pharmacy_map: dict[tuple[str, str | None], Pharmacy] = {}
+        for p in Pharmacy.objects.filter(city=city).order_by("pk"):
+            pharmacy_map.setdefault((p.name, p.phone), p)
 
-    pharmacies_to_create = []
-    pharmacies_to_update = []
+        pharmacies_to_create: dict[tuple[str, str | None], Pharmacy] = {}
+        pharmacies_to_update: dict[int, Pharmacy] = {}
 
-    for item in scraped_data:
-        key = (item["name"], item["phone"])
-        existing_pharmacy = pharmacy_map.get(key)
+        for item in scraped_data:
+            key = (item["name"], item["phone"])
+            existing_pharmacy = pharmacy_map.get(key)
 
-        if not existing_pharmacy:
+            if existing_pharmacy:
+                existing_pharmacy.duty_start = item["duty_start"]
+                existing_pharmacy.duty_end = item["duty_end"]
+                existing_pharmacy.address = item["address"]
+                existing_pharmacy.district = item["district"]
+                new_location = _point_from_coordinates(item.get("coordinates"))
+                if new_location is not None:
+                    existing_pharmacy.location = new_location
+                pharmacies_to_update[existing_pharmacy.pk] = existing_pharmacy
+                continue
+
             coordinates = item["coordinates"]
             location = Point(float(coordinates["lng"]), float(coordinates["lat"]))
+            pending = pharmacies_to_create.get(key)
+            if pending is None:
+                pharmacies_to_create[key] = Pharmacy(
+                    name=item["name"],
+                    address=item["address"],
+                    phone=item["phone"],
+                    location=location,
+                    duty_start=item["duty_start"],
+                    duty_end=item["duty_end"],
+                    district=item["district"],
+                    city=city,
+                )
+            else:
+                pending.address = item["address"]
+                pending.location = location
+                pending.duty_start = item["duty_start"]
+                pending.duty_end = item["duty_end"]
+                pending.district = item["district"]
 
-            pharmacy = Pharmacy(
-                name=item["name"],
-                address=item["address"],
-                phone=item["phone"],
-                location=location,
-                duty_start=item["duty_start"],
-                duty_end=item["duty_end"],
-                district=item["district"],
-                city=city,
-            )
-            pharmacies_to_create.append(pharmacy)
-        else:
-            existing_pharmacy.duty_start = item["duty_start"]
-            existing_pharmacy.duty_end = item["duty_end"]
-            existing_pharmacy.address = item["address"]
-            existing_pharmacy.district = item["district"]
-            new_location = _point_from_coordinates(item.get("coordinates"))
-            if new_location is not None:
-                existing_pharmacy.location = new_location
-            pharmacies_to_update.append(existing_pharmacy)
-
-    Pharmacy.objects.bulk_create(pharmacies_to_create, ignore_conflicts=True)
-    Pharmacy.objects.bulk_update(
-        pharmacies_to_update,
-        ["duty_start", "duty_end", "location", "address", "district"],
-    )
+        Pharmacy.objects.bulk_create(
+            list(pharmacies_to_create.values()), ignore_conflicts=True
+        )
+        Pharmacy.objects.bulk_update(
+            list(pharmacies_to_update.values()),
+            ["duty_start", "duty_end", "location", "address", "district"],
+        )
 
 
 def _raise_for_non_ok_status(status: Any, results: list[Any]) -> None:

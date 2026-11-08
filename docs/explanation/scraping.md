@@ -166,15 +166,21 @@ task, including through the admin's bulk delete and a `City` cascade
    logged as a warning and the task ends without writing. Other errors fail
    the task.
 
-`add_scraped_data_to_db` (`pharmacies/utils/utils.py`) loads the city's rows
-once and keys them by `(name, phone)`
+`add_scraped_data_to_db` (`pharmacies/utils/utils.py`) runs in a transaction
+(inside `run_scraper`'s it is a savepoint) and first locks the city's row with
+`select_for_update`, so two scrapes of one city run one after the other and the
+second sees the rows the first created. It then loads the city's rows once and
+keys them by `(name, phone)`
 ([ADR 0005](../decisions/0005-identify-a-pharmacy-by-name-and-phone-and-never-delete-rows.md)).
-An unseen key becomes a new row (`bulk_create`). A known key gets its
-`duty_start`, `duty_end`, `address` and `district` overwritten, and its
-`location` when the scraped coordinates are valid (`_point_from_coordinates`),
-in one `bulk_update`; ADR 0005's "only duty times update" predates that
-change (#241). Rows are never deleted: a pharmacy missing from a scrape keeps
-its old window, which simply passes.
+When a key already has several rows, the one with the lowest pk stands for it.
+An unseen key becomes a new row (`bulk_create`); a key repeated within one
+scrape still gives one row, and the last item wins. A known key gets its
+`duty_start`, `duty_end`, `address` and `district` overwritten on that one row,
+and its `location` when the scraped coordinates are valid
+(`_point_from_coordinates`), in one `bulk_update`; ADR 0005's "only duty times
+update" predates that change (#241). The other rows of the key are not touched,
+so their duty windows pass and they stop being shown. Rows are never deleted: a
+pharmacy missing from a scrape keeps its old window, which simply passes.
 
 `City.last_scraped_at` is not written by any scrape; freshness is
 `ScraperConfig.last_run`.
@@ -204,8 +210,10 @@ its old window, which simply passes.
    pharmacies (`fetch_nearest_pharmacies`, cached in the process). Nothing
    comes from this database.
 4. **Closed:** `get_nearest_pharmacies_on_duty` takes the city's rows with
-   `duty_start <= time <= duty_end`, the 10 nearest by distance. None gives a
-   400, "No pharmacies are on duty at this time."
+   `duty_start <= time <= duty_end`, ordered by distance. It keeps the nearest
+   row of each `(name, phone)` and stops at 10 distinct pharmacies, before the
+   Distance Matrix call, so a repeated row uses up neither the limit nor a
+   paid element. None gives a 400, "No pharmacies are on duty at this time."
 5. Either way `add_travel_distances_to_pharmacy_data` adds the travel
    distance from Google's Distance Matrix, the list is sorted by it, and the
    first 5 are returned.

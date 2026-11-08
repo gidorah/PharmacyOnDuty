@@ -182,6 +182,68 @@ class TestGetPharmacyPoints:
         assert "points" in data
         assert data["points"][0]["title"] == "Duty Pharmacy"
 
+    @patch("pharmacies.utils.utils.requests.get")
+    @patch("pharmacies.views.get_city_name_from_location")
+    def test_get_pharmacy_points_lists_duplicated_pharmacy_once(
+        self,
+        mock_get_city: MagicMock,
+        mock_requests_get: MagicMock,
+        client: Client,
+        setup_city: City,
+    ) -> None:
+        from django.contrib.gis.geos import Point
+
+        from pharmacies.models import Pharmacy
+        from pharmacies.utils.utils import _get_distance_matrix_data
+
+        mock_get_city.return_value = "eskisehir"
+        for lng in (30.5, 30.5001):
+            Pharmacy.objects.create(
+                name="Twice Eczane",
+                phone="123",
+                city=setup_city,
+                district="D1",
+                location=Point(lng, 39.7),
+                duty_start=datetime(2025, 12, 16, 18, 0, tzinfo=UTC),
+                duty_end=datetime(2025, 12, 17, 8, 0, tzinfo=UTC),
+            )
+
+        def fake_get(url: str, timeout: int) -> MagicMock:
+            count = len(url.split("&destinations=")[1].split("&key=")[0].split("|"))
+            response = MagicMock()
+            response.json.return_value = {
+                "status": "OK",
+                "rows": [
+                    {
+                        "elements": [
+                            {
+                                "status": "OK",
+                                "distance": {"value": 100},
+                                "duration": {"value": 60},
+                            }
+                        ]
+                        * count
+                    }
+                ],
+            }
+            return response
+
+        mock_requests_get.side_effect = fake_get
+        _get_distance_matrix_data.cache_clear()
+
+        # Tuesday 20:00 (Closed -> On Duty)
+        with patch("django.utils.timezone.now") as mock_now:
+            mock_now.return_value = datetime(2025, 12, 16, 20, 0, tzinfo=UTC)
+            response = client.post(
+                reverse("pharmacies:get_pharmacy_points"),
+                data=json.dumps({"lat": 39.7, "lng": 30.5}),
+                content_type="application/json",
+            )
+
+        assert response.status_code == 200
+        titles = [p["title"] for p in response.json()["points"]]
+        assert titles == ["Twice Eczane"]
+
     @patch("pharmacies.views.get_city_name_from_location")
     def test_get_pharmacy_points_city_not_found(
         self, mock_get_city: MagicMock, client: Client
