@@ -22,6 +22,7 @@ from django_celery_beat.models import CrontabSchedule, IntervalSchedule, Periodi
 
 ISTANBUL_TZ = ZoneInfo("Europe/Istanbul")
 EVE_CLOSING_TIME_ISTANBUL = time(13, 0)
+HANDOVER = time(6, 0)  # UTC; the day rolls over here, or at the opening if later
 
 # Built once: the lookups are cached per year by the holidays package.
 TR_PUBLIC_HOLIDAYS = holidays.country_holidays("TR", categories=(holidays.PUBLIC,))
@@ -32,6 +33,7 @@ SCHEDULE_TASK_SUFFIXES = (
     "Weekday End",
     "Saturday Start",
     "Saturday End",
+    "Handover",
 )
 
 
@@ -41,7 +43,7 @@ def schedule_task_name(city_name: str, suffix: str) -> str:
 
 
 def schedule_task_names(city_name: str) -> list[str]:
-    """Return the four crontab PeriodicTask names for a city name."""
+    """Return the five crontab PeriodicTask names for a city name."""
     return [schedule_task_name(city_name, suffix) for suffix in SCHEDULE_TASK_SUFFIXES]
 
 
@@ -182,11 +184,12 @@ class WorkingSchedule(models.Model):
         """
         Create or update Celery PeriodicTasks based on the schedule.
 
-        This method generates four periodic tasks for the city:
+        This method generates five periodic tasks for the city:
         1. Weekday Start
         2. Weekday End
         3. Saturday Start
         4. Saturday End
+        5. Handover (daily at HANDOVER, when the duty window rolls over)
         """
 
         # Helper to create/get crontab and task
@@ -233,6 +236,9 @@ class WorkingSchedule(models.Model):
         create_task(
             "Saturday End", self.saturday_end.hour, self.saturday_end.minute, "6"
         )
+        # 5. Handover (every day): the duty window rolls over on Sundays and
+        # holidays, when no opening scrape follows.
+        create_task("Handover", HANDOVER.hour, HANDOVER.minute, "*")
 
     class Meta:
         """Meta options for WorkingSchedule model."""

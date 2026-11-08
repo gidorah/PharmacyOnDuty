@@ -131,8 +131,8 @@ Every scraper returns the standard dict per pharmacy: `name`, `address`,
 ## Schedule
 
 Beat uses `django_celery_beat`'s `DatabaseScheduler`, so the schedule is rows
-in the database ([ADR 0007](../decisions/0007-drive-scrape-schedules-from-the-database-and-remove-their-tasks.md)).
-Each city has five `PeriodicTask` rows that call
+in the database ([ADR 0008](../decisions/0008-add-a-daily-handover-scrape-to-the-schedule.md)).
+Each city has six `PeriodicTask` rows that call
 `pharmacies.tasks.run_scraper` with the city name:
 
 | Task | Written by | When (as `seed_cities` sets it) |
@@ -142,10 +142,15 @@ Each city has five `PeriodicTask` rows that call
 | `Scrape <city> Weekday End` | `WorkingSchedule.save()` | Mon to Fri 15:30 UTC (18:30 TRT) |
 | `Scrape <city> Saturday Start` | `WorkingSchedule.save()` | Sat 07:00 UTC (10:00 TRT) |
 | `Scrape <city> Saturday End` | `WorkingSchedule.save()` | Sat 15:00 UTC (18:00 TRT) |
+| `Scrape <city> Handover` | `WorkingSchedule.save()`, and migration 0008 for existing cities | every day 06:00 UTC (09:00 TRT), `HANDOVER` |
+
+The handover task is when the duty window rolls over on Sundays and holidays,
+when cities stay closed and no opening scrape follows; without it nobody is on
+duty until the next hourly scrape ([ADR 0008](../decisions/0008-add-a-daily-handover-scrape-to-the-schedule.md)).
 
 `WorkingSchedule` times are UTC and their crontabs use `timezone="UTC"`,
 although `CELERY_TIMEZONE` is `Europe/Istanbul`. Deleting a `WorkingSchedule`
-removes its four crontab tasks and deleting a `ScraperConfig` its interval
+removes its five crontab tasks and deleting a `ScraperConfig` its interval
 task, including through the admin's bulk delete and a `City` cascade
 (`pre_delete` receivers in `pharmacies/models.py`). Renaming a city in
 `City.save()` replaces its tasks with ones under the new name. In production beat runs on

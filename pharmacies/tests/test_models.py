@@ -224,11 +224,23 @@ class TestWorkingScheduleModel:
         )
 
         tasks = PeriodicTask.objects.filter(name__icontains="Scrape TaskCity")
-        assert tasks.count() == 4
+        assert tasks.count() == 5
         assert tasks.filter(name__icontains="Weekday Start").exists()
         assert tasks.filter(name__icontains="Weekday End").exists()
         assert tasks.filter(name__icontains="Saturday Start").exists()
         assert tasks.filter(name__icontains="Saturday End").exists()
+
+        handover = PeriodicTask.objects.get(name="Scrape TaskCity Handover")
+        assert handover.crontab is not None
+        assert handover.crontab.minute == "0"
+        assert handover.crontab.hour == "6"
+        assert handover.crontab.day_of_week == "*"
+        assert handover.crontab.day_of_month == "*"
+        assert handover.crontab.month_of_year == "*"
+        assert str(handover.crontab.timezone) == "UTC"
+        assert handover.task == "pharmacies.tasks.run_scraper"
+        assert handover.args == json.dumps(["TaskCity"])
+        assert handover.enabled is True
 
 
 @pytest.mark.django_db
@@ -269,12 +281,13 @@ SCRAPER_TASK = "pharmacies.tasks.run_scraper"
 
 
 def _names_for(city: City) -> set[str]:
-    """Expected five task names for a city."""
+    """Expected six task names for a city."""
     return {
         f"Scrape {city.name} Weekday Start",
         f"Scrape {city.name} Weekday End",
         f"Scrape {city.name} Saturday Start",
         f"Scrape {city.name} Saturday End",
+        f"Scrape {city.name} Handover",
         f"Scrape {city.name} ({city.pk})",
     }
 
@@ -300,9 +313,11 @@ def _make_city(name: str) -> City:
 
 @pytest.mark.django_db
 class TestPeriodicTaskCleanup:
-    def test_deleting_schedule_removes_its_four_tasks(self) -> None:
+    def test_deleting_schedule_removes_its_five_tasks(self) -> None:
         city_a, city_b = _make_city("CityA"), _make_city("CityB")
+        assert PeriodicTask.objects.filter(name="Scrape CityA Handover").exists()
         city_a.working_schedule.delete()
+        assert not PeriodicTask.objects.filter(name="Scrape CityA Handover").exists()
         assert _task_names() == {f"Scrape CityA ({city_a.pk})"} | _names_for(city_b)
 
     def test_deleting_config_removes_its_interval_task(self) -> None:
@@ -315,6 +330,7 @@ class TestPeriodicTaskCleanup:
     def test_deleting_city_removes_all_its_tasks(self) -> None:
         city_a, city_b = _make_city("CityA"), _make_city("CityB")
         city_a.delete()
+        assert not PeriodicTask.objects.filter(name="Scrape CityA Handover").exists()
         assert _task_names() == _names_for(city_b)
         assert not PeriodicTask.objects.filter(args=json.dumps(["CityA"])).exists()
 
@@ -349,6 +365,8 @@ class TestCityRenameTasks:
             task = PeriodicTask.objects.get(name=name)
             assert task.args == json.dumps(["CityC"])
         assert not PeriodicTask.objects.filter(args=json.dumps(["CityA"])).exists()
+        assert PeriodicTask.objects.filter(name="Scrape CityC Handover").exists()
+        assert not PeriodicTask.objects.filter(name="Scrape CityA Handover").exists()
 
     def test_rename_city_without_schedule_or_config_creates_no_tasks(self) -> None:
         city = City.objects.create(name="Bare")

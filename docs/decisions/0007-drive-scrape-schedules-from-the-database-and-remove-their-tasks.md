@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted, 29 Oct 2026 (#252). Replaces
+Accepted, 29 Oct 2026 (#252). Replaced by
+[0008](0008-add-a-daily-handover-scrape-to-the-schedule.md). Replaces
 [0002](0002-drive-scrape-schedules-from-the-database.md), whose decision it
 restates; only the consequences about removing tasks changed.
 
