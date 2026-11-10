@@ -1,9 +1,11 @@
+import threading
 from datetime import UTC, datetime, time, timedelta
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 from django.contrib.gis.geos import Point
+from django.db import connection
 
 from pharmacies.models import City, Pharmacy, WorkingSchedule
 from pharmacies.utils.utils import (
@@ -702,3 +704,173 @@ class TestUtilsDB:
             assert results[0]["address"] == ""
             assert results[0]["description"] == ""
             assert results[0]["travel_distance"] == 100
+
+    @staticmethod
+    def _duty_pharmacy(
+        city: City, name: str, phone: str, lng: float, lat: float
+    ) -> Pharmacy:
+        return Pharmacy.objects.create(
+            name=name,
+            phone=phone,
+            city=city,
+            district="D1",
+            location=Point(lng, lat),
+            duty_start=datetime(2025, 12, 16, 18, 0, tzinfo=UTC),
+            duty_end=datetime(2025, 12, 17, 8, 0, tzinfo=UTC),
+        )
+
+    @patch("pharmacies.utils.utils.requests.get")
+    def test_get_nearest_pharmacies_on_duty_dedupes_before_distance_matrix(
+        self, mock_get: MagicMock
+    ) -> None:
+        from pharmacies.utils.utils import (
+            _get_distance_matrix_data,
+            get_nearest_pharmacies_on_duty,
+        )
+
+        city = City.objects.create(name="eskisehir")
+        # 5 pharmacies stored twice each: the 10 nearest rows.
+        for i in range(5):
+            for _ in range(2):
+                self._duty_pharmacy(city, f"Near {i}", f"10{i}", 30.5 + i * 0.001, 39.7)
+        # Farther distinct pharmacies.
+        for i in range(3):
+            self._duty_pharmacy(city, f"Far {i}", f"20{i}", 30.6 + i * 0.001, 39.7)
+
+        def fake_get(url: str, timeout: int) -> MagicMock:
+            destinations = url.split("&destinations=")[1].split("&key=")[0]
+            count = len(destinations.split("|"))
+            response = MagicMock()
+            response.json.return_value = {
+                "status": "OK",
+                "rows": [
+                    {
+                        "elements": [
+                            {
+                                "status": "OK",
+                                "distance": {"value": 100 + n},
+                                "duration": {"value": 60 + n},
+                            }
+                            for n in range(count)
+                        ]
+                    }
+                ],
+            }
+            return response
+
+        mock_get.side_effect = fake_get
+        _get_distance_matrix_data.cache_clear()
+
+        results = get_nearest_pharmacies_on_duty(
+            lat=39.7,
+            lng=30.5,
+            city="eskisehir",
+            time=datetime(2025, 12, 16, 22, 0, tzinfo=UTC),
+        )
+
+        url = mock_get.call_args.args[0]
+        destinations = url.split("&destinations=")[1].split("&key=")[0].split("|")
+        assert len(destinations) == 8
+        assert len(set(destinations)) == 8
+        assert len(results) == 5
+        assert len({r["title"] for r in results}) == 5
+
+    def test_get_nearest_pharmacies_on_duty_raises_when_none(self) -> None:
+        from pharmacies.utils.utils import get_nearest_pharmacies_on_duty
+
+        City.objects.create(name="eskisehir")
+        with pytest.raises(ValueError, match="No pharmacies are on duty"):
+            get_nearest_pharmacies_on_duty(
+                lat=39.7,
+                lng=30.5,
+                city="eskisehir",
+                time=datetime(2025, 12, 16, 22, 0, tzinfo=UTC),
+            )
+
+    def test_add_scraped_data_to_db_key_twice_in_one_scrape_makes_one_row(
+        self,
+    ) -> None:
+        from pharmacies.utils.utils import add_scraped_data_to_db
+
+        city = City.objects.create(name="eskisehir")
+        coords = {"lat": 39.7, "lng": 30.5}
+        add_scraped_data_to_db(
+            [
+                self._scraped_item("Eczane D", "777", coords, "First", "D1"),
+                self._scraped_item("Eczane D", "777", coords, "Second", "D1"),
+            ],
+            "eskisehir",
+        )
+
+        rows = Pharmacy.objects.filter(city=city, name="Eczane D", phone="777")
+        assert rows.count() == 1
+        assert rows[0].address == "Second"
+
+    def test_add_scraped_data_to_db_updates_only_lowest_pk_of_a_key(self) -> None:
+        from pharmacies.utils.utils import add_scraped_data_to_db
+
+        city = City.objects.create(name="eskisehir")
+        first = self._existing_pharmacy(city, "Eczane E", "888")
+        second = self._existing_pharmacy(city, "Eczane E", "888")
+        assert first.pk < second.pk
+        coords = {"lat": 39.7, "lng": 30.5}
+
+        for _ in range(2):
+            add_scraped_data_to_db(
+                [self._scraped_item("Eczane E", "888", coords, "New", "D1")],
+                "eskisehir",
+            )
+            first.refresh_from_db()
+            second.refresh_from_db()
+            assert first.duty_start == datetime(2025, 12, 16, 18, 0, tzinfo=UTC)
+            assert first.address == "New"
+            assert second.duty_start == datetime(2025, 12, 10, 18, 0, tzinfo=UTC)
+            assert second.duty_end == datetime(2025, 12, 11, 8, 0, tzinfo=UTC)
+            assert second.address == "Old Address"
+
+        assert Pharmacy.objects.filter(city=city).count() == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_add_scraped_data_to_db_concurrent_scrapes_make_one_row() -> None:
+    import time as time_module
+
+    from pharmacies.utils.utils import add_scraped_data_to_db
+
+    city = City.objects.create(name="eskisehir")
+    item = {
+        "name": "Eczane C",
+        "address": "Address",
+        "phone": "999",
+        "district": "D1",
+        "coordinates": {"lat": 39.7, "lng": 30.5},
+        "duty_start": datetime(2025, 12, 16, 18, 0, tzinfo=UTC),
+        "duty_end": datetime(2025, 12, 17, 8, 0, tzinfo=UTC),
+    }
+    real_bulk_create = Pharmacy.objects.bulk_create
+    start = threading.Barrier(2)
+    errors: list[BaseException] = []
+
+    def slow_bulk_create(*args: Any, **kwargs: Any) -> Any:
+        # Without the city lock both threads have read an empty map by now.
+        time_module.sleep(0.5)
+        return real_bulk_create(*args, **kwargs)
+
+    def run() -> None:
+        try:
+            start.wait(timeout=10)
+            add_scraped_data_to_db([item], "eskisehir")
+        except BaseException as exc:
+            errors.append(exc)
+        finally:
+            connection.close()
+
+    with patch.object(Pharmacy.objects, "bulk_create", side_effect=slow_bulk_create):
+        threads = [threading.Thread(target=run) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+    assert errors == []
+    assert Pharmacy.objects.filter(city=city, name="Eczane C", phone="999").count() == 1
