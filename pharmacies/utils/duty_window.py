@@ -6,13 +6,12 @@ from django.utils import timezone
 
 from pharmacies.models import (
     EVE_CLOSING_TIME_ISTANBUL,
+    HANDOVER,
     ISTANBUL_TZ,
     TR_HALF_DAY_HOLIDAYS,
     TR_PUBLIC_HOLIDAYS,
     WorkingSchedule,
 )
-
-HANDOVER = time(6, 0)  # UTC; the day rolls over here, or at the opening if later
 
 
 def _at(day: datetime, at: time) -> datetime:
